@@ -25,7 +25,9 @@ typedef enum {
     GATEWAY_EVENT_PERMIT_JOIN,
     GATEWAY_EVENT_DEVICE_ANNOUNCE,
     GATEWAY_EVENT_DEVICE_REJOIN,
-    GATEWAY_EVENT_DEVICE_LEAVE,
+    GATEWAY_EVENT_DEVICE_LEAVE_RESET,
+    GATEWAY_EVENT_DEVICE_LEAVE_REJOIN,
+    GATEWAY_EVENT_DEVICE_LEAVE_UNKNOWN,
     GATEWAY_EVENT_DEVICE_UPDATE,
     GATEWAY_EVENT_DEVICE_UNAVAILABLE,
     GATEWAY_EVENT_DEVICE_CHECK_IN,
@@ -87,6 +89,14 @@ typedef struct {
         struct {
             uint8_t duration;
         } permit;
+        struct {
+            uint16_t old_short_addr;
+            uint16_t new_short_addr;
+        } rejoin;
+        struct {
+            uint8_t leave_type;
+            bool record_retained;
+        } leave;
         struct {
             uint16_t profile_id;
             uint16_t device_id;

@@ -62,7 +62,7 @@
 #define REPORTING_BATTERY_MAX_SECONDS 21600U
 #define REPORTING_BATTERY_PERCENT_CHANGE 2U
 
-typedef enum { SLOT_EMPTY, SLOT_ACTIVE, SLOT_LEAVING } slot_state_t;
+typedef enum { SLOT_EMPTY, SLOT_ACTIVE, SLOT_REJOIN_PENDING, SLOT_LEAVING } slot_state_t;
 typedef enum { BASIC_NOT_SCHEDULED, BASIC_SCHEDULED, BASIC_COMPLETE } basic_state_t;
 
 typedef struct {
@@ -82,6 +82,7 @@ typedef struct {
     slot_state_t state;
     uint32_t generation;
     gateway_device_id_t device;
+    ezb_shortaddr_t previous_short_addr;
     uint8_t pending_jobs;
     uint8_t pending_requests;
     endpoint_state_t endpoints[GATEWAY_MAX_ENDPOINTS_PER_DEVICE];
@@ -180,6 +181,7 @@ static device_slot_t *allocate_device(ezb_shortaddr_t short_addr)
             s_devices[i].state = SLOT_ACTIVE;
             s_devices[i].generation = generation;
             s_devices[i].device.short_addr = short_addr;
+            s_devices[i].previous_short_addr = GATEWAY_INVALID_SHORT_ADDR;
             return &s_devices[i];
         }
     }
@@ -201,6 +203,9 @@ static device_slot_t *upsert_device(ezb_shortaddr_t short_addr, const ezb_extadd
         maybe_reclaim(old);
     }
     slot->state = SLOT_ACTIVE;
+    if (slot->device.short_addr != GATEWAY_INVALID_SHORT_ADDR && slot->device.short_addr != short_addr) {
+        slot->previous_short_addr = slot->device.short_addr;
+    }
     slot->device.short_addr = short_addr;
     if (ieee != NULL) {
         memcpy(slot->device.ieee, ieee->u8, sizeof(slot->device.ieee));
@@ -732,19 +737,66 @@ static void network_event(gateway_event_kind_t kind)
 
 static void announce_and_discover(gateway_event_kind_t kind, ezb_shortaddr_t short_addr, const ezb_extaddr_t *ieee)
 {
+    device_slot_t *existing = ieee == NULL ? NULL : find_by_ieee(ieee, true);
+    const ezb_shortaddr_t old_short_addr = existing == NULL ? GATEWAY_INVALID_SHORT_ADDR :
+        (existing->device.short_addr == GATEWAY_INVALID_SHORT_ADDR ? existing->previous_short_addr : existing->device.short_addr);
     device_slot_t *slot = upsert_device(short_addr, ieee);
     if (slot == NULL) { warning(NULL, "device registry capacity exhausted"); return; }
-    gateway_event_t event = event_base(kind, &slot->device); gateway_event_publish(&event);
+    gateway_event_t event = event_base(kind, &slot->device);
+    if (kind == GATEWAY_EVENT_DEVICE_REJOIN) {
+        event.data.rejoin.old_short_addr = old_short_addr;
+        event.data.rejoin.new_short_addr = slot->device.short_addr;
+    }
+    gateway_event_publish(&event);
     if (!queue_job(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U, 0U)) warning(&slot->device, "active endpoint queue full");
 }
 
-static void device_left(ezb_shortaddr_t short_addr, const ezb_extaddr_t *ieee)
+static gateway_device_id_t leave_device_id(const device_slot_t *slot, ezb_shortaddr_t short_addr, const ezb_extaddr_t *ieee)
+{
+    gateway_device_id_t device = {.short_addr = short_addr};
+    if (slot != NULL) device = slot->device;
+    if (device.short_addr == GATEWAY_INVALID_SHORT_ADDR) device.short_addr = short_addr;
+    if (ieee != NULL) {
+        memcpy(device.ieee, ieee->u8, sizeof(device.ieee));
+        device.ieee_valid = true;
+    }
+    return device;
+}
+
+/* DEVICE_UPDATE does not carry leave_type.  Retain IEEE state rather than
+ * guessing that an unknown leave is permanent. */
+static void device_left(ezb_shortaddr_t short_addr, const ezb_extaddr_t *ieee,
+                        bool leave_type_known, ezb_zdo_leave_type_t leave_type)
 {
     device_slot_t *slot = ieee == NULL ? NULL : find_by_ieee(ieee, true);
     if (slot == NULL) slot = find_by_short(short_addr, true);
+    const gateway_device_id_t device = leave_device_id(slot, short_addr, ieee);
+
+    gateway_event_kind_t kind = GATEWAY_EVENT_DEVICE_LEAVE_UNKNOWN;
+    bool retained = true;
+    if (leave_type_known && leave_type == EZB_ZDO_LEAVE_TYPE_RESET) {
+        kind = GATEWAY_EVENT_DEVICE_LEAVE_RESET;
+        retained = false;
+    } else if (leave_type_known && leave_type == EZB_ZDO_LEAVE_TYPE_REJOIN) {
+        kind = GATEWAY_EVENT_DEVICE_LEAVE_REJOIN;
+    }
+    gateway_event_t event = event_base(kind, &device);
+    event.data.leave.leave_type = leave_type_known ? leave_type : UINT8_MAX;
+    event.data.leave.record_retained = retained;
+    gateway_event_publish(&event);
+
     if (slot == NULL) return;
-    gateway_event_t event = event_base(GATEWAY_EVENT_DEVICE_LEAVE, &slot->device); gateway_event_publish(&event);
-    slot->state = SLOT_LEAVING; maybe_reclaim(slot);
+    if (kind == GATEWAY_EVENT_DEVICE_LEAVE_RESET) {
+        slot->state = SLOT_LEAVING;
+        maybe_reclaim(slot);
+        return;
+    }
+    /* The previous short address is no longer a safe route.  The retained
+     * IEEE identity and endpoint configuration are reactivated by upsert_device
+     * when a secure or Trust-Center rejoin announces a new short address. */
+    if (slot->device.short_addr != GATEWAY_INVALID_SHORT_ADDR) slot->previous_short_addr = slot->device.short_addr;
+    slot->device.short_addr = GATEWAY_INVALID_SHORT_ADDR;
+    slot->state = SLOT_REJOIN_PENDING;
 }
 
 static bool app_signal_handler(const ezb_app_signal_t *signal)
@@ -765,12 +817,12 @@ static bool app_signal_handler(const ezb_app_signal_t *signal)
         if (p != NULL) announce_and_discover(GATEWAY_EVENT_DEVICE_ANNOUNCE, p->short_addr, &p->device_addr);
     } else if (type == EZB_ZDO_SIGNAL_DEVICE_UPDATE) {
         const ezb_zdo_signal_device_update_params_t *p = params;
-        if (p != NULL && p->status == EZB_ZDO_UPDDEV_DEVICE_LEFT) device_left(p->short_addr, &p->device_addr);
+        if (p != NULL && p->status == EZB_ZDO_UPDDEV_DEVICE_LEFT) device_left(p->short_addr, &p->device_addr, false, UINT8_MAX);
         else if (p != NULL && (p->status == EZB_ZDO_UPDDEV_SECURE_REJOIN || p->status == EZB_ZDO_UPDDEV_TC_REJOIN)) announce_and_discover(GATEWAY_EVENT_DEVICE_REJOIN, p->short_addr, &p->device_addr);
         else if (p != NULL) announce_and_discover(GATEWAY_EVENT_DEVICE_UPDATE, p->short_addr, &p->device_addr);
     } else if (type == EZB_ZDO_SIGNAL_LEAVE_INDICATION) {
         const ezb_zdo_signal_leave_indication_params_t *p = params;
-        if (p != NULL) device_left(p->short_addr, &p->device_addr);
+        if (p != NULL) device_left(p->short_addr, &p->device_addr, true, p->leave_type);
     } else if (type == EZB_ZDO_SIGNAL_DEVICE_UNAVAILABLE) {
         const ezb_zdo_signal_device_unavailable_params_t *p = params;
         if (p != NULL) {

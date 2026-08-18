@@ -77,11 +77,11 @@ For a sleepy end device, discovery creates standard ZDO bindings for its tempera
 4. While awake, the device returns Configure Reporting responses and normal temperature/humidity (and, if the device supports and reports it, battery-percentage) reports. A response with a non-success status remains eligible for a later retry; one unsupported cluster does not stop the rest of discovery.
 5. After a coordinator reboot, the persisted network is restored with joining closed. The sensor does not need a factory reset or a new pairing: **single-press** its button for wake-up/reconnection. Do not hold it for five seconds: SONOFF documents that action as entering pairing mode. The gateway requests five seconds of fast polling when it receives Poll Control Check-In and repeats bounded discovery/configuration work that was not confirmed in this boot.
 
-Device records are IEEE-first. If a rejoin changes a short address, the record is updated rather than duplicated. If a short address is reused by another IEEE, the displaced record becomes non-routable and is reclaimed only after all static queued jobs and ZDO callback contexts referencing its generation have drained.
+Device records are IEEE-first. If a rejoin changes a short address, the record is updated rather than duplicated. A `LEAVE_INDICATION` with SDK leave type `RESET` (`0`, without rejoin) retires the record once its static queued jobs and ZDO callback contexts have drained. Type `REJOIN` (`1`, with rejoin) instead moves it to a non-routable rejoin-pending state: its IEEE identity and endpoint/binding/reporting state are retained until the same IEEE returns with a new short address. `DEVICE_UPDATE/DEVICE_LEFT` does not carry `leave_type`; it is logged as `ZIGBEE_DEVICE_LEAVE_UNKNOWN` and is conservatively retained rather than guessed to be permanent. If a short address is reused by another IEEE, the displaced record becomes non-routable and is reclaimed only after all static queued jobs and ZDO callback contexts referencing its generation have drained.
 
 Other attributes delivered through the normal ZCL report callback are preserved as raw attributes. A raw event has cluster ID, attribute ID, ZCL type, original byte length, copied byte length, up to 96 bytes, and a `truncated` flag. Completely unsupported/unregistered frames are not fabricated: no APS interception is registered because the MVP has no confirmed additive 2.0.4 indication path that is needed here.
 
-`ZIGBEE_DEVICE_LEAVE`, `ZIGBEE_DEVICE_UPDATE`, and `ZIGBEE_DEVICE_UNAVAILABLE` are distinct events. In particular, `DEVICE_UNAVAILABLE` is intentionally not converted to an authoritative generic offline state.
+`ZIGBEE_DEVICE_LEAVE_RESET`, `ZIGBEE_DEVICE_LEAVE_REJOIN`, `ZIGBEE_DEVICE_LEAVE_UNKNOWN`, `ZIGBEE_DEVICE_UPDATE`, and `ZIGBEE_DEVICE_UNAVAILABLE` are distinct events. In particular, `DEVICE_UNAVAILABLE` is intentionally not converted to an authoritative generic offline state.
 
 Callbacks only validate/copy/enqueue. A static 16-event queue feeds the serial transport task; queue overflows are counted and reported as aggregated warnings. This narrow transport boundary is the intended replacement point for a later C6 normalized-events → UART/SPI → ESP32-S3 pipeline.
 
@@ -97,5 +97,15 @@ Hardware-test the following on the target C6:
 4. join and rejoin announcements, endpoint/simple-descriptor output, and Basic manufacturer/model reads;
 5. a known passive report, unknown-attribute raw fallback and a payload over 96 bytes;
 6. leave, device-update, and `ZIGBEE_DEVICE_UNAVAILABLE` events.
+
+### SNZB-02D leave/rejoin test
+
+1. Factory-pair the SNZB-02D and confirm temperature/humidity reports.
+2. Run `permit 0`; this only closes joining and never removes a record, binding, or network state.
+3. If a leave indication arrives, note its exact `leave_type` in the monitor.
+4. For `ZIGBEE_DEVICE_LEAVE_REJOIN`, keep joining closed, single-press the SNZB-02D to wake it, and verify the same IEEE reports `ZIGBEE_DEVICE_REJOIN`; `old_short` and `new_short` may differ and no second device record is created.
+5. For `ZIGBEE_DEVICE_LEAVE_RESET`, verify `retained=false`; ordinary reporting must not resume until the device is paired again.
+
+Do not hold the SNZB-02D button for five seconds during the rejoin test: that enters pairing mode.
 
 For the SDK 2.x gateway data-model behavior, see Espressif’s [migration guide](https://docs.espressif.com/projects/esp-zigbee-sdk/en/latest/esp32c3/migration-guide/v2.x/zigbee-cluster.html) and [APS/AF reference](https://docs.espressif.com/projects/esp-zigbee-sdk/en/latest/esp32h2/api-reference/esp_zigbee_core/aps_af.html).
