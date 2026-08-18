@@ -1,5 +1,7 @@
 #include "zigbee_gateway.h"
 
+#include <limits.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -12,8 +14,9 @@
 #include <ezbee/af.h>
 #include <ezbee/app_signals.h>
 #include <ezbee/bdb.h>
-#include <ezbee/zcl/zcl_core.h>
+#include <ezbee/secur.h>
 #include <ezbee/zcl/cluster/poll_control.h>
+#include <ezbee/zcl/zcl_core.h>
 #include <ezbee/zcl/zcl_general_cmd.h>
 #include <ezbee/zdo/zdo_bind_mgmt.h>
 #include <ezbee/zdo/zdo_dev_srv_disc.h>
@@ -25,8 +28,17 @@
 #define GATEWAY_DEVICE_ID 0x0000U
 #define GATEWAY_CHANNEL_MASK 0x07fff800UL
 #define GATEWAY_MAX_DEVICES 16U
+#define GATEWAY_MAX_ENDPOINTS_PER_DEVICE 8U
 #define GATEWAY_DISCOVERY_QUEUE_DEPTH 16U
+#define GATEWAY_MAX_ASYNC_CONTEXTS 32U
 #define GATEWAY_ZIGBEE_LOCK_TIMEOUT_MS 100U
+#define GATEWAY_DISCOVERY_MAX_RETRIES 3U
+#define GATEWAY_DISCOVERY_RETRY_DELAY_MS 50U
+#define GATEWAY_REQUEST_STALE_MS 10000U
+#define GATEWAY_INVALID_SHORT_ADDR 0xffffU
+
+/* Poll Control Check-In uses quarter-seconds, not the millisecond SDK macro. */
+#define GATEWAY_FAST_POLL_TIMEOUT_QUARTER_SECONDS 20U /* five seconds */
 
 #define ZCL_ATTR_BASIC_MANUFACTURER_NAME 0x0004U
 #define ZCL_ATTR_BASIC_MODEL_IDENTIFIER 0x0005U
@@ -35,11 +47,6 @@
 #define ZCL_ATTR_ON_OFF 0x0000U
 #define ZCL_ATTR_BATTERY_VOLTAGE 0x0020U
 #define ZCL_ATTR_BATTERY_PERCENT 0x0021U
-#define ZCL_ATTR_MAINS_VOLTAGE 0x0000U
-#define ZCL_ATTR_RMS_VOLTAGE 0x0505U
-#define ZCL_ATTR_RMS_CURRENT 0x0508U
-#define ZCL_ATTR_ACTIVE_POWER 0x050bU
-#define ZCL_ATTR_CURRENT_SUMMATION_DELIVERED 0x0000U
 
 #define REPORTING_TEMPERATURE 0x01U
 #define REPORTING_HUMIDITY 0x02U
@@ -55,150 +62,311 @@
 #define REPORTING_BATTERY_MAX_SECONDS 21600U
 #define REPORTING_BATTERY_PERCENT_CHANGE 2U
 
+typedef enum { SLOT_EMPTY, SLOT_ACTIVE, SLOT_LEAVING } slot_state_t;
+typedef enum { BASIC_NOT_SCHEDULED, BASIC_SCHEDULED, BASIC_COMPLETE } basic_state_t;
+
 typedef struct {
     bool in_use;
-    gateway_device_id_t device;
-    bool basic_read_started;
+    uint8_t endpoint;
+    basic_state_t basic_state;
+    uint32_t basic_scheduled_at_ms;
     uint8_t reporting_requested;
     uint8_t reporting_configured;
+    uint32_t reporting_requested_at_ms;
     uint8_t binding_requested;
     uint8_t binding_configured;
-} gateway_device_slot_t;
+    uint32_t binding_requested_at_ms;
+} endpoint_state_t;
 
+typedef struct {
+    slot_state_t state;
+    uint32_t generation;
+    gateway_device_id_t device;
+    uint8_t pending_jobs;
+    uint8_t pending_requests;
+    endpoint_state_t endpoints[GATEWAY_MAX_ENDPOINTS_PER_DEVICE];
+} device_slot_t;
+
+typedef struct { uint8_t index; uint32_t generation; } device_ref_t;
 typedef enum {
-    DISCOVERY_ACTIVE_ENDPOINTS,
-    DISCOVERY_SIMPLE_DESCRIPTOR,
-    DISCOVERY_READ_BASIC,
-    DISCOVERY_BIND_CLUSTER,
-    DISCOVERY_CONFIG_REPORTING,
+    DISCOVERY_ACTIVE_ENDPOINTS, DISCOVERY_SIMPLE_DESCRIPTOR, DISCOVERY_READ_BASIC,
+    DISCOVERY_BIND_CLUSTER, DISCOVERY_CONFIG_REPORTING,
 } discovery_kind_t;
-
 typedef struct {
     discovery_kind_t kind;
-    gateway_device_slot_t *slot;
+    device_ref_t device;
+    ezb_shortaddr_t route_short_addr;
     uint8_t endpoint;
     uint16_t cluster_id;
+    uint8_t retry_count;
 } discovery_job_t;
-
 typedef struct {
     bool in_use;
-    gateway_device_slot_t *slot;
+    device_ref_t device;
+    ezb_shortaddr_t route_short_addr;
     uint8_t endpoint;
     uint16_t cluster_id;
-} binding_context_t;
+    uint8_t retry_count;
+} async_context_t;
 
-static gateway_device_slot_t s_devices[GATEWAY_MAX_DEVICES];
+static device_slot_t s_devices[GATEWAY_MAX_DEVICES];
+static async_context_t s_async_contexts[GATEWAY_MAX_ASYNC_CONTEXTS];
 static StaticQueue_t s_discovery_queue_storage;
 static uint8_t s_discovery_queue_buffer[GATEWAY_DISCOVERY_QUEUE_DEPTH * sizeof(discovery_job_t)];
 static QueueHandle_t s_discovery_queue;
-static binding_context_t s_binding_contexts[GATEWAY_MAX_DEVICES * 4U];
 
-static gateway_event_t gateway_event_base(gateway_event_kind_t kind, const gateway_device_id_t *device)
+static gateway_event_t event_base(gateway_event_kind_t kind, const gateway_device_id_t *device)
 {
-    gateway_event_t event = {
-        .source = GATEWAY_SOURCE_ZIGBEE,
-        .kind = kind,
-        .uptime_ms = gateway_uptime_ms(),
-    };
-    if (device != NULL) {
-        event.device = *device;
-    }
+    gateway_event_t event = {.source = GATEWAY_SOURCE_ZIGBEE, .kind = kind, .uptime_ms = gateway_uptime_ms()};
+    if (device != NULL) event.device = *device;
     return event;
 }
 
-static gateway_device_slot_t *find_device_by_short(ezb_shortaddr_t short_addr)
+static void warning(const gateway_device_id_t *device, const char *text)
+{
+    gateway_event_t event = event_base(GATEWAY_EVENT_WARNING, device);
+    strncpy(event.data.text.value, text, sizeof(event.data.text.value) - 1U);
+    gateway_event_publish(&event);
+}
+
+static bool ieee_matches(const device_slot_t *slot, const ezb_extaddr_t *ieee)
+{
+    return ieee != NULL && slot->device.ieee_valid && memcmp(slot->device.ieee, ieee->u8, sizeof(slot->device.ieee)) == 0;
+}
+
+static device_slot_t *find_by_ieee(const ezb_extaddr_t *ieee, bool include_leaving)
+{
+    for (size_t i = 0; ieee != NULL && i < GATEWAY_MAX_DEVICES; ++i)
+        if (s_devices[i].state != SLOT_EMPTY && (include_leaving || s_devices[i].state == SLOT_ACTIVE) && ieee_matches(&s_devices[i], ieee)) return &s_devices[i];
+    return NULL;
+}
+
+static device_slot_t *find_by_short(ezb_shortaddr_t short_addr, bool include_leaving)
+{
+    for (size_t i = 0; i < GATEWAY_MAX_DEVICES; ++i)
+        if (s_devices[i].state != SLOT_EMPTY && (include_leaving || s_devices[i].state == SLOT_ACTIVE) && s_devices[i].device.short_addr == short_addr) return &s_devices[i];
+    return NULL;
+}
+
+static device_ref_t ref_for(const device_slot_t *slot)
+{
+    return (device_ref_t){.index = (uint8_t)(slot - s_devices), .generation = slot->generation};
+}
+
+static device_slot_t *from_ref(device_ref_t ref, bool include_leaving)
+{
+    if (ref.index >= GATEWAY_MAX_DEVICES) return NULL;
+    device_slot_t *slot = &s_devices[ref.index];
+    if (slot->state == SLOT_EMPTY || slot->generation != ref.generation || (!include_leaving && slot->state != SLOT_ACTIVE)) return NULL;
+    return slot;
+}
+
+static void maybe_reclaim(device_slot_t *slot)
+{
+    if (slot != NULL && slot->state == SLOT_LEAVING && slot->pending_jobs == 0U && slot->pending_requests == 0U) {
+        memset(slot->endpoints, 0, sizeof(slot->endpoints));
+        memset(&slot->device, 0, sizeof(slot->device));
+        slot->device.short_addr = GATEWAY_INVALID_SHORT_ADDR;
+        slot->state = SLOT_EMPTY;
+    }
+}
+
+static device_slot_t *allocate_device(ezb_shortaddr_t short_addr)
 {
     for (size_t i = 0; i < GATEWAY_MAX_DEVICES; ++i) {
-        if (s_devices[i].in_use && s_devices[i].device.short_addr == short_addr) {
+        if (s_devices[i].state == SLOT_EMPTY) {
+            uint32_t generation = s_devices[i].generation == UINT32_MAX ? 1U : s_devices[i].generation + 1U;
+            memset(&s_devices[i], 0, sizeof(s_devices[i]));
+            s_devices[i].state = SLOT_ACTIVE;
+            s_devices[i].generation = generation;
+            s_devices[i].device.short_addr = short_addr;
             return &s_devices[i];
         }
     }
     return NULL;
 }
 
-static gateway_device_slot_t *upsert_device(ezb_shortaddr_t short_addr, const ezb_extaddr_t *ieee)
+/* IEEE is authoritative identity; the 16-bit address is a mutable route. */
+static device_slot_t *upsert_device(ezb_shortaddr_t short_addr, const ezb_extaddr_t *ieee)
 {
-    gateway_device_slot_t *slot = find_device_by_short(short_addr);
-    if (slot == NULL) {
-        for (size_t i = 0; i < GATEWAY_MAX_DEVICES; ++i) {
-            if (!s_devices[i].in_use) {
-                slot = &s_devices[i];
-                memset(slot, 0, sizeof(*slot));
-                slot->in_use = true;
-                slot->device.short_addr = short_addr;
-                break;
-            }
-        }
+    device_slot_t *slot = ieee == NULL ? find_by_short(short_addr, false) : find_by_ieee(ieee, true);
+    if (slot == NULL) slot = allocate_device(short_addr);
+    if (slot == NULL) return NULL;
+    device_slot_t *old = find_by_short(short_addr, true);
+    if (old != NULL && old != slot) {
+        /* A short address cannot belong to two live devices.  Keep old callbacks
+         * safe, but retire that now-unroutable identity as soon as they drain. */
+        old->device.short_addr = GATEWAY_INVALID_SHORT_ADDR;
+        old->state = SLOT_LEAVING;
+        maybe_reclaim(old);
     }
-    if (slot != NULL && ieee != NULL) {
-        if (!slot->device.ieee_valid || memcmp(slot->device.ieee, ieee->u8, sizeof(slot->device.ieee)) != 0) {
-            slot->basic_read_started = false;
-            slot->reporting_requested = 0U;
-            slot->reporting_configured = 0U;
-            slot->binding_requested = 0U;
-            slot->binding_configured = 0U;
-        }
+    slot->state = SLOT_ACTIVE;
+    slot->device.short_addr = short_addr;
+    if (ieee != NULL) {
         memcpy(slot->device.ieee, ieee->u8, sizeof(slot->device.ieee));
         slot->device.ieee_valid = true;
     }
     return slot;
 }
 
+static endpoint_state_t *endpoint_state(device_slot_t *slot, uint8_t endpoint, bool create)
+{
+    for (size_t i = 0; i < GATEWAY_MAX_ENDPOINTS_PER_DEVICE; ++i)
+        if (slot->endpoints[i].in_use && slot->endpoints[i].endpoint == endpoint) return &slot->endpoints[i];
+    if (!create) return NULL;
+    for (size_t i = 0; i < GATEWAY_MAX_ENDPOINTS_PER_DEVICE; ++i) {
+        if (!slot->endpoints[i].in_use) {
+            slot->endpoints[i].in_use = true;
+            slot->endpoints[i].endpoint = endpoint;
+            return &slot->endpoints[i];
+        }
+    }
+    warning(&slot->device, "endpoint state capacity exhausted");
+    return NULL;
+}
+
 static gateway_device_id_t device_from_header(const ezb_zcl_cmd_hdr_t *header)
 {
-    gateway_device_id_t device = {.short_addr = 0xffffU};
-    if (header != NULL && header->src_addr.addr_mode == EZB_ADDR_MODE_SHORT) {
-        gateway_device_slot_t *slot = find_device_by_short(header->src_addr.u.short_addr);
+    gateway_device_id_t device = {.short_addr = GATEWAY_INVALID_SHORT_ADDR};
+    if (header == NULL) return device;
+    if (header->src_addr.addr_mode == EZB_ADDR_MODE_SHORT) {
         device.short_addr = header->src_addr.u.short_addr;
-        if (slot != NULL) {
-            device = slot->device;
-        }
-    } else if (header != NULL && header->src_addr.addr_mode == EZB_ADDR_MODE_EXT) {
+        device_slot_t *slot = find_by_short(device.short_addr, false);
+        if (slot != NULL) device = slot->device;
+    } else if (header->src_addr.addr_mode == EZB_ADDR_MODE_EXT) {
         memcpy(device.ieee, header->src_addr.u.extended_addr.u8, sizeof(device.ieee));
         device.ieee_valid = true;
+        device_slot_t *slot = find_by_ieee(&header->src_addr.u.extended_addr, false);
+        if (slot != NULL) device = slot->device;
     }
     return device;
 }
 
-static bool queue_discovery(discovery_kind_t kind, gateway_device_slot_t *slot, uint8_t endpoint, uint16_t cluster_id)
+static bool queue_job(discovery_kind_t kind, device_slot_t *slot, uint8_t endpoint, uint16_t cluster, uint8_t retries);
+
+/* A report may be the first traffic seen after the coordinator application has
+ * rebooted.  Resolve the stack's local short->IEEE mapping while still in the
+ * Zigbee callback, then defer all network work to the discovery task. */
+static device_slot_t *recover_report_source(const ezb_zcl_cmd_hdr_t *header)
 {
-    const discovery_job_t job = {.kind = kind, .slot = slot, .endpoint = endpoint, .cluster_id = cluster_id};
-    return s_discovery_queue != NULL && xQueueSend(s_discovery_queue, &job, 0) == pdPASS;
+    if (header == NULL || header->src_addr.addr_mode != EZB_ADDR_MODE_SHORT) return NULL;
+    const ezb_shortaddr_t short_addr = header->src_addr.u.short_addr;
+    device_slot_t *slot = find_by_short(short_addr, false);
+    if (slot != NULL) return slot;
+    ezb_extaddr_t ieee;
+    slot = ezb_address_extended_by_short(short_addr, &ieee) == EZB_ERR_NONE ?
+        upsert_device(short_addr, &ieee) : upsert_device(short_addr, NULL);
+    if (slot != NULL && !queue_job(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U, 0U))
+        warning(&slot->device, "report recovery discovery queue full");
+    return slot;
 }
 
-static uint8_t reporting_mask_for_cluster(uint16_t cluster_id)
+static uint8_t reporting_mask(uint16_t cluster)
 {
-    if (cluster_id == EZB_ZCL_CLUSTER_ID_TEMPERATURE_MEASUREMENT) return REPORTING_TEMPERATURE;
-    if (cluster_id == EZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT) return REPORTING_HUMIDITY;
-    if (cluster_id == EZB_ZCL_CLUSTER_ID_POWER_CONFIG) return REPORTING_BATTERY_PERCENT;
+    if (cluster == EZB_ZCL_CLUSTER_ID_TEMPERATURE_MEASUREMENT) return REPORTING_TEMPERATURE;
+    if (cluster == EZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT) return REPORTING_HUMIDITY;
+    if (cluster == EZB_ZCL_CLUSTER_ID_POWER_CONFIG) return REPORTING_BATTERY_PERCENT;
     return 0U;
 }
 
-static uint8_t binding_mask_for_cluster(uint16_t cluster_id)
+static uint8_t binding_mask(uint16_t cluster)
 {
-    const uint8_t reporting_mask = reporting_mask_for_cluster(cluster_id);
-    return reporting_mask != 0U ? reporting_mask : (cluster_id == EZB_ZCL_CLUSTER_ID_POLL_CONTROL ? BINDING_POLL_CONTROL : 0U);
+    uint8_t report = reporting_mask(cluster);
+    return report != 0U ? report : (cluster == EZB_ZCL_CLUSTER_ID_POLL_CONTROL ? BINDING_POLL_CONTROL : 0U);
 }
 
-static bool queue_reporting_config(gateway_device_slot_t *slot, uint8_t endpoint, uint16_t cluster_id)
+static bool queue_job(discovery_kind_t kind, device_slot_t *slot, uint8_t endpoint, uint16_t cluster, uint8_t retries)
 {
-    const uint8_t reporting_mask = reporting_mask_for_cluster(cluster_id);
-    if (reporting_mask == 0U || (slot->reporting_configured & reporting_mask) != 0U ||
-        (slot->reporting_requested & reporting_mask) != 0U) return false;
-    if (!queue_discovery(DISCOVERY_CONFIG_REPORTING, slot, endpoint, cluster_id)) return false;
-    slot->reporting_requested |= reporting_mask;
+    if (s_discovery_queue == NULL || slot == NULL || slot->state != SLOT_ACTIVE || slot->device.short_addr == GATEWAY_INVALID_SHORT_ADDR) return false;
+    const discovery_job_t job = {.kind = kind, .device = ref_for(slot), .route_short_addr = slot->device.short_addr,
+        .endpoint = endpoint, .cluster_id = cluster, .retry_count = retries};
+    if (xQueueSend(s_discovery_queue, &job, 0) != pdPASS) return false;
+    ++slot->pending_jobs;
     return true;
 }
 
-static binding_context_t *allocate_binding_context(gateway_device_slot_t *slot, uint8_t endpoint, uint16_t cluster_id)
+static bool schedule_basic(device_slot_t *slot, uint8_t endpoint)
 {
-    for (size_t i = 0; i < sizeof(s_binding_contexts) / sizeof(s_binding_contexts[0]); ++i) {
-        if (!s_binding_contexts[i].in_use) {
-            s_binding_contexts[i] = (binding_context_t){.in_use = true, .slot = slot, .endpoint = endpoint, .cluster_id = cluster_id};
-            return &s_binding_contexts[i];
-        }
+    endpoint_state_t *state = endpoint_state(slot, endpoint, true);
+    if (state == NULL || state->basic_state != BASIC_NOT_SCHEDULED) return false;
+    if (!queue_job(DISCOVERY_READ_BASIC, slot, endpoint, 0U, 0U)) {
+        warning(&slot->device, "Basic read queue full");
+        return false;
+    }
+    state->basic_state = BASIC_SCHEDULED;
+    state->basic_scheduled_at_ms = gateway_uptime_ms();
+    return true;
+}
+
+static bool schedule_binding(device_slot_t *slot, uint8_t endpoint, uint16_t cluster)
+{
+    const uint8_t mask = binding_mask(cluster);
+    endpoint_state_t *state = endpoint_state(slot, endpoint, true);
+    if (state == NULL || mask == 0U || (state->binding_requested & mask) != 0U || (state->binding_configured & mask) != 0U) return false;
+    if (!queue_job(DISCOVERY_BIND_CLUSTER, slot, endpoint, cluster, 0U)) {
+        warning(&slot->device, "binding queue full");
+        return false;
+    }
+    state->binding_requested |= mask;
+    state->binding_requested_at_ms = gateway_uptime_ms();
+    return true;
+}
+
+static bool schedule_reporting(device_slot_t *slot, uint8_t endpoint, uint16_t cluster)
+{
+    const uint8_t mask = reporting_mask(cluster);
+    endpoint_state_t *state = endpoint_state(slot, endpoint, true);
+    if (state == NULL || mask == 0U || (state->binding_configured & mask) == 0U || (state->reporting_requested & mask) != 0U ||
+        (state->reporting_configured & mask) != 0U) return false;
+    if (!queue_job(DISCOVERY_CONFIG_REPORTING, slot, endpoint, cluster, 0U)) {
+        warning(&slot->device, "reporting queue full");
+        return false;
+    }
+    state->reporting_requested |= mask;
+    state->reporting_requested_at_ms = gateway_uptime_ms();
+    return true;
+}
+
+static async_context_t *context_alloc(device_slot_t *slot, uint8_t endpoint, uint16_t cluster, uint8_t retries)
+{
+    for (size_t i = 0; i < GATEWAY_MAX_ASYNC_CONTEXTS; ++i) if (!s_async_contexts[i].in_use) {
+        s_async_contexts[i] = (async_context_t){.in_use = true, .device = ref_for(slot), .route_short_addr = slot->device.short_addr,
+            .endpoint = endpoint, .cluster_id = cluster, .retry_count = retries};
+        ++slot->pending_requests;
+        return &s_async_contexts[i];
     }
     return NULL;
+}
+
+static void context_release(async_context_t *context)
+{
+    if (context == NULL || !context->in_use) return;
+    device_slot_t *slot = from_ref(context->device, true);
+    if (slot != NULL && slot->pending_requests != 0U) {
+        --slot->pending_requests;
+        maybe_reclaim(slot);
+    }
+    context->in_use = false;
+}
+
+static void clear_pending(device_slot_t *slot, const discovery_job_t *job)
+{
+    endpoint_state_t *state = endpoint_state(slot, job->endpoint, false);
+    if (state == NULL) return;
+    if (job->kind == DISCOVERY_READ_BASIC && state->basic_state == BASIC_SCHEDULED) state->basic_state = BASIC_NOT_SCHEDULED;
+    if (job->kind == DISCOVERY_BIND_CLUSTER) state->binding_requested &= (uint8_t)~binding_mask(job->cluster_id);
+    if (job->kind == DISCOVERY_CONFIG_REPORTING) state->reporting_requested &= (uint8_t)~reporting_mask(job->cluster_id);
+}
+
+static void retry_or_fail(discovery_job_t job, const char *message)
+{
+    device_slot_t *slot = from_ref(job.device, true);
+    if (slot == NULL) return;
+    if (slot->state == SLOT_ACTIVE && job.retry_count < GATEWAY_DISCOVERY_MAX_RETRIES &&
+        queue_job(job.kind, slot, job.endpoint, job.cluster_id, (uint8_t)(job.retry_count + 1U))) return;
+    clear_pending(slot, &job);
+    warning(&slot->device, message);
+    maybe_reclaim(slot);
 }
 
 static uint16_t attr_size(uint8_t type, const void *value)
@@ -209,85 +377,54 @@ static uint16_t attr_size(uint8_t type, const void *value)
 static bool read_u8(const void *value, uint8_t type, uint8_t *out)
 {
     if (value == NULL || (type != EZB_ZCL_ATTR_TYPE_UINT8 && type != EZB_ZCL_ATTR_TYPE_BOOL && type != EZB_ZCL_ATTR_TYPE_MAP8)) return false;
-    memcpy(out, value, sizeof(*out));
-    return true;
+    memcpy(out, value, sizeof(*out)); return true;
 }
 
 static bool read_u16(const void *value, uint8_t type, uint16_t *out)
 {
     if (value == NULL || type != EZB_ZCL_ATTR_TYPE_UINT16) return false;
-    memcpy(out, value, sizeof(*out));
-    return true;
+    memcpy(out, value, sizeof(*out)); return true;
 }
 
 static bool read_s16(const void *value, uint8_t type, int16_t *out)
 {
     if (value == NULL || type != EZB_ZCL_ATTR_TYPE_INT16) return false;
-    memcpy(out, value, sizeof(*out));
-    return true;
+    memcpy(out, value, sizeof(*out)); return true;
 }
 
 static bool read_float(const void *value, uint8_t type, float *out)
 {
     if (value == NULL || type != EZB_ZCL_ATTR_TYPE_SINGLE) return false;
-    memcpy(out, value, sizeof(*out));
-    return true;
+    memcpy(out, value, sizeof(*out)); return true;
 }
 
-static bool read_u48(const void *value, uint8_t type, uint64_t *out)
+/* Electrical and Metering remain raw until multiplier/divisor caches exist. */
+static bool normalize(uint16_t cluster, uint16_t attr, uint8_t type, const void *value,
+                      gateway_measurement_kind_t *kind, gateway_unit_t *unit, double *number)
 {
-    if (value == NULL || type != EZB_ZCL_ATTR_TYPE_UINT48) return false;
-    const uint8_t *bytes = value;
-    *out = 0U;
-    for (unsigned i = 0; i < 6U; ++i) *out |= (uint64_t)bytes[i] << (8U * i);
-    return true;
-}
-
-static bool normalize_measurement(uint16_t cluster, uint16_t attr, uint8_t type, const void *value,
-                                  gateway_measurement_kind_t *kind, gateway_unit_t *unit, double *number)
-{
-    uint8_t u8;
-    uint16_t u16;
-    int16_t s16;
-    uint64_t u48;
-    float single;
-    if (cluster == EZB_ZCL_CLUSTER_ID_TEMPERATURE_MEASUREMENT && attr == ZCL_ATTR_MEASURED_VALUE && read_s16(value, type, &s16)) {
+    uint8_t u8; uint16_t u16; int16_t s16; float single;
+    if (cluster == EZB_ZCL_CLUSTER_ID_TEMPERATURE_MEASUREMENT && attr == ZCL_ATTR_MEASURED_VALUE && read_s16(value, type, &s16) && s16 != INT16_MIN) {
         *kind = GATEWAY_MEAS_TEMPERATURE; *unit = GATEWAY_UNIT_CELSIUS; *number = (double)s16 / 100.0; return true;
     }
-    if (cluster == EZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT && attr == ZCL_ATTR_MEASURED_VALUE && read_u16(value, type, &u16)) {
+    if (cluster == EZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT && attr == ZCL_ATTR_MEASURED_VALUE && read_u16(value, type, &u16) && u16 <= 10000U) {
         *kind = GATEWAY_MEAS_HUMIDITY; *unit = GATEWAY_UNIT_PERCENT; *number = (double)u16 / 100.0; return true;
     }
-    if (cluster == EZB_ZCL_CLUSTER_ID_ILLUMINANCE_MEASUREMENT && attr == ZCL_ATTR_MEASURED_VALUE && read_u16(value, type, &u16)) {
+    if (cluster == EZB_ZCL_CLUSTER_ID_ILLUMINANCE_MEASUREMENT && attr == ZCL_ATTR_MEASURED_VALUE && read_u16(value, type, &u16) && u16 != UINT16_MAX) {
         *kind = GATEWAY_MEAS_ILLUMINANCE; *unit = GATEWAY_UNIT_LUX_LOG; *number = u16; return true;
     }
     if (cluster == EZB_ZCL_CLUSTER_ID_OCCUPANCY_SENSING && attr == ZCL_ATTR_OCCUPANCY && read_u8(value, type, &u8)) {
         *kind = GATEWAY_MEAS_OCCUPANCY; *unit = GATEWAY_UNIT_BOOLEAN; *number = (u8 & 1U) != 0U; return true;
     }
-    if (cluster == EZB_ZCL_CLUSTER_ID_CARBON_DIOXIDE_MEASUREMENT && attr == ZCL_ATTR_MEASURED_VALUE && read_float(value, type, &single)) {
+    if (cluster == EZB_ZCL_CLUSTER_ID_CARBON_DIOXIDE_MEASUREMENT && attr == ZCL_ATTR_MEASURED_VALUE && read_float(value, type, &single) && isfinite(single) && single >= 0.0f && single <= 1.0f) {
         *kind = GATEWAY_MEAS_CO2; *unit = GATEWAY_UNIT_PPM; *number = (double)single * 1000000.0; return true;
     }
-    if (cluster == EZB_ZCL_CLUSTER_ID_POWER_CONFIG && attr == ZCL_ATTR_BATTERY_VOLTAGE && read_u8(value, type, &u8)) {
+    if (cluster == EZB_ZCL_CLUSTER_ID_POWER_CONFIG && attr == ZCL_ATTR_BATTERY_VOLTAGE && read_u8(value, type, &u8) && u8 != UINT8_MAX) {
         *kind = GATEWAY_MEAS_BATTERY_VOLTAGE; *unit = GATEWAY_UNIT_VOLTS; *number = (double)u8 / 10.0; return true;
     }
-    if (cluster == EZB_ZCL_CLUSTER_ID_POWER_CONFIG && attr == ZCL_ATTR_BATTERY_PERCENT && read_u8(value, type, &u8)) {
+    if (cluster == EZB_ZCL_CLUSTER_ID_POWER_CONFIG && attr == ZCL_ATTR_BATTERY_PERCENT && read_u8(value, type, &u8) && u8 <= 200U) {
         *kind = GATEWAY_MEAS_BATTERY_PERCENT; *unit = GATEWAY_UNIT_PERCENT; *number = (double)u8 / 2.0; return true;
     }
-    if (cluster == EZB_ZCL_CLUSTER_ID_POWER_CONFIG && attr == ZCL_ATTR_MAINS_VOLTAGE && read_u16(value, type, &u16)) {
-        *kind = GATEWAY_MEAS_MAINS_VOLTAGE; *unit = GATEWAY_UNIT_VOLTS; *number = (double)u16 / 10.0; return true;
-    }
-    if (cluster == EZB_ZCL_CLUSTER_ID_ELECTRICAL_MEASUREMENT && attr == ZCL_ATTR_RMS_VOLTAGE && read_u16(value, type, &u16)) {
-        *kind = GATEWAY_MEAS_VOLTAGE; *unit = GATEWAY_UNIT_VOLTS; *number = u16; return true;
-    }
-    if (cluster == EZB_ZCL_CLUSTER_ID_ELECTRICAL_MEASUREMENT && attr == ZCL_ATTR_RMS_CURRENT && read_u16(value, type, &u16)) {
-        *kind = GATEWAY_MEAS_CURRENT; *unit = GATEWAY_UNIT_AMPS; *number = u16; return true;
-    }
-    if (cluster == EZB_ZCL_CLUSTER_ID_ELECTRICAL_MEASUREMENT && attr == ZCL_ATTR_ACTIVE_POWER && read_s16(value, type, &s16)) {
-        *kind = GATEWAY_MEAS_POWER; *unit = GATEWAY_UNIT_WATTS; *number = s16; return true;
-    }
-    if (cluster == EZB_ZCL_CLUSTER_ID_METERING && attr == ZCL_ATTR_CURRENT_SUMMATION_DELIVERED && read_u48(value, type, &u48)) {
-        *kind = GATEWAY_MEAS_ENERGY; *unit = GATEWAY_UNIT_KILOWATT_HOURS; *number = (double)u48; return true;
-    }
-    if (cluster == EZB_ZCL_CLUSTER_ID_ON_OFF && attr == ZCL_ATTR_ON_OFF && read_u8(value, type, &u8)) {
+    if (cluster == EZB_ZCL_CLUSTER_ID_ON_OFF && attr == ZCL_ATTR_ON_OFF && read_u8(value, type, &u8) && u8 <= 1U) {
         *kind = GATEWAY_MEAS_ON_OFF; *unit = GATEWAY_UNIT_BOOLEAN; *number = u8 != 0U; return true;
     }
     return false;
@@ -297,31 +434,28 @@ static void publish_report(const ezb_zcl_cmd_report_attr_message_t *message)
 {
     const ezb_zcl_cmd_hdr_t *header = message->in.header;
     if (header == NULL || message->info.dst_ep != GATEWAY_ENDPOINT) return;
-    const gateway_device_id_t device = device_from_header(header);
+    device_slot_t *slot = recover_report_source(header);
+    gateway_device_id_t device = slot == NULL ? device_from_header(header) : slot->device;
     for (ezb_zcl_report_attr_variable_t *item = message->in.variables; item != NULL; item = item->next) {
-        gateway_measurement_kind_t kind;
-        gateway_unit_t unit;
-        double value;
-        if (normalize_measurement(header->cluster_id, item->attr_id, item->attr_type, item->attr_value, &kind, &unit, &value)) {
-            gateway_event_t event = gateway_event_base(GATEWAY_EVENT_MEASUREMENT, &device);
+        gateway_measurement_kind_t kind; gateway_unit_t unit; double value;
+        if (normalize(header->cluster_id, item->attr_id, item->attr_type, item->attr_value, &kind, &unit, &value)) {
+            gateway_event_t event = event_base(GATEWAY_EVENT_MEASUREMENT, &device);
             event.endpoint = header->src_ep;
-            event.data.measurement = (typeof(event.data.measurement)){
-                .kind = kind, .unit = unit, .value = value, .cluster_id = header->cluster_id,
-                .attribute_id = item->attr_id, .zcl_type = item->attr_type,
-            };
+            event.data.measurement = (typeof(event.data.measurement)){.kind = kind, .unit = unit, .value = value,
+                .cluster_id = header->cluster_id, .attribute_id = item->attr_id, .zcl_type = item->attr_type};
             gateway_event_publish(&event);
-            continue;
+        } else {
+            gateway_event_t event = event_base(GATEWAY_EVENT_RAW_ATTRIBUTE, &device);
+            event.endpoint = header->src_ep;
+            event.data.raw.cluster_id = header->cluster_id;
+            event.data.raw.attribute_id = item->attr_id;
+            event.data.raw.zcl_type = item->attr_type;
+            event.data.raw.original_length = attr_size(item->attr_type, item->attr_value);
+            event.data.raw.copied_length = event.data.raw.original_length > GATEWAY_RAW_ATTRIBUTE_MAX_BYTES ? GATEWAY_RAW_ATTRIBUTE_MAX_BYTES : event.data.raw.original_length;
+            event.data.raw.truncated = event.data.raw.original_length > GATEWAY_RAW_ATTRIBUTE_MAX_BYTES;
+            if (event.data.raw.copied_length != 0U) memcpy(event.data.raw.bytes, item->attr_value, event.data.raw.copied_length);
+            gateway_event_publish(&event);
         }
-        gateway_event_t event = gateway_event_base(GATEWAY_EVENT_RAW_ATTRIBUTE, &device);
-        event.endpoint = header->src_ep;
-        event.data.raw.cluster_id = header->cluster_id;
-        event.data.raw.attribute_id = item->attr_id;
-        event.data.raw.zcl_type = item->attr_type;
-        event.data.raw.original_length = attr_size(item->attr_type, item->attr_value);
-        event.data.raw.copied_length = event.data.raw.original_length > GATEWAY_RAW_ATTRIBUTE_MAX_BYTES ? GATEWAY_RAW_ATTRIBUTE_MAX_BYTES : event.data.raw.original_length;
-        event.data.raw.truncated = event.data.raw.original_length > GATEWAY_RAW_ATTRIBUTE_MAX_BYTES;
-        if (event.data.raw.copied_length != 0U) memcpy(event.data.raw.bytes, item->attr_value, event.data.raw.copied_length);
-        gateway_event_publish(&event);
     }
 }
 
@@ -329,35 +463,41 @@ static void publish_basic_read(const ezb_zcl_cmd_read_attr_rsp_message_t *messag
 {
     const ezb_zcl_cmd_hdr_t *header = message->in.header;
     if (header == NULL || message->info.dst_ep != GATEWAY_ENDPOINT || header->cluster_id != EZB_ZCL_CLUSTER_ID_BASIC) return;
-    const gateway_device_id_t device = device_from_header(header);
+    gateway_device_id_t device = device_from_header(header);
+    bool seen = false;
     for (ezb_zcl_read_attr_rsp_variable_t *item = message->in.variables; item != NULL; item = item->next) {
-        if (item->status != EZB_ZCL_STATUS_SUCCESS || item->attr_type != EZB_ZCL_ATTR_TYPE_STRING || item->attr_value == NULL ||
-            (item->attr_id != ZCL_ATTR_BASIC_MANUFACTURER_NAME && item->attr_id != ZCL_ATTR_BASIC_MODEL_IDENTIFIER)) continue;
-        const uint8_t *zcl_string = item->attr_value;
-        if (zcl_string[0] == 0xffU) continue;
-        gateway_event_t event = gateway_event_base(GATEWAY_EVENT_BASIC, &device);
+        if (item->attr_id != ZCL_ATTR_BASIC_MANUFACTURER_NAME && item->attr_id != ZCL_ATTR_BASIC_MODEL_IDENTIFIER) continue;
+        seen = true;
+        if (item->status != EZB_ZCL_STATUS_SUCCESS || item->attr_type != EZB_ZCL_ATTR_TYPE_STRING || item->attr_value == NULL) continue;
+        const uint8_t *string = item->attr_value;
+        if (string[0] == 0xffU) continue;
+        gateway_event_t event = event_base(GATEWAY_EVENT_BASIC, &device);
         event.endpoint = header->src_ep;
         strncpy(event.data.text.key, item->attr_id == ZCL_ATTR_BASIC_MANUFACTURER_NAME ? "manufacturer" : "model", sizeof(event.data.text.key) - 1U);
-        size_t length = zcl_string[0] < (GATEWAY_TEXT_MAX_BYTES - 1U) ? zcl_string[0] : (GATEWAY_TEXT_MAX_BYTES - 1U);
-        memcpy(event.data.text.value, zcl_string + 1, length);
-        event.data.text.value[length] = '\0';
+        size_t len = string[0] < GATEWAY_TEXT_MAX_BYTES - 1U ? string[0] : GATEWAY_TEXT_MAX_BYTES - 1U;
+        memcpy(event.data.text.value, string + 1, len);
+        event.data.text.value[len] = '\0';
         gateway_event_publish(&event);
     }
+    device_slot_t *slot = find_by_short(device.short_addr, false);
+    endpoint_state_t *state = slot == NULL ? NULL : endpoint_state(slot, header->src_ep, false);
+    if (seen && state != NULL) state->basic_state = BASIC_COMPLETE;
 }
 
-static void publish_config_report_response(const ezb_zcl_cmd_config_report_rsp_message_t *message)
+static void publish_config_response(const ezb_zcl_cmd_config_report_rsp_message_t *message)
 {
     const ezb_zcl_cmd_hdr_t *header = message->in.header;
     if (header == NULL || message->info.dst_ep != GATEWAY_ENDPOINT) return;
-    const gateway_device_id_t device = device_from_header(header);
+    gateway_device_id_t device = device_from_header(header);
+    device_slot_t *slot = find_by_short(device.short_addr, false);
+    endpoint_state_t *state = slot == NULL ? NULL : endpoint_state(slot, header->src_ep, false);
+    uint8_t mask = reporting_mask(header->cluster_id);
     for (ezb_zcl_config_report_rsp_variable_t *item = message->in.variables; item != NULL; item = item->next) {
-        gateway_device_slot_t *slot = find_device_by_short(device.short_addr);
-        const uint8_t reporting_mask = reporting_mask_for_cluster(header->cluster_id);
-        if (slot != NULL && reporting_mask != 0U) {
-            if (item->status == EZB_ZCL_STATUS_SUCCESS) slot->reporting_configured |= reporting_mask;
-            else slot->reporting_requested &= (uint8_t)~reporting_mask;
+        if (state != NULL && (state->reporting_requested & mask) != 0U) {
+            state->reporting_requested &= (uint8_t)~mask;
+            if (item->status == EZB_ZCL_STATUS_SUCCESS) state->reporting_configured |= mask;
         }
-        gateway_event_t event = gateway_event_base(GATEWAY_EVENT_REPORTING_CONFIG, &device);
+        gateway_event_t event = event_base(GATEWAY_EVENT_REPORTING_CONFIG, &device);
         event.endpoint = header->src_ep;
         event.data.reporting.cluster_id = header->cluster_id;
         event.data.reporting.attribute_id = item->attr_id;
@@ -366,64 +506,91 @@ static void publish_config_report_response(const ezb_zcl_cmd_config_report_rsp_m
     }
 }
 
-static void handle_poll_control_check_in(ezb_zcl_poll_control_check_in_message_t *message)
+static void handle_check_in(ezb_zcl_poll_control_check_in_message_t *message)
 {
     message->out.result = EZB_ZCL_STATUS_SUCCESS;
     message->out.start_fast_poll = true;
-    message->out.fast_poll_timeout = EZB_ZCL_POLL_CONTROL_PREDEFINED_CHECK_IN_TIMEOUT_DEFAULT_VALUE;
+    message->out.fast_poll_timeout = GATEWAY_FAST_POLL_TIMEOUT_QUARTER_SECONDS;
     const ezb_zcl_cmd_hdr_t *header = message->in.header;
     if (header == NULL || message->info.dst_ep != GATEWAY_ENDPOINT || header->src_addr.addr_mode != EZB_ADDR_MODE_SHORT) return;
-    gateway_device_slot_t *slot = upsert_device(header->src_addr.u.short_addr, NULL);
+    device_slot_t *slot = upsert_device(header->src_addr.u.short_addr, NULL);
     if (slot == NULL) return;
-    slot->reporting_requested = 0U;
-    gateway_event_t event = gateway_event_base(GATEWAY_EVENT_DEVICE_CHECK_IN, &slot->device);
+    const uint32_t now_ms = gateway_uptime_ms();
+    for (size_t i = 0; i < GATEWAY_MAX_ENDPOINTS_PER_DEVICE; ++i) if (slot->endpoints[i].in_use) {
+        endpoint_state_t *state = &slot->endpoints[i];
+        if (state->basic_state == BASIC_SCHEDULED &&
+            (uint32_t)(now_ms - state->basic_scheduled_at_ms) >= GATEWAY_REQUEST_STALE_MS)
+            state->basic_state = BASIC_NOT_SCHEDULED;
+        if (state->binding_requested != 0U &&
+            (uint32_t)(now_ms - state->binding_requested_at_ms) >= GATEWAY_REQUEST_STALE_MS)
+            state->binding_requested = 0U;
+        if (state->reporting_requested != 0U &&
+            (uint32_t)(now_ms - state->reporting_requested_at_ms) >= GATEWAY_REQUEST_STALE_MS)
+            state->reporting_requested = 0U;
+    }
+    gateway_event_t event = event_base(GATEWAY_EVENT_DEVICE_CHECK_IN, &slot->device);
     event.endpoint = header->src_ep;
     gateway_event_publish(&event);
-    queue_discovery(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U);
-}
-
-static void binding_callback(const ezb_zdp_bind_req_result_t *result, void *user_ctx)
-{
-    binding_context_t *context = user_ctx;
-    if (context == NULL || !context->in_use || context->slot == NULL) return;
-    gateway_device_slot_t *slot = context->slot;
-    const uint8_t binding_mask = binding_mask_for_cluster(context->cluster_id);
-    const uint8_t status = (result != NULL && result->error == EZB_ERR_NONE && result->rsp != NULL) ? result->rsp->status : 0xffU;
-    if (status == EZB_ZDP_STATUS_SUCCESS) {
-        slot->binding_configured |= binding_mask;
-        if (reporting_mask_for_cluster(context->cluster_id) != 0U) {
-            queue_reporting_config(slot, context->endpoint, context->cluster_id);
-        }
-    } else {
-        slot->binding_requested &= (uint8_t)~binding_mask;
-    }
-    gateway_event_t event = gateway_event_base(GATEWAY_EVENT_BINDING, &slot->device);
-    event.endpoint = context->endpoint;
-    event.data.binding.cluster_id = context->cluster_id;
-    event.data.binding.status = status;
-    gateway_event_publish(&event);
-    context->in_use = false;
+    if (!queue_job(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U, 0U)) warning(&slot->device, "check-in discovery queue full");
 }
 
 static void zcl_core_action_handler(ezb_zcl_core_action_callback_id_t callback_id, void *message)
 {
-    if (callback_id == EZB_ZCL_CORE_REPORT_ATTR_CB_ID) {
-        publish_report((const ezb_zcl_cmd_report_attr_message_t *)message);
-    } else if (callback_id == EZB_ZCL_CORE_READ_ATTR_RSP_CB_ID) {
-        publish_basic_read((const ezb_zcl_cmd_read_attr_rsp_message_t *)message);
-    } else if (callback_id == EZB_ZCL_CORE_CONFIG_REPORT_RSP_CB_ID) {
-        publish_config_report_response((const ezb_zcl_cmd_config_report_rsp_message_t *)message);
-    } else if (callback_id == EZB_ZCL_CORE_POLL_CONTROL_CHECK_IN_CB_ID) {
-        handle_poll_control_check_in((ezb_zcl_poll_control_check_in_message_t *)message);
-    }
+    if (callback_id == EZB_ZCL_CORE_REPORT_ATTR_CB_ID) publish_report(message);
+    else if (callback_id == EZB_ZCL_CORE_READ_ATTR_RSP_CB_ID) publish_basic_read(message);
+    else if (callback_id == EZB_ZCL_CORE_CONFIG_REPORT_RSP_CB_ID) publish_config_response(message);
+    else if (callback_id == EZB_ZCL_CORE_POLL_CONTROL_CHECK_IN_CB_ID) handle_check_in(message);
 }
 
-static void simple_desc_callback(const ezb_zdo_simple_desc_req_result_t *result, void *user_ctx)
+static bool context_route(const async_context_t *context, device_slot_t **out)
 {
-    gateway_device_slot_t *slot = user_ctx;
-    if (slot == NULL || result == NULL || result->error != EZB_ERR_NONE || result->rsp == NULL || result->rsp->status != EZB_ZDP_STATUS_SUCCESS) return;
+    device_slot_t *slot = context == NULL ? NULL : from_ref(context->device, false);
+    if (slot == NULL || slot->device.short_addr != context->route_short_addr) return false;
+    *out = slot; return true;
+}
+
+static void binding_callback(const ezb_zdp_bind_req_result_t *result, void *user_ctx)
+{
+    async_context_t *context = user_ctx;
+    device_slot_t *slot = NULL;
+    uint8_t status = result != NULL && result->error == EZB_ERR_NONE && result->rsp != NULL ? result->rsp->status : 0xffU;
+    if (context != NULL && context->in_use && context_route(context, &slot)) {
+        endpoint_state_t *state = endpoint_state(slot, context->endpoint, false);
+        if (status == EZB_ZDP_STATUS_SUCCESS && state != NULL) {
+            const uint8_t mask = binding_mask(context->cluster_id);
+            state->binding_requested &= (uint8_t)~mask;
+            state->binding_configured |= mask;
+            schedule_reporting(slot, context->endpoint, context->cluster_id);
+        } else if (state != NULL) {
+            /* Keep the in-flight marker while the bounded retry is queued. */
+            state->binding_requested |= binding_mask(context->cluster_id);
+            retry_or_fail((discovery_job_t){.kind = DISCOVERY_BIND_CLUSTER, .device = context->device,
+                .route_short_addr = context->route_short_addr, .endpoint = context->endpoint, .cluster_id = context->cluster_id,
+                .retry_count = context->retry_count}, "binding failed after retries");
+        }
+        gateway_event_t event = event_base(GATEWAY_EVENT_BINDING, &slot->device);
+        event.endpoint = context->endpoint;
+        event.data.binding.cluster_id = context->cluster_id;
+        event.data.binding.status = status;
+        gateway_event_publish(&event);
+    }
+    context_release(context);
+}
+
+static void simple_callback(const ezb_zdo_simple_desc_req_result_t *result, void *user_ctx)
+{
+    async_context_t *context = user_ctx;
+    device_slot_t *slot = NULL;
+    if (context == NULL || !context->in_use || !context_route(context, &slot) || result == NULL || result->error != EZB_ERR_NONE || result->rsp == NULL || result->rsp->status != EZB_ZDP_STATUS_SUCCESS) {
+        if (context != NULL && context->in_use) {
+            retry_or_fail((discovery_job_t){.kind = DISCOVERY_SIMPLE_DESCRIPTOR, .device = context->device, .route_short_addr = context->route_short_addr,
+                .endpoint = context->endpoint, .retry_count = context->retry_count}, "simple descriptor failed after retries");
+            context_release(context);
+        }
+        return;
+    }
     const ezb_af_simple_desc_t *desc = &result->rsp->desc;
-    gateway_event_t event = gateway_event_base(GATEWAY_EVENT_ENDPOINT, &slot->device);
+    gateway_event_t event = event_base(GATEWAY_EVENT_ENDPOINT, &slot->device);
     event.endpoint = desc->ep_id;
     event.data.endpoint_desc.profile_id = desc->app_profile_id;
     event.data.endpoint_desc.device_id = desc->app_device_id;
@@ -434,243 +601,188 @@ static void simple_desc_callback(const ezb_zdo_simple_desc_req_result_t *result,
     for (uint8_t i = 0; i < event.data.endpoint_desc.input_copied; ++i) event.data.endpoint_desc.input_clusters[i] = desc->app_cluster_list[i];
     for (uint8_t i = 0; i < event.data.endpoint_desc.output_copied; ++i) event.data.endpoint_desc.output_clusters[i] = desc->app_cluster_list[desc->app_input_cluster_count + i];
     gateway_event_publish(&event);
-    bool basic_server = false;
+    bool basic = false;
     for (uint8_t i = 0; i < desc->app_input_cluster_count; ++i) {
-        const uint16_t cluster_id = desc->app_cluster_list[i];
-        const uint8_t binding_mask = binding_mask_for_cluster(cluster_id);
-        if (cluster_id == EZB_ZCL_CLUSTER_ID_BASIC) basic_server = true;
-        if (binding_mask != 0U && (slot->binding_configured & binding_mask) == 0U &&
-            (slot->binding_requested & binding_mask) == 0U &&
-            queue_discovery(DISCOVERY_BIND_CLUSTER, slot, desc->ep_id, cluster_id)) {
-            slot->binding_requested |= binding_mask;
-        } else if (reporting_mask_for_cluster(cluster_id) != 0U && (slot->binding_configured & binding_mask) != 0U) {
-            queue_reporting_config(slot, desc->ep_id, cluster_id);
+        uint16_t cluster = desc->app_cluster_list[i];
+        if (cluster == EZB_ZCL_CLUSTER_ID_BASIC) basic = true;
+        if (binding_mask(cluster) != 0U) schedule_binding(slot, desc->ep_id, cluster);
+        else if (reporting_mask(cluster) != 0U) schedule_reporting(slot, desc->ep_id, cluster);
+    }
+    if (basic) schedule_basic(slot, desc->ep_id);
+    context_release(context);
+}
+
+static void active_callback(const ezb_zdo_active_ep_req_result_t *result, void *user_ctx)
+{
+    async_context_t *context = user_ctx;
+    device_slot_t *slot = NULL;
+    if (context == NULL || !context->in_use || !context_route(context, &slot) || result == NULL || result->error != EZB_ERR_NONE || result->rsp == NULL || result->rsp->status != EZB_ZDP_STATUS_SUCCESS) {
+        if (context != NULL && context->in_use) {
+            retry_or_fail((discovery_job_t){.kind = DISCOVERY_ACTIVE_ENDPOINTS, .device = context->device, .route_short_addr = context->route_short_addr,
+                .retry_count = context->retry_count}, "active endpoint discovery failed after retries");
+            context_release(context);
         }
-    }
-    if (basic_server && !slot->basic_read_started) {
-        slot->basic_read_started = true;
-        queue_discovery(DISCOVERY_READ_BASIC, slot, desc->ep_id, 0U);
-    }
-}
-
-static void active_ep_callback(const ezb_zdo_active_ep_req_result_t *result, void *user_ctx)
-{
-    gateway_device_slot_t *slot = user_ctx;
-    if (slot == NULL || result == NULL || result->error != EZB_ERR_NONE || result->rsp == NULL || result->rsp->status != EZB_ZDP_STATUS_SUCCESS) return;
-    for (uint8_t i = 0; i < result->rsp->active_ep_count; ++i) {
-        queue_discovery(DISCOVERY_SIMPLE_DESCRIPTOR, slot, result->rsp->active_ep_list[i], 0U);
-    }
-}
-
-static void submit_active_endpoints(gateway_device_slot_t *slot)
-{
-    ezb_zdo_active_ep_req_t request = {
-        .dst_nwk_addr = slot->device.short_addr,
-        .field = {.nwk_addr_of_interest = slot->device.short_addr},
-        .cb = active_ep_callback,
-        .user_ctx = slot,
-    };
-    ezb_zdo_active_ep_req(&request);
-}
-
-static void submit_simple_descriptor(gateway_device_slot_t *slot, uint8_t endpoint)
-{
-    ezb_zdo_simple_desc_req_t request = {
-        .dst_nwk_addr = slot->device.short_addr,
-        .field = {.nwk_addr_of_interest = slot->device.short_addr, .endpoint = endpoint},
-        .cb = simple_desc_callback,
-        .user_ctx = slot,
-    };
-    ezb_zdo_simple_desc_req(&request);
-}
-
-static void submit_basic_read(gateway_device_slot_t *slot, uint8_t endpoint)
-{
-    uint16_t attrs[] = {ZCL_ATTR_BASIC_MANUFACTURER_NAME, ZCL_ATTR_BASIC_MODEL_IDENTIFIER};
-    ezb_zcl_read_attr_cmd_t request = {
-        .cmd_ctrl = {
-            .dst_addr = EZB_ADDRESS_SHORT(slot->device.short_addr), .dst_ep = endpoint, .src_ep = GATEWAY_ENDPOINT,
-            .cluster_id = EZB_ZCL_CLUSTER_ID_BASIC, .manuf_code = EZB_ZCL_STD_MANUF_CODE,
-        },
-        .payload = {.attr_number = 2U, .attr_field = attrs},
-    };
-    ezb_zcl_read_attr_cmd_req(&request);
-}
-
-static void submit_binding(gateway_device_slot_t *slot, uint8_t endpoint, uint16_t cluster_id)
-{
-    const uint8_t binding_mask = binding_mask_for_cluster(cluster_id);
-    if (binding_mask == 0U) return;
-    if (!slot->device.ieee_valid) {
-        ezb_extaddr_t device_ieee;
-        if (ezb_address_extended_by_short(slot->device.short_addr, &device_ieee) != EZB_ERR_NONE) {
-            slot->binding_requested &= (uint8_t)~binding_mask;
-            return;
-        }
-        memcpy(slot->device.ieee, device_ieee.u8, sizeof(slot->device.ieee));
-        slot->device.ieee_valid = true;
-    }
-    binding_context_t *context = allocate_binding_context(slot, endpoint, cluster_id);
-    if (context == NULL) {
-        slot->binding_requested &= (uint8_t)~binding_mask;
         return;
     }
-    ezb_extaddr_t coordinator_ieee;
-    ezb_nwk_get_extended_address(&coordinator_ieee);
+    for (uint8_t i = 0; i < result->rsp->active_ep_count; ++i)
+        if (!queue_job(DISCOVERY_SIMPLE_DESCRIPTOR, slot, result->rsp->active_ep_list[i], 0U, 0U)) warning(&slot->device, "simple descriptor queue full");
+    context_release(context);
+}
+
+static bool submit_active(device_slot_t *slot, const discovery_job_t *job)
+{
+    async_context_t *context = context_alloc(slot, 0U, 0U, job->retry_count);
+    if (context == NULL) return false;
+    const ezb_zdo_active_ep_req_t request = {.dst_nwk_addr = slot->device.short_addr,
+        .field = {.nwk_addr_of_interest = slot->device.short_addr}, .cb = active_callback, .user_ctx = context};
+    if (ezb_zdo_active_ep_req(&request) == EZB_ERR_NONE) return true;
+    context_release(context); return false;
+}
+
+static bool submit_simple(device_slot_t *slot, const discovery_job_t *job)
+{
+    async_context_t *context = context_alloc(slot, job->endpoint, 0U, job->retry_count);
+    if (context == NULL) return false;
+    const ezb_zdo_simple_desc_req_t request = {.dst_nwk_addr = slot->device.short_addr,
+        .field = {.nwk_addr_of_interest = slot->device.short_addr, .endpoint = job->endpoint}, .cb = simple_callback, .user_ctx = context};
+    if (ezb_zdo_simple_desc_req(&request) == EZB_ERR_NONE) return true;
+    context_release(context); return false;
+}
+
+static bool submit_basic(device_slot_t *slot, const discovery_job_t *job)
+{
+    uint16_t attrs[] = {ZCL_ATTR_BASIC_MANUFACTURER_NAME, ZCL_ATTR_BASIC_MODEL_IDENTIFIER};
+    const ezb_zcl_read_attr_cmd_t request = {.cmd_ctrl = {.dst_addr = EZB_ADDRESS_SHORT(slot->device.short_addr), .dst_ep = job->endpoint,
+        .src_ep = GATEWAY_ENDPOINT, .cluster_id = EZB_ZCL_CLUSTER_ID_BASIC, .manuf_code = EZB_ZCL_STD_MANUF_CODE}, .payload = {.attr_number = 2U, .attr_field = attrs}};
+    return ezb_zcl_read_attr_cmd_req(&request) == EZB_ERR_NONE;
+}
+
+static bool submit_binding(device_slot_t *slot, const discovery_job_t *job)
+{
+    if (!slot->device.ieee_valid) {
+        ezb_extaddr_t ieee;
+        if (ezb_address_extended_by_short(slot->device.short_addr, &ieee) != EZB_ERR_NONE) return false;
+        memcpy(slot->device.ieee, ieee.u8, sizeof(slot->device.ieee));
+        slot->device.ieee_valid = true;
+    }
+    async_context_t *context = context_alloc(slot, job->endpoint, job->cluster_id, job->retry_count);
+    if (context == NULL) return false;
+    ezb_extaddr_t coordinator;
+    ezb_nwk_get_extended_address(&coordinator);
     ezb_zdo_bind_req_t request = {0};
     request.dst_nwk_addr = slot->device.short_addr;
     memcpy(request.field.src_addr.u8, slot->device.ieee, sizeof(slot->device.ieee));
-    request.field.src_ep = endpoint;
-    request.field.cluster_id = cluster_id;
+    request.field.src_ep = job->endpoint;
+    request.field.cluster_id = job->cluster_id;
     request.field.dst_addr_mode = EZB_ADDR_MODE_EXT;
-    request.field.dst_addr.extended_addr = coordinator_ieee;
+    request.field.dst_addr.extended_addr = coordinator;
     request.field.dst_ep = GATEWAY_ENDPOINT;
     request.cb = binding_callback;
     request.user_ctx = context;
-    const ezb_err_t err = ezb_zdo_bind_req(&request);
-    if (err != EZB_ERR_NONE) {
-        context->in_use = false;
-        slot->binding_requested &= (uint8_t)~binding_mask;
-        gateway_event_t event = gateway_event_base(GATEWAY_EVENT_WARNING, &slot->device);
-        snprintf(event.data.text.value, sizeof(event.data.text.value), "binding submit failed cluster=0x%04x err=%d", cluster_id, err);
-        gateway_event_publish(&event);
-    }
+    if (ezb_zdo_bind_req(&request) == EZB_ERR_NONE) return true;
+    context_release(context); return false;
 }
 
-static void submit_config_report(gateway_device_slot_t *slot, uint8_t endpoint, uint16_t cluster_id)
+static bool submit_reporting(device_slot_t *slot, const discovery_job_t *job)
 {
-    ezb_zcl_config_report_record_t record = {
-        .direction = EZB_ZCL_REPORTING_SEND,
-        .attr_id = ZCL_ATTR_MEASURED_VALUE,
-    };
-    if (cluster_id == EZB_ZCL_CLUSTER_ID_TEMPERATURE_MEASUREMENT) {
-        record.client = (typeof(record.client)){
-            .attr_type = EZB_ZCL_ATTR_TYPE_INT16,
-            .min_interval = REPORTING_TEMPERATURE_MIN_SECONDS,
-            .max_interval = REPORTING_TEMPERATURE_MAX_SECONDS,
-            .reportable_change = {.s16 = REPORTING_TEMPERATURE_CHANGE},
-        };
-    } else if (cluster_id == EZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT) {
-        record.client = (typeof(record.client)){
-            .attr_type = EZB_ZCL_ATTR_TYPE_UINT16,
-            .min_interval = REPORTING_HUMIDITY_MIN_SECONDS,
-            .max_interval = REPORTING_HUMIDITY_MAX_SECONDS,
-            .reportable_change = {.u16 = REPORTING_HUMIDITY_CHANGE},
-        };
-    } else if (cluster_id == EZB_ZCL_CLUSTER_ID_POWER_CONFIG) {
+    ezb_zcl_config_report_record_t record = {.direction = EZB_ZCL_REPORTING_SEND, .attr_id = ZCL_ATTR_MEASURED_VALUE};
+    if (job->cluster_id == EZB_ZCL_CLUSTER_ID_TEMPERATURE_MEASUREMENT) record.client = (typeof(record.client)){
+        .attr_type = EZB_ZCL_ATTR_TYPE_INT16, .min_interval = REPORTING_TEMPERATURE_MIN_SECONDS, .max_interval = REPORTING_TEMPERATURE_MAX_SECONDS,
+        .reportable_change = {.s16 = REPORTING_TEMPERATURE_CHANGE}};
+    else if (job->cluster_id == EZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT) record.client = (typeof(record.client)){
+        .attr_type = EZB_ZCL_ATTR_TYPE_UINT16, .min_interval = REPORTING_HUMIDITY_MIN_SECONDS, .max_interval = REPORTING_HUMIDITY_MAX_SECONDS,
+        .reportable_change = {.u16 = REPORTING_HUMIDITY_CHANGE}};
+    else if (job->cluster_id == EZB_ZCL_CLUSTER_ID_POWER_CONFIG) {
         record.attr_id = ZCL_ATTR_BATTERY_PERCENT;
-        record.client = (typeof(record.client)){
-            .attr_type = EZB_ZCL_ATTR_TYPE_UINT8,
-            .min_interval = REPORTING_BATTERY_MIN_SECONDS,
-            .max_interval = REPORTING_BATTERY_MAX_SECONDS,
-            .reportable_change = {.u8 = REPORTING_BATTERY_PERCENT_CHANGE},
-        };
-    } else {
-        return;
-    }
-    const ezb_zcl_config_report_cmd_t request = {
-        .cmd_ctrl = {
-            .dst_addr = EZB_ADDRESS_SHORT(slot->device.short_addr), .dst_ep = endpoint, .src_ep = GATEWAY_ENDPOINT,
-            .cluster_id = cluster_id, .manuf_code = EZB_ZCL_STD_MANUF_CODE,
-        },
-        .payload = {.record_number = 1U, .record_field = &record},
-    };
-    const ezb_err_t err = ezb_zcl_config_report_cmd_req(&request);
-    if (err != EZB_ERR_NONE) {
-        slot->reporting_requested &= (uint8_t)~reporting_mask_for_cluster(cluster_id);
-        gateway_event_t event = gateway_event_base(GATEWAY_EVENT_WARNING, &slot->device);
-        snprintf(event.data.text.value, sizeof(event.data.text.value), "reporting submit failed cluster=0x%04x err=%d", cluster_id, err);
-        gateway_event_publish(&event);
-    }
+        record.client = (typeof(record.client)){.attr_type = EZB_ZCL_ATTR_TYPE_UINT8, .min_interval = REPORTING_BATTERY_MIN_SECONDS,
+            .max_interval = REPORTING_BATTERY_MAX_SECONDS, .reportable_change = {.u8 = REPORTING_BATTERY_PERCENT_CHANGE}};
+    } else return true;
+    const ezb_zcl_config_report_cmd_t request = {.cmd_ctrl = {.dst_addr = EZB_ADDRESS_SHORT(slot->device.short_addr), .dst_ep = job->endpoint,
+        .src_ep = GATEWAY_ENDPOINT, .cluster_id = job->cluster_id, .manuf_code = EZB_ZCL_STD_MANUF_CODE}, .payload = {.record_number = 1U, .record_field = &record}};
+    return ezb_zcl_config_report_cmd_req(&request) == EZB_ERR_NONE;
 }
 
 static void discovery_task(void *arg)
 {
+    (void)arg;
     discovery_job_t job;
     for (;;) {
-        if (xQueueReceive(s_discovery_queue, &job, portMAX_DELAY) != pdPASS || job.slot == NULL) continue;
-        if (!esp_zigbee_lock_acquire(pdMS_TO_TICKS(GATEWAY_ZIGBEE_LOCK_TIMEOUT_MS))) {
-            gateway_event_t event = gateway_event_base(GATEWAY_EVENT_WARNING, &job.slot->device);
-            strncpy(event.data.text.value, "discovery deferred: Zigbee lock timeout", sizeof(event.data.text.value) - 1U);
-            gateway_event_publish(&event);
-            continue;
+        if (xQueueReceive(s_discovery_queue, &job, portMAX_DELAY) != pdPASS) continue;
+        device_slot_t *slot = from_ref(job.device, true);
+        if (slot == NULL) continue;
+        if (slot->pending_jobs != 0U) --slot->pending_jobs;
+        if (slot->state != SLOT_ACTIVE || slot->device.short_addr != job.route_short_addr) {
+            clear_pending(slot, &job); warning(&slot->device, "discovery cancelled: route superseded"); maybe_reclaim(slot); continue;
         }
-        if (job.kind == DISCOVERY_ACTIVE_ENDPOINTS) submit_active_endpoints(job.slot);
-        else if (job.kind == DISCOVERY_SIMPLE_DESCRIPTOR) submit_simple_descriptor(job.slot, job.endpoint);
-        else if (job.kind == DISCOVERY_READ_BASIC) submit_basic_read(job.slot, job.endpoint);
-        else if (job.kind == DISCOVERY_BIND_CLUSTER) submit_binding(job.slot, job.endpoint, job.cluster_id);
-        else submit_config_report(job.slot, job.endpoint, job.cluster_id);
+        if (job.retry_count != 0U) vTaskDelay(pdMS_TO_TICKS(GATEWAY_DISCOVERY_RETRY_DELAY_MS * job.retry_count));
+        if (!esp_zigbee_lock_acquire(pdMS_TO_TICKS(GATEWAY_ZIGBEE_LOCK_TIMEOUT_MS))) { retry_or_fail(job, "discovery lock timeout after retries"); continue; }
+        bool sent = job.kind == DISCOVERY_ACTIVE_ENDPOINTS ? submit_active(slot, &job) :
+            job.kind == DISCOVERY_SIMPLE_DESCRIPTOR ? submit_simple(slot, &job) :
+            job.kind == DISCOVERY_READ_BASIC ? submit_basic(slot, &job) :
+            job.kind == DISCOVERY_BIND_CLUSTER ? submit_binding(slot, &job) : submit_reporting(slot, &job);
         esp_zigbee_lock_release();
+        if (!sent) retry_or_fail(job, "discovery submit failed after retries");
     }
 }
 
-static void publish_network_event(gateway_event_kind_t kind)
+static void network_event(gateway_event_kind_t kind)
 {
-    gateway_event_t event = gateway_event_base(kind, NULL);
-    gateway_event_publish(&event);
+    gateway_event_t event = event_base(kind, NULL); gateway_event_publish(&event);
+}
+
+static void announce_and_discover(gateway_event_kind_t kind, ezb_shortaddr_t short_addr, const ezb_extaddr_t *ieee)
+{
+    device_slot_t *slot = upsert_device(short_addr, ieee);
+    if (slot == NULL) { warning(NULL, "device registry capacity exhausted"); return; }
+    gateway_event_t event = event_base(kind, &slot->device); gateway_event_publish(&event);
+    if (!queue_job(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U, 0U)) warning(&slot->device, "active endpoint queue full");
+}
+
+static void device_left(ezb_shortaddr_t short_addr, const ezb_extaddr_t *ieee)
+{
+    device_slot_t *slot = ieee == NULL ? NULL : find_by_ieee(ieee, true);
+    if (slot == NULL) slot = find_by_short(short_addr, true);
+    if (slot == NULL) return;
+    gateway_event_t event = event_base(GATEWAY_EVENT_DEVICE_LEAVE, &slot->device); gateway_event_publish(&event);
+    slot->state = SLOT_LEAVING; maybe_reclaim(slot);
 }
 
 static bool app_signal_handler(const ezb_app_signal_t *signal)
 {
-    const ezb_app_signal_type_t type = ezb_app_signal_get_type(signal);
+    ezb_app_signal_type_t type = ezb_app_signal_get_type(signal);
     const void *params = ezb_app_signal_get_params(signal);
-    if (type == EZB_ZDO_SIGNAL_SKIP_STARTUP) {
-        ezb_bdb_start_top_level_commissioning(EZB_BDB_MODE_INITIALIZATION);
-    } else if (type == EZB_BDB_SIGNAL_DEVICE_FIRST_START) {
-        ezb_bdb_start_top_level_commissioning(EZB_BDB_MODE_NETWORK_FORMATION);
-    } else if (type == EZB_BDB_SIGNAL_DEVICE_REBOOT) {
-        publish_network_event(GATEWAY_EVENT_NETWORK_RESTORED);
-    } else if (type == EZB_BDB_SIGNAL_FORMATION) {
+    if (type == EZB_ZDO_SIGNAL_SKIP_STARTUP) ezb_bdb_start_top_level_commissioning(EZB_BDB_MODE_INITIALIZATION);
+    else if (type == EZB_BDB_SIGNAL_DEVICE_FIRST_START) ezb_bdb_start_top_level_commissioning(EZB_BDB_MODE_NETWORK_FORMATION);
+    else if (type == EZB_BDB_SIGNAL_DEVICE_REBOOT) network_event(GATEWAY_EVENT_NETWORK_RESTORED);
+    else if (type == EZB_BDB_SIGNAL_FORMATION) {
         const ezb_bdb_signal_simple_params_t *formation = params;
-        if (formation != NULL && formation->status == EZB_BDB_STATUS_SUCCESS) {
-            publish_network_event(GATEWAY_EVENT_NETWORK_FORMED);
-            ezb_bdb_open_network(180U);
-        }
+        if (formation != NULL && formation->status == EZB_BDB_STATUS_SUCCESS) { network_event(GATEWAY_EVENT_NETWORK_FORMED); ezb_bdb_open_network(180U); }
     } else if (type == EZB_NWK_SIGNAL_PERMIT_JOIN_STATUS) {
         const ezb_nwk_signal_permit_join_status_params_t *permit = params;
-        gateway_event_t event = gateway_event_base(GATEWAY_EVENT_PERMIT_JOIN, NULL);
-        event.data.permit.duration = permit == NULL ? 0U : permit->duration;
-        gateway_event_publish(&event);
+        gateway_event_t event = event_base(GATEWAY_EVENT_PERMIT_JOIN, NULL); event.data.permit.duration = permit == NULL ? 0U : permit->duration; gateway_event_publish(&event);
     } else if (type == EZB_ZDO_SIGNAL_DEVICE_ANNCE) {
-        const ezb_zdo_signal_device_annce_params_t *announcement = params;
-        if (announcement != NULL) {
-            gateway_device_slot_t *slot = upsert_device(announcement->short_addr, &announcement->device_addr);
-            if (slot != NULL) {
-                gateway_event_t event = gateway_event_base(GATEWAY_EVENT_DEVICE_ANNOUNCE, &slot->device);
-                gateway_event_publish(&event);
-                queue_discovery(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U);
-            }
-        }
+        const ezb_zdo_signal_device_annce_params_t *p = params;
+        if (p != NULL) announce_and_discover(GATEWAY_EVENT_DEVICE_ANNOUNCE, p->short_addr, &p->device_addr);
     } else if (type == EZB_ZDO_SIGNAL_DEVICE_UPDATE) {
-        const ezb_zdo_signal_device_update_params_t *update = params;
-        if (update != NULL) {
-            gateway_device_slot_t *slot = upsert_device(update->short_addr, &update->device_addr);
-            if (slot != NULL) {
-                gateway_event_t event = gateway_event_base(update->status == EZB_ZDO_UPDDEV_SECURE_REJOIN || update->status == EZB_ZDO_UPDDEV_TC_REJOIN ? GATEWAY_EVENT_DEVICE_REJOIN : GATEWAY_EVENT_DEVICE_UPDATE, &slot->device);
-                gateway_event_publish(&event);
-                if (event.kind == GATEWAY_EVENT_DEVICE_REJOIN) {
-                    slot->reporting_requested = 0U;
-                    queue_discovery(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U);
-                }
-            }
-        }
+        const ezb_zdo_signal_device_update_params_t *p = params;
+        if (p != NULL && p->status == EZB_ZDO_UPDDEV_DEVICE_LEFT) device_left(p->short_addr, &p->device_addr);
+        else if (p != NULL && (p->status == EZB_ZDO_UPDDEV_SECURE_REJOIN || p->status == EZB_ZDO_UPDDEV_TC_REJOIN)) announce_and_discover(GATEWAY_EVENT_DEVICE_REJOIN, p->short_addr, &p->device_addr);
+        else if (p != NULL) announce_and_discover(GATEWAY_EVENT_DEVICE_UPDATE, p->short_addr, &p->device_addr);
     } else if (type == EZB_ZDO_SIGNAL_LEAVE_INDICATION) {
-        const ezb_zdo_signal_leave_indication_params_t *leave = params;
-        if (leave != NULL) {
-            gateway_device_slot_t *slot = upsert_device(leave->short_addr, &leave->device_addr);
-            if (slot != NULL) {
-                gateway_event_t event = gateway_event_base(GATEWAY_EVENT_DEVICE_LEAVE, &slot->device);
-                gateway_event_publish(&event);
-            }
-        }
+        const ezb_zdo_signal_leave_indication_params_t *p = params;
+        if (p != NULL) device_left(p->short_addr, &p->device_addr);
     } else if (type == EZB_ZDO_SIGNAL_DEVICE_UNAVAILABLE) {
-        const ezb_zdo_signal_device_unavailable_params_t *unavailable = params;
-        if (unavailable != NULL) {
-            gateway_device_slot_t *slot = upsert_device(unavailable->short_addr, &unavailable->device_addr);
-            if (slot != NULL) {
-                gateway_event_t event = gateway_event_base(GATEWAY_EVENT_DEVICE_UNAVAILABLE, &slot->device);
-                gateway_event_publish(&event);
-            }
+        const ezb_zdo_signal_device_unavailable_params_t *p = params;
+        if (p != NULL) {
+            /* This is an indication, not a join/rejoin or authoritative offline state. */
+            gateway_device_id_t device = {.short_addr = p->short_addr};
+            memcpy(device.ieee, p->device_addr.u8, sizeof(device.ieee));
+            device.ieee_valid = true;
+            device_slot_t *slot = find_by_ieee(&p->device_addr, false);
+            if (slot == NULL) slot = find_by_short(p->short_addr, false);
+            if (slot != NULL) device = slot->device;
+            gateway_event_t event = event_base(GATEWAY_EVENT_DEVICE_UNAVAILABLE, &device);
+            gateway_event_publish(&event);
         }
     }
     return false;
@@ -678,39 +790,32 @@ static bool app_signal_handler(const ezb_app_signal_t *signal)
 
 static void zigbee_task(void *arg)
 {
-    const esp_zigbee_config_t config = {
-        .device_config = {.device_type = EZB_NWK_DEVICE_TYPE_COORDINATOR, .install_code_policy = false, .zczr_config = {.max_children = 32U}},
-        .platform_config = {.storage_partition_name = "zb_storage", .radio_config = {.radio_mode = ESP_ZIGBEE_RADIO_MODE_NATIVE}},
-    };
+    (void)arg;
+    const esp_zigbee_config_t config = {.device_config = {.device_type = EZB_NWK_DEVICE_TYPE_COORDINATOR, .install_code_policy = false,
+        .zczr_config = {.max_children = 32U}}, .platform_config = {.storage_partition_name = "zb_storage", .radio_config = {.radio_mode = ESP_ZIGBEE_RADIO_MODE_NATIVE}}};
     if (esp_zigbee_init(&config) != ESP_OK) return;
     s_discovery_queue = xQueueCreateStatic(GATEWAY_DISCOVERY_QUEUE_DEPTH, sizeof(discovery_job_t), s_discovery_queue_buffer, &s_discovery_queue_storage);
     ezb_bdb_set_primary_channel_set(GATEWAY_CHANNEL_MASK);
     const ezb_af_ep_config_t endpoint_config = {.ep_id = GATEWAY_ENDPOINT, .app_profile_id = GATEWAY_PROFILE_ID, .app_device_id = GATEWAY_DEVICE_ID, .app_device_version = 1U};
-    ezb_af_device_desc_t device_desc = ezb_af_create_device_desc();
+    ezb_af_device_desc_t device = ezb_af_create_device_desc();
     ezb_af_ep_desc_t endpoint = ezb_af_create_gateway_endpoint(&endpoint_config);
-    if (device_desc == EZB_INVALID_AF_DEVICE_DESC || endpoint == EZB_INVALID_AF_EP_DESC ||
-        ezb_af_device_add_endpoint_desc(device_desc, endpoint) != EZB_ERR_NONE || ezb_af_device_desc_register(device_desc) != EZB_ERR_NONE) return;
+    if (device == EZB_INVALID_AF_DEVICE_DESC || endpoint == EZB_INVALID_AF_EP_DESC || ezb_af_device_add_endpoint_desc(device, endpoint) != EZB_ERR_NONE || ezb_af_device_desc_register(device) != EZB_ERR_NONE) return;
     ezb_app_signal_add_handler(app_signal_handler);
     ezb_zcl_core_action_handler_register(zcl_core_action_handler);
+    /* Keep normal joining closed after reboot while allowing an already-known
+     * sleepy device to authenticate its Trust Center rejoin. */
+    ezb_secur_tcpol_set_allow_rejoins_with_well_known_key(true);
     if (esp_zigbee_start(false) != ESP_OK) return;
-    publish_network_event(GATEWAY_EVENT_STACK_READY);
+    network_event(GATEWAY_EVENT_STACK_READY);
     xTaskCreate(discovery_task, "zb_discovery", 4096, NULL, 5, NULL);
     esp_zigbee_launch_mainloop();
 }
 
-void zigbee_gateway_start(void)
-{
-    xTaskCreate(zigbee_task, "zigbee_main", 6144, NULL, 5, NULL);
-}
+void zigbee_gateway_start(void) { xTaskCreate(zigbee_task, "zigbee_main", 6144, NULL, 5, NULL); }
 
 void zigbee_gateway_set_permit_join(uint8_t seconds)
 {
-    if (!esp_zigbee_lock_acquire(pdMS_TO_TICKS(GATEWAY_ZIGBEE_LOCK_TIMEOUT_MS))) {
-        gateway_event_t event = gateway_event_base(GATEWAY_EVENT_WARNING, NULL);
-        strncpy(event.data.text.value, "permit command rejected: Zigbee lock timeout", sizeof(event.data.text.value) - 1U);
-        gateway_event_publish(&event);
-        return;
-    }
+    if (!esp_zigbee_lock_acquire(pdMS_TO_TICKS(GATEWAY_ZIGBEE_LOCK_TIMEOUT_MS))) { warning(NULL, "permit command rejected: Zigbee lock timeout"); return; }
     if (seconds == 0U) ezb_bdb_close_network(); else ezb_bdb_open_network(seconds);
     esp_zigbee_lock_release();
 }
