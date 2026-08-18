@@ -1,5 +1,6 @@
 #include "zigbee_gateway.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "esp_err.h"
@@ -38,22 +39,38 @@
 #define ZCL_ATTR_ACTIVE_POWER 0x050bU
 #define ZCL_ATTR_CURRENT_SUMMATION_DELIVERED 0x0000U
 
+#define REPORTING_TEMPERATURE 0x01U
+#define REPORTING_HUMIDITY 0x02U
+#define REPORTING_BATTERY_PERCENT 0x04U
+#define REPORTING_TEMPERATURE_MIN_SECONDS 60U
+#define REPORTING_TEMPERATURE_MAX_SECONDS 300U
+#define REPORTING_TEMPERATURE_CHANGE 10
+#define REPORTING_HUMIDITY_MIN_SECONDS 60U
+#define REPORTING_HUMIDITY_MAX_SECONDS 300U
+#define REPORTING_HUMIDITY_CHANGE 100U
+#define REPORTING_BATTERY_MIN_SECONDS 3600U
+#define REPORTING_BATTERY_MAX_SECONDS 21600U
+#define REPORTING_BATTERY_PERCENT_CHANGE 2U
+
 typedef struct {
     bool in_use;
     gateway_device_id_t device;
     bool basic_read_started;
+    uint8_t reporting_requested;
 } gateway_device_slot_t;
 
 typedef enum {
     DISCOVERY_ACTIVE_ENDPOINTS,
     DISCOVERY_SIMPLE_DESCRIPTOR,
     DISCOVERY_READ_BASIC,
+    DISCOVERY_CONFIG_REPORTING,
 } discovery_kind_t;
 
 typedef struct {
     discovery_kind_t kind;
     gateway_device_slot_t *slot;
     uint8_t endpoint;
+    uint16_t cluster_id;
 } discovery_job_t;
 
 static gateway_device_slot_t s_devices[GATEWAY_MAX_DEVICES];
@@ -124,10 +141,18 @@ static gateway_device_id_t device_from_header(const ezb_zcl_cmd_hdr_t *header)
     return device;
 }
 
-static bool queue_discovery(discovery_kind_t kind, gateway_device_slot_t *slot, uint8_t endpoint)
+static bool queue_discovery(discovery_kind_t kind, gateway_device_slot_t *slot, uint8_t endpoint, uint16_t cluster_id)
 {
-    const discovery_job_t job = {.kind = kind, .slot = slot, .endpoint = endpoint};
+    const discovery_job_t job = {.kind = kind, .slot = slot, .endpoint = endpoint, .cluster_id = cluster_id};
     return s_discovery_queue != NULL && xQueueSend(s_discovery_queue, &job, 0) == pdPASS;
+}
+
+static uint8_t reporting_mask_for_cluster(uint16_t cluster_id)
+{
+    if (cluster_id == EZB_ZCL_CLUSTER_ID_TEMPERATURE_MEASUREMENT) return REPORTING_TEMPERATURE;
+    if (cluster_id == EZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT) return REPORTING_HUMIDITY;
+    if (cluster_id == EZB_ZCL_CLUSTER_ID_POWER_CONFIG) return REPORTING_BATTERY_PERCENT;
+    return 0U;
 }
 
 static uint16_t attr_size(uint8_t type, const void *value)
@@ -274,12 +299,29 @@ static void publish_basic_read(const ezb_zcl_cmd_read_attr_rsp_message_t *messag
     }
 }
 
+static void publish_config_report_response(const ezb_zcl_cmd_config_report_rsp_message_t *message)
+{
+    const ezb_zcl_cmd_hdr_t *header = message->in.header;
+    if (header == NULL || message->info.dst_ep != GATEWAY_ENDPOINT) return;
+    const gateway_device_id_t device = device_from_header(header);
+    for (ezb_zcl_config_report_rsp_variable_t *item = message->in.variables; item != NULL; item = item->next) {
+        gateway_event_t event = gateway_event_base(GATEWAY_EVENT_REPORTING_CONFIG, &device);
+        event.endpoint = header->src_ep;
+        event.data.reporting.cluster_id = header->cluster_id;
+        event.data.reporting.attribute_id = item->attr_id;
+        event.data.reporting.status = item->status;
+        gateway_event_publish(&event);
+    }
+}
+
 static void zcl_core_action_handler(ezb_zcl_core_action_callback_id_t callback_id, void *message)
 {
     if (callback_id == EZB_ZCL_CORE_REPORT_ATTR_CB_ID) {
         publish_report((const ezb_zcl_cmd_report_attr_message_t *)message);
     } else if (callback_id == EZB_ZCL_CORE_READ_ATTR_RSP_CB_ID) {
         publish_basic_read((const ezb_zcl_cmd_read_attr_rsp_message_t *)message);
+    } else if (callback_id == EZB_ZCL_CORE_CONFIG_REPORT_RSP_CB_ID) {
+        publish_config_report_response((const ezb_zcl_cmd_config_report_rsp_message_t *)message);
     }
 }
 
@@ -299,12 +341,19 @@ static void simple_desc_callback(const ezb_zdo_simple_desc_req_result_t *result,
     for (uint8_t i = 0; i < event.data.endpoint_desc.input_copied; ++i) event.data.endpoint_desc.input_clusters[i] = desc->app_cluster_list[i];
     for (uint8_t i = 0; i < event.data.endpoint_desc.output_copied; ++i) event.data.endpoint_desc.output_clusters[i] = desc->app_cluster_list[desc->app_input_cluster_count + i];
     gateway_event_publish(&event);
+    bool basic_server = false;
     for (uint8_t i = 0; i < desc->app_input_cluster_count; ++i) {
-        if (desc->app_cluster_list[i] == EZB_ZCL_CLUSTER_ID_BASIC && !slot->basic_read_started) {
-            slot->basic_read_started = true;
-            queue_discovery(DISCOVERY_READ_BASIC, slot, desc->ep_id);
-            break;
+        const uint16_t cluster_id = desc->app_cluster_list[i];
+        const uint8_t reporting_mask = reporting_mask_for_cluster(cluster_id);
+        if (cluster_id == EZB_ZCL_CLUSTER_ID_BASIC) basic_server = true;
+        if (reporting_mask != 0U && (slot->reporting_requested & reporting_mask) == 0U &&
+            queue_discovery(DISCOVERY_CONFIG_REPORTING, slot, desc->ep_id, cluster_id)) {
+            slot->reporting_requested |= reporting_mask;
         }
+    }
+    if (basic_server && !slot->basic_read_started) {
+        slot->basic_read_started = true;
+        queue_discovery(DISCOVERY_READ_BASIC, slot, desc->ep_id, 0U);
     }
 }
 
@@ -313,7 +362,7 @@ static void active_ep_callback(const ezb_zdo_active_ep_req_result_t *result, voi
     gateway_device_slot_t *slot = user_ctx;
     if (slot == NULL || result == NULL || result->error != EZB_ERR_NONE || result->rsp == NULL || result->rsp->status != EZB_ZDP_STATUS_SUCCESS) return;
     for (uint8_t i = 0; i < result->rsp->active_ep_count; ++i) {
-        queue_discovery(DISCOVERY_SIMPLE_DESCRIPTOR, slot, result->rsp->active_ep_list[i]);
+        queue_discovery(DISCOVERY_SIMPLE_DESCRIPTOR, slot, result->rsp->active_ep_list[i], 0U);
     }
 }
 
@@ -352,6 +401,52 @@ static void submit_basic_read(gateway_device_slot_t *slot, uint8_t endpoint)
     ezb_zcl_read_attr_cmd_req(&request);
 }
 
+static void submit_config_report(gateway_device_slot_t *slot, uint8_t endpoint, uint16_t cluster_id)
+{
+    ezb_zcl_config_report_record_t record = {
+        .direction = EZB_ZCL_REPORTING_SEND,
+        .attr_id = ZCL_ATTR_MEASURED_VALUE,
+    };
+    if (cluster_id == EZB_ZCL_CLUSTER_ID_TEMPERATURE_MEASUREMENT) {
+        record.client = (typeof(record.client)){
+            .attr_type = EZB_ZCL_ATTR_TYPE_INT16,
+            .min_interval = REPORTING_TEMPERATURE_MIN_SECONDS,
+            .max_interval = REPORTING_TEMPERATURE_MAX_SECONDS,
+            .reportable_change = {.s16 = REPORTING_TEMPERATURE_CHANGE},
+        };
+    } else if (cluster_id == EZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT) {
+        record.client = (typeof(record.client)){
+            .attr_type = EZB_ZCL_ATTR_TYPE_UINT16,
+            .min_interval = REPORTING_HUMIDITY_MIN_SECONDS,
+            .max_interval = REPORTING_HUMIDITY_MAX_SECONDS,
+            .reportable_change = {.u16 = REPORTING_HUMIDITY_CHANGE},
+        };
+    } else if (cluster_id == EZB_ZCL_CLUSTER_ID_POWER_CONFIG) {
+        record.attr_id = ZCL_ATTR_BATTERY_PERCENT;
+        record.client = (typeof(record.client)){
+            .attr_type = EZB_ZCL_ATTR_TYPE_UINT8,
+            .min_interval = REPORTING_BATTERY_MIN_SECONDS,
+            .max_interval = REPORTING_BATTERY_MAX_SECONDS,
+            .reportable_change = {.u8 = REPORTING_BATTERY_PERCENT_CHANGE},
+        };
+    } else {
+        return;
+    }
+    const ezb_zcl_config_report_cmd_t request = {
+        .cmd_ctrl = {
+            .dst_addr = EZB_ADDRESS_SHORT(slot->device.short_addr), .dst_ep = endpoint, .src_ep = GATEWAY_ENDPOINT,
+            .cluster_id = cluster_id, .manuf_code = EZB_ZCL_STD_MANUF_CODE,
+        },
+        .payload = {.record_number = 1U, .record_field = &record},
+    };
+    const ezb_err_t err = ezb_zcl_config_report_cmd_req(&request);
+    if (err != EZB_ERR_NONE) {
+        gateway_event_t event = gateway_event_base(GATEWAY_EVENT_WARNING, &slot->device);
+        snprintf(event.data.text.value, sizeof(event.data.text.value), "reporting submit failed cluster=0x%04x err=%d", cluster_id, err);
+        gateway_event_publish(&event);
+    }
+}
+
 static void discovery_task(void *arg)
 {
     discovery_job_t job;
@@ -365,7 +460,8 @@ static void discovery_task(void *arg)
         }
         if (job.kind == DISCOVERY_ACTIVE_ENDPOINTS) submit_active_endpoints(job.slot);
         else if (job.kind == DISCOVERY_SIMPLE_DESCRIPTOR) submit_simple_descriptor(job.slot, job.endpoint);
-        else submit_basic_read(job.slot, job.endpoint);
+        else if (job.kind == DISCOVERY_READ_BASIC) submit_basic_read(job.slot, job.endpoint);
+        else submit_config_report(job.slot, job.endpoint, job.cluster_id);
         esp_zigbee_lock_release();
     }
 }
@@ -404,7 +500,7 @@ static bool app_signal_handler(const ezb_app_signal_t *signal)
             if (slot != NULL) {
                 gateway_event_t event = gateway_event_base(GATEWAY_EVENT_DEVICE_ANNOUNCE, &slot->device);
                 gateway_event_publish(&event);
-                queue_discovery(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U);
+                queue_discovery(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U);
             }
         }
     } else if (type == EZB_ZDO_SIGNAL_DEVICE_UPDATE) {
@@ -414,7 +510,10 @@ static bool app_signal_handler(const ezb_app_signal_t *signal)
             if (slot != NULL) {
                 gateway_event_t event = gateway_event_base(update->status == EZB_ZDO_UPDDEV_SECURE_REJOIN || update->status == EZB_ZDO_UPDDEV_TC_REJOIN ? GATEWAY_EVENT_DEVICE_REJOIN : GATEWAY_EVENT_DEVICE_UPDATE, &slot->device);
                 gateway_event_publish(&event);
-                if (event.kind == GATEWAY_EVENT_DEVICE_REJOIN) queue_discovery(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U);
+                if (event.kind == GATEWAY_EVENT_DEVICE_REJOIN) {
+                    slot->reporting_requested = 0U;
+                    queue_discovery(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U);
+                }
             }
         }
     } else if (type == EZB_ZDO_SIGNAL_LEAVE_INDICATION) {

@@ -73,6 +73,11 @@ static void log_event(const gateway_event_t *event)
         break;
     }
     case GATEWAY_EVENT_BASIC: ESP_LOGI(TAG, "basic %s %s=%s", device, event->data.text.key, event->data.text.value); break;
+    case GATEWAY_EVENT_REPORTING_CONFIG:
+        ESP_LOGI(TAG, "reporting %s ep=%u cluster=0x%04x attr=0x%04x status=0x%02x",
+                 device, event->endpoint, event->data.reporting.cluster_id,
+                 event->data.reporting.attribute_id, event->data.reporting.status);
+        break;
     case GATEWAY_EVENT_MEASUREMENT:
         ESP_LOGI(TAG, "measurement %s ep=%u %s=%.3f %s cluster=0x%04x attr=0x%04x type=0x%02x",
                  device, event->endpoint, measurement_name(event->data.measurement.kind), event->data.measurement.value,

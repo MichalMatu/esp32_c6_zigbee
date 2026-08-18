@@ -65,6 +65,8 @@ The gateway endpoint registers SDK 2.x app-signal and ZCL core-action handlers. 
 
 Recognized report attributes are normalized only when their incoming cluster, attribute, and ZCL type agree: temperature, humidity, illuminance, occupancy, CO2, power configuration, electrical measurement, metering, and On/Off. Electrical and metering values are emitted in their reported units; device-specific multiplier/divisor handling is deliberately future work.
 
+When discovery finds the matching standard server clusters, the gateway sends one Configure Reporting request per cluster. Temperature (`0x0402/0x0000`) reports after at least 60 seconds on a 0.10 °C change and at least once every 300 seconds. Relative humidity (`0x0405/0x0000`) uses the same 60/300-second intervals with a 1.00 %RH change. Battery percentage (`0x0001/0x0021`) reports after at least one hour on a 1 % change and at least once every six hours. This is deliberately limited to standard attributes; manufacturer-specific clusters are neither configured nor interpreted. The serial transport logs each Configure Reporting response.
+
 Other attributes delivered through the normal ZCL report callback are preserved as raw attributes. A raw event has cluster ID, attribute ID, ZCL type, original byte length, copied byte length, up to 96 bytes, and a `truncated` flag. Completely unsupported/unregistered frames are not fabricated: no APS interception is registered because the MVP has no confirmed additive 2.0.4 indication path that is needed here.
 
 `ZIGBEE_DEVICE_LEAVE`, `ZIGBEE_DEVICE_UPDATE`, and `ZIGBEE_DEVICE_UNAVAILABLE` are distinct events. In particular, `DEVICE_UNAVAILABLE` is intentionally not converted to an authoritative generic offline state.
@@ -73,7 +75,7 @@ Callbacks only validate/copy/enqueue. A static 16-event queue feeds the serial t
 
 ## MVP limitation and hardware test checklist
 
-This MVP only consumes passive reports. It does not send Configure Reporting commands. Many devices will therefore emit no useful measurements, or only after a local change, until Configure Reporting is added later.
+The gateway configures standard reports only after the target endpoint advertises the relevant server cluster. Battery-powered sleepy devices must be awake to receive this request; for the SNZB-02D, press its rear button after flashing or after a failed reporting request. Other devices may still reject reporting or emit no useful measurements, in which case the raw fallback and response logs preserve the evidence without fabricating support.
 
 Hardware-test the following on the target C6:
 
