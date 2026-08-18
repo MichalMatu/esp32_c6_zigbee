@@ -61,6 +61,11 @@ static void log_event(const gateway_event_t *event)
     case GATEWAY_EVENT_DEVICE_LEAVE: ESP_LOGI(TAG, "ZIGBEE_DEVICE_LEAVE %s", device); break;
     case GATEWAY_EVENT_DEVICE_UPDATE: ESP_LOGI(TAG, "ZIGBEE_DEVICE_UPDATE %s", device); break;
     case GATEWAY_EVENT_DEVICE_UNAVAILABLE: ESP_LOGW(TAG, "ZIGBEE_DEVICE_UNAVAILABLE %s (not an authoritative offline state)", device); break;
+    case GATEWAY_EVENT_DEVICE_CHECK_IN: ESP_LOGI(TAG, "ZIGBEE_DEVICE_CHECK_IN %s; fast poll requested", device); break;
+    case GATEWAY_EVENT_BINDING:
+        ESP_LOGI(TAG, "binding %s ep=%u cluster=0x%04x status=0x%02x", device, event->endpoint,
+                 event->data.binding.cluster_id, event->data.binding.status);
+        break;
     case GATEWAY_EVENT_ENDPOINT:
     {
         char input[6U * GATEWAY_MAX_DESCRIPTOR_CLUSTERS + 1U];

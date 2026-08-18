@@ -28,6 +28,8 @@ typedef enum {
     GATEWAY_EVENT_DEVICE_LEAVE,
     GATEWAY_EVENT_DEVICE_UPDATE,
     GATEWAY_EVENT_DEVICE_UNAVAILABLE,
+    GATEWAY_EVENT_DEVICE_CHECK_IN,
+    GATEWAY_EVENT_BINDING,
     GATEWAY_EVENT_ENDPOINT,
     GATEWAY_EVENT_BASIC,
     GATEWAY_EVENT_REPORTING_CONFIG,
@@ -108,6 +110,10 @@ typedef struct {
             uint16_t attribute_id;
             uint8_t status;
         } reporting;
+        struct {
+            uint16_t cluster_id;
+            uint8_t status;
+        } binding;
         gateway_raw_attribute_t raw;
         struct {
             char key[16];

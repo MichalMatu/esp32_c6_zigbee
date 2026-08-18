@@ -13,7 +13,9 @@
 #include <ezbee/app_signals.h>
 #include <ezbee/bdb.h>
 #include <ezbee/zcl/zcl_core.h>
+#include <ezbee/zcl/cluster/poll_control.h>
 #include <ezbee/zcl/zcl_general_cmd.h>
+#include <ezbee/zdo/zdo_bind_mgmt.h>
 #include <ezbee/zdo/zdo_dev_srv_disc.h>
 
 #include "gateway_events.h"
@@ -42,6 +44,7 @@
 #define REPORTING_TEMPERATURE 0x01U
 #define REPORTING_HUMIDITY 0x02U
 #define REPORTING_BATTERY_PERCENT 0x04U
+#define BINDING_POLL_CONTROL 0x08U
 #define REPORTING_TEMPERATURE_MIN_SECONDS 60U
 #define REPORTING_TEMPERATURE_MAX_SECONDS 300U
 #define REPORTING_TEMPERATURE_CHANGE 10
@@ -57,12 +60,16 @@ typedef struct {
     gateway_device_id_t device;
     bool basic_read_started;
     uint8_t reporting_requested;
+    uint8_t reporting_configured;
+    uint8_t binding_requested;
+    uint8_t binding_configured;
 } gateway_device_slot_t;
 
 typedef enum {
     DISCOVERY_ACTIVE_ENDPOINTS,
     DISCOVERY_SIMPLE_DESCRIPTOR,
     DISCOVERY_READ_BASIC,
+    DISCOVERY_BIND_CLUSTER,
     DISCOVERY_CONFIG_REPORTING,
 } discovery_kind_t;
 
@@ -73,10 +80,18 @@ typedef struct {
     uint16_t cluster_id;
 } discovery_job_t;
 
+typedef struct {
+    bool in_use;
+    gateway_device_slot_t *slot;
+    uint8_t endpoint;
+    uint16_t cluster_id;
+} binding_context_t;
+
 static gateway_device_slot_t s_devices[GATEWAY_MAX_DEVICES];
 static StaticQueue_t s_discovery_queue_storage;
 static uint8_t s_discovery_queue_buffer[GATEWAY_DISCOVERY_QUEUE_DEPTH * sizeof(discovery_job_t)];
 static QueueHandle_t s_discovery_queue;
+static binding_context_t s_binding_contexts[GATEWAY_MAX_DEVICES * 4U];
 
 static gateway_event_t gateway_event_base(gateway_event_kind_t kind, const gateway_device_id_t *device)
 {
@@ -118,6 +133,10 @@ static gateway_device_slot_t *upsert_device(ezb_shortaddr_t short_addr, const ez
     if (slot != NULL && ieee != NULL) {
         if (!slot->device.ieee_valid || memcmp(slot->device.ieee, ieee->u8, sizeof(slot->device.ieee)) != 0) {
             slot->basic_read_started = false;
+            slot->reporting_requested = 0U;
+            slot->reporting_configured = 0U;
+            slot->binding_requested = 0U;
+            slot->binding_configured = 0U;
         }
         memcpy(slot->device.ieee, ieee->u8, sizeof(slot->device.ieee));
         slot->device.ieee_valid = true;
@@ -153,6 +172,33 @@ static uint8_t reporting_mask_for_cluster(uint16_t cluster_id)
     if (cluster_id == EZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT) return REPORTING_HUMIDITY;
     if (cluster_id == EZB_ZCL_CLUSTER_ID_POWER_CONFIG) return REPORTING_BATTERY_PERCENT;
     return 0U;
+}
+
+static uint8_t binding_mask_for_cluster(uint16_t cluster_id)
+{
+    const uint8_t reporting_mask = reporting_mask_for_cluster(cluster_id);
+    return reporting_mask != 0U ? reporting_mask : (cluster_id == EZB_ZCL_CLUSTER_ID_POLL_CONTROL ? BINDING_POLL_CONTROL : 0U);
+}
+
+static bool queue_reporting_config(gateway_device_slot_t *slot, uint8_t endpoint, uint16_t cluster_id)
+{
+    const uint8_t reporting_mask = reporting_mask_for_cluster(cluster_id);
+    if (reporting_mask == 0U || (slot->reporting_configured & reporting_mask) != 0U ||
+        (slot->reporting_requested & reporting_mask) != 0U) return false;
+    if (!queue_discovery(DISCOVERY_CONFIG_REPORTING, slot, endpoint, cluster_id)) return false;
+    slot->reporting_requested |= reporting_mask;
+    return true;
+}
+
+static binding_context_t *allocate_binding_context(gateway_device_slot_t *slot, uint8_t endpoint, uint16_t cluster_id)
+{
+    for (size_t i = 0; i < sizeof(s_binding_contexts) / sizeof(s_binding_contexts[0]); ++i) {
+        if (!s_binding_contexts[i].in_use) {
+            s_binding_contexts[i] = (binding_context_t){.in_use = true, .slot = slot, .endpoint = endpoint, .cluster_id = cluster_id};
+            return &s_binding_contexts[i];
+        }
+    }
+    return NULL;
 }
 
 static uint16_t attr_size(uint8_t type, const void *value)
@@ -305,6 +351,12 @@ static void publish_config_report_response(const ezb_zcl_cmd_config_report_rsp_m
     if (header == NULL || message->info.dst_ep != GATEWAY_ENDPOINT) return;
     const gateway_device_id_t device = device_from_header(header);
     for (ezb_zcl_config_report_rsp_variable_t *item = message->in.variables; item != NULL; item = item->next) {
+        gateway_device_slot_t *slot = find_device_by_short(device.short_addr);
+        const uint8_t reporting_mask = reporting_mask_for_cluster(header->cluster_id);
+        if (slot != NULL && reporting_mask != 0U) {
+            if (item->status == EZB_ZCL_STATUS_SUCCESS) slot->reporting_configured |= reporting_mask;
+            else slot->reporting_requested &= (uint8_t)~reporting_mask;
+        }
         gateway_event_t event = gateway_event_base(GATEWAY_EVENT_REPORTING_CONFIG, &device);
         event.endpoint = header->src_ep;
         event.data.reporting.cluster_id = header->cluster_id;
@@ -312,6 +364,45 @@ static void publish_config_report_response(const ezb_zcl_cmd_config_report_rsp_m
         event.data.reporting.status = item->status;
         gateway_event_publish(&event);
     }
+}
+
+static void handle_poll_control_check_in(ezb_zcl_poll_control_check_in_message_t *message)
+{
+    message->out.result = EZB_ZCL_STATUS_SUCCESS;
+    message->out.start_fast_poll = true;
+    message->out.fast_poll_timeout = EZB_ZCL_POLL_CONTROL_PREDEFINED_CHECK_IN_TIMEOUT_DEFAULT_VALUE;
+    const ezb_zcl_cmd_hdr_t *header = message->in.header;
+    if (header == NULL || message->info.dst_ep != GATEWAY_ENDPOINT || header->src_addr.addr_mode != EZB_ADDR_MODE_SHORT) return;
+    gateway_device_slot_t *slot = upsert_device(header->src_addr.u.short_addr, NULL);
+    if (slot == NULL) return;
+    slot->reporting_requested = 0U;
+    gateway_event_t event = gateway_event_base(GATEWAY_EVENT_DEVICE_CHECK_IN, &slot->device);
+    event.endpoint = header->src_ep;
+    gateway_event_publish(&event);
+    queue_discovery(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U);
+}
+
+static void binding_callback(const ezb_zdp_bind_req_result_t *result, void *user_ctx)
+{
+    binding_context_t *context = user_ctx;
+    if (context == NULL || !context->in_use || context->slot == NULL) return;
+    gateway_device_slot_t *slot = context->slot;
+    const uint8_t binding_mask = binding_mask_for_cluster(context->cluster_id);
+    const uint8_t status = (result != NULL && result->error == EZB_ERR_NONE && result->rsp != NULL) ? result->rsp->status : 0xffU;
+    if (status == EZB_ZDP_STATUS_SUCCESS) {
+        slot->binding_configured |= binding_mask;
+        if (reporting_mask_for_cluster(context->cluster_id) != 0U) {
+            queue_reporting_config(slot, context->endpoint, context->cluster_id);
+        }
+    } else {
+        slot->binding_requested &= (uint8_t)~binding_mask;
+    }
+    gateway_event_t event = gateway_event_base(GATEWAY_EVENT_BINDING, &slot->device);
+    event.endpoint = context->endpoint;
+    event.data.binding.cluster_id = context->cluster_id;
+    event.data.binding.status = status;
+    gateway_event_publish(&event);
+    context->in_use = false;
 }
 
 static void zcl_core_action_handler(ezb_zcl_core_action_callback_id_t callback_id, void *message)
@@ -322,6 +413,8 @@ static void zcl_core_action_handler(ezb_zcl_core_action_callback_id_t callback_i
         publish_basic_read((const ezb_zcl_cmd_read_attr_rsp_message_t *)message);
     } else if (callback_id == EZB_ZCL_CORE_CONFIG_REPORT_RSP_CB_ID) {
         publish_config_report_response((const ezb_zcl_cmd_config_report_rsp_message_t *)message);
+    } else if (callback_id == EZB_ZCL_CORE_POLL_CONTROL_CHECK_IN_CB_ID) {
+        handle_poll_control_check_in((ezb_zcl_poll_control_check_in_message_t *)message);
     }
 }
 
@@ -344,11 +437,14 @@ static void simple_desc_callback(const ezb_zdo_simple_desc_req_result_t *result,
     bool basic_server = false;
     for (uint8_t i = 0; i < desc->app_input_cluster_count; ++i) {
         const uint16_t cluster_id = desc->app_cluster_list[i];
-        const uint8_t reporting_mask = reporting_mask_for_cluster(cluster_id);
+        const uint8_t binding_mask = binding_mask_for_cluster(cluster_id);
         if (cluster_id == EZB_ZCL_CLUSTER_ID_BASIC) basic_server = true;
-        if (reporting_mask != 0U && (slot->reporting_requested & reporting_mask) == 0U &&
-            queue_discovery(DISCOVERY_CONFIG_REPORTING, slot, desc->ep_id, cluster_id)) {
-            slot->reporting_requested |= reporting_mask;
+        if (binding_mask != 0U && (slot->binding_configured & binding_mask) == 0U &&
+            (slot->binding_requested & binding_mask) == 0U &&
+            queue_discovery(DISCOVERY_BIND_CLUSTER, slot, desc->ep_id, cluster_id)) {
+            slot->binding_requested |= binding_mask;
+        } else if (reporting_mask_for_cluster(cluster_id) != 0U && (slot->binding_configured & binding_mask) != 0U) {
+            queue_reporting_config(slot, desc->ep_id, cluster_id);
         }
     }
     if (basic_server && !slot->basic_read_started) {
@@ -401,6 +497,46 @@ static void submit_basic_read(gateway_device_slot_t *slot, uint8_t endpoint)
     ezb_zcl_read_attr_cmd_req(&request);
 }
 
+static void submit_binding(gateway_device_slot_t *slot, uint8_t endpoint, uint16_t cluster_id)
+{
+    const uint8_t binding_mask = binding_mask_for_cluster(cluster_id);
+    if (binding_mask == 0U) return;
+    if (!slot->device.ieee_valid) {
+        ezb_extaddr_t device_ieee;
+        if (ezb_address_extended_by_short(slot->device.short_addr, &device_ieee) != EZB_ERR_NONE) {
+            slot->binding_requested &= (uint8_t)~binding_mask;
+            return;
+        }
+        memcpy(slot->device.ieee, device_ieee.u8, sizeof(slot->device.ieee));
+        slot->device.ieee_valid = true;
+    }
+    binding_context_t *context = allocate_binding_context(slot, endpoint, cluster_id);
+    if (context == NULL) {
+        slot->binding_requested &= (uint8_t)~binding_mask;
+        return;
+    }
+    ezb_extaddr_t coordinator_ieee;
+    ezb_nwk_get_extended_address(&coordinator_ieee);
+    ezb_zdo_bind_req_t request = {0};
+    request.dst_nwk_addr = slot->device.short_addr;
+    memcpy(request.field.src_addr.u8, slot->device.ieee, sizeof(slot->device.ieee));
+    request.field.src_ep = endpoint;
+    request.field.cluster_id = cluster_id;
+    request.field.dst_addr_mode = EZB_ADDR_MODE_EXT;
+    request.field.dst_addr.extended_addr = coordinator_ieee;
+    request.field.dst_ep = GATEWAY_ENDPOINT;
+    request.cb = binding_callback;
+    request.user_ctx = context;
+    const ezb_err_t err = ezb_zdo_bind_req(&request);
+    if (err != EZB_ERR_NONE) {
+        context->in_use = false;
+        slot->binding_requested &= (uint8_t)~binding_mask;
+        gateway_event_t event = gateway_event_base(GATEWAY_EVENT_WARNING, &slot->device);
+        snprintf(event.data.text.value, sizeof(event.data.text.value), "binding submit failed cluster=0x%04x err=%d", cluster_id, err);
+        gateway_event_publish(&event);
+    }
+}
+
 static void submit_config_report(gateway_device_slot_t *slot, uint8_t endpoint, uint16_t cluster_id)
 {
     ezb_zcl_config_report_record_t record = {
@@ -441,6 +577,7 @@ static void submit_config_report(gateway_device_slot_t *slot, uint8_t endpoint, 
     };
     const ezb_err_t err = ezb_zcl_config_report_cmd_req(&request);
     if (err != EZB_ERR_NONE) {
+        slot->reporting_requested &= (uint8_t)~reporting_mask_for_cluster(cluster_id);
         gateway_event_t event = gateway_event_base(GATEWAY_EVENT_WARNING, &slot->device);
         snprintf(event.data.text.value, sizeof(event.data.text.value), "reporting submit failed cluster=0x%04x err=%d", cluster_id, err);
         gateway_event_publish(&event);
@@ -461,6 +598,7 @@ static void discovery_task(void *arg)
         if (job.kind == DISCOVERY_ACTIVE_ENDPOINTS) submit_active_endpoints(job.slot);
         else if (job.kind == DISCOVERY_SIMPLE_DESCRIPTOR) submit_simple_descriptor(job.slot, job.endpoint);
         else if (job.kind == DISCOVERY_READ_BASIC) submit_basic_read(job.slot, job.endpoint);
+        else if (job.kind == DISCOVERY_BIND_CLUSTER) submit_binding(job.slot, job.endpoint, job.cluster_id);
         else submit_config_report(job.slot, job.endpoint, job.cluster_id);
         esp_zigbee_lock_release();
     }
