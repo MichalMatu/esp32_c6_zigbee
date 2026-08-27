@@ -4,7 +4,23 @@
 #include <math.h>
 #include <string.h>
 
+#ifndef GATEWAY_ZCL_HOST_TEST
 #include <ezbee/zcl/zcl_core.h>
+#else
+#define EZB_ZCL_CLUSTER_ID_POWER_CONFIG 0x0001U
+#define EZB_ZCL_CLUSTER_ID_ON_OFF 0x0006U
+#define EZB_ZCL_CLUSTER_ID_ILLUMINANCE_MEASUREMENT 0x0400U
+#define EZB_ZCL_CLUSTER_ID_TEMPERATURE_MEASUREMENT 0x0402U
+#define EZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT 0x0405U
+#define EZB_ZCL_CLUSTER_ID_OCCUPANCY_SENSING 0x0406U
+#define EZB_ZCL_CLUSTER_ID_CARBON_DIOXIDE_MEASUREMENT 0x040DU
+#define EZB_ZCL_ATTR_TYPE_BOOL 0x10U
+#define EZB_ZCL_ATTR_TYPE_MAP8 0x18U
+#define EZB_ZCL_ATTR_TYPE_UINT8 0x20U
+#define EZB_ZCL_ATTR_TYPE_UINT16 0x21U
+#define EZB_ZCL_ATTR_TYPE_INT16 0x29U
+#define EZB_ZCL_ATTR_TYPE_SINGLE 0x39U
+#endif
 
 #define ZCL_ATTR_MEASURED_VALUE 0x0000U
 #define ZCL_ATTR_OCCUPANCY 0x0000U
@@ -14,8 +30,14 @@
 
 uint16_t gateway_zcl_attr_size(uint8_t type, const void *value)
 {
+#ifdef GATEWAY_ZCL_HOST_TEST
+    (void)type;
+    (void)value;
+    return 0U;
+#else
     return value == NULL ? 0U :
         ezb_zcl_get_attr_value_size((ezb_zcl_attr_type_t)type, value);
+#endif
 }
 
 static bool read_u8(const void *value, uint8_t type, uint8_t *out)
