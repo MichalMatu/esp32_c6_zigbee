@@ -1,0 +1,44 @@
+name: Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  host-zcl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build host ZCL tests
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror -pedantic \
+            -DGATEWAY_ZCL_HOST_TEST \
+            -Imain \
+            tests/host/test_gateway_zcl_value.c \
+            main/gateway_zcl_value.c \
+            -lm \
+            -o /tmp/test_gateway_zcl_value
+      - name: Run host ZCL tests
+        run: /tmp/test_gateway_zcl_value
+      - name: Check touched C formatting
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang-format
+          clang-format --dry-run --Werror \
+            main/gateway_zcl_value.c \
+            main/gateway_zcl_value.h \
+            tests/host/test_gateway_zcl_value.c
+
+  firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.5.4
+          target: esp32c6
+          command: idf.py build
