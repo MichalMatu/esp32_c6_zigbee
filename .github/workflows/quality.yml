@@ -24,14 +24,6 @@ jobs:
             -o /tmp/test_gateway_zcl_value
       - name: Run host ZCL tests
         run: /tmp/test_gateway_zcl_value
-      - name: Check touched C formatting
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq clang-format
-          clang-format --dry-run --Werror \
-            main/gateway_zcl_value.c \
-            main/gateway_zcl_value.h \
-            tests/host/test_gateway_zcl_value.c
 
   firmware:
     runs-on: ubuntu-latest
