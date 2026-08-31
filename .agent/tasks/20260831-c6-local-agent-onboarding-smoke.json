@@ -1,0 +1,13 @@
+{
+  "id": "20260831-c6-local-agent-onboarding-smoke",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 128,
+  "command_timeout": 60,
+  "task_timeout": 240,
+  "commands": [
+    "set -euo pipefail; test \"$(git branch --show-current)\" = 'agent-work'; test \"$(git rev-parse HEAD)\" = \"$(git rev-parse origin/main)\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; test -f AGENTS.md; grep -Fq 'local-agent repository id: `esp32-c6-zigbee`' AGENTS.md; grep -Fq 'ESP-IDF: v5.5.4' AGENTS.md; grep -Fq 'espressif/esp-zigbee-lib` v2.0.4' README.md; test -f CMakeLists.txt; printf 'ESP32-C6 Local Agent onboarding smoke OK\\n'"
+  ]
+}
