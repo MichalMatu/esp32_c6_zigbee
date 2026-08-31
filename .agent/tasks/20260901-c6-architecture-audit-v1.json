@@ -1,0 +1,14 @@
+{
+  "id": "20260901-c6-architecture-audit-v1",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 512,
+  "command_timeout": 180,
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "commands": [
+    "set -euo pipefail; EXPECTED=f4fbd69e00bbda19dcb90d7c8692b48c0dce21f6; git fetch --quiet origin main; test \"$(git rev-parse origin/main)\" = \"$EXPECTED\"; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; printf '%s\\n' '=== FILE SIZES ==='; wc -l main/*.c main/*.h README.md AGENTS.md tests/host/*.c; printf '%s\\n' '=== SOURCE FILES ==='; find main tests -maxdepth 2 -type f -print | sort; printf '%s\\n' '=== FUNCTIONS IN zigbee_gateway.c ==='; python3 - <<'PY'\nimport re\nfrom pathlib import Path\np=Path('main/zigbee_gateway.c')\nlines=p.read_text().splitlines()\npat=re.compile(r'^(?:static\\s+)?(?:[A-Za-z_][\\w\\s\\*]*?)\\s+([A-Za-z_]\\w*)\\s*\\(')\nstarts=[]\nfor i,line in enumerate(lines,1):\n    s=line.strip()\n    if s.startswith(('if ','if(', 'for ','for(', 'while ','while(', 'switch ','return ')):\n        continue\n    m=pat.match(s)\n    if m and not s.endswith(';'):\n        starts.append((i,m.group(1)))\nfor n,(start,name) in enumerate(starts):\n    end=(starts[n+1][0]-1) if n+1<len(starts) else len(lines)\n    span=end-start+1\n    print(f'{start:4d}-{end:4d} {span:4d} {name}')\nprint('function_count=',len(starts))\nprint('functions_over_60_lines=',sum(1 for n,(s,_) in enumerate(starts) if ((starts[n+1][0]-1 if n+1<len(starts) else len(lines))-s+1)>60))\nPY\nprintf '%s\\n' '=== STATIC STATE ==='; grep -nE '^static .*(s_|QueueHandle|StaticQueue|\\[GATEWAY_)' main/zigbee_gateway.c || true; printf '%s\\n' '=== CALLBACK / ZDO / ZCL / QUEUE HOTSPOTS ==='; grep -nE 'callback|handler|zdo|zcl|queue_job|xQueue|binding|reporting|discovery|async_context' main/zigbee_gateway.c | head -n 220; printf '%s\\n' '=== TODO/FIXME ==='; git grep -nE 'TODO|FIXME|HACK|XXX' -- . ':!dependencies.lock' || true; printf '%s\\n' '=== HOST QUALITY GATE ==='; cc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zcl_value.c main/gateway_zcl_value.c -lm -o /tmp/test_gateway_zcl_value; /tmp/test_gateway_zcl_value; git diff --check; printf '%s\\n' 'AUDIT_OK'"
+  ]
+}
