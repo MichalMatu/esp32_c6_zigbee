@@ -33,7 +33,7 @@ Before queueing work:
 
 1. Read this file and the current `README.md`.
 2. Inspect the exact source branch/HEAD relevant to the request.
-3. Inspect `.agent/status/daemon.json` on `agent-control` and treat `daemon_version`, `self_revision`, `execution_model`, `max_parallel_workers`, and current task state as the running truth.
+3. Inspect `.agent/status/daemon.json` on `agent-control` and treat `daemon_version`, `self_revision`, `execution_model` / `execution_variant`, current task state, and `supervisor_pid` as repository-worker truth. Supervisor-wide fields such as `max_parallel_workers` are not guaranteed to be repeated in every repository-worker snapshot; read the shared supervisor status when that field matters.
 4. Follow any active task instead of queueing a duplicate.
 
 Task/evidence contract:
@@ -63,7 +63,7 @@ Omitting `resources` means full `machine` exclusivity.
 
 Use `resources: []` only for clearly software-only lightweight work that is safe to overlap, such as documentation checks or isolated static/source inspection, with an enabled `memory_limit_mb <= 1024` (normally 256-512 MiB for lightweight checks).
 
-One task executes at a time for this repository, while unrelated registered repositories may overlap when Local Agent resource admission permits it. Production normally uses `max_workers=2`; read the live status rather than relying on this sentence as runtime truth.
+One task executes at a time for this repository, while unrelated registered repositories may overlap when Local Agent resource admission permits it. Production normally uses `max_workers=2`; read the shared supervisor status when the exact live worker cap matters rather than relying on a repository-worker snapshot or this sentence.
 
 ## Build and hardware rules
 
