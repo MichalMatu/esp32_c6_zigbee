@@ -2,9 +2,9 @@
   "version": 1,
   "daemon_version": "4.11.3",
   "state": "idle",
-  "pid": 55460,
-  "updated_at": "2026-08-31T21:40:56.796037+00:00",
-  "self_revision": "24cdbe6d13af25fadb9f2f78e995e2fa6b62ed8d",
+  "pid": 70650,
+  "updated_at": "2026-08-31T22:10:00.791296+00:00",
+  "self_revision": "140f78d83f95dc2fde74bd3a69b7330d6b10803b",
   "poll_seconds": 15,
   "self_update_seconds": 60,
   "command_timeout_default": 900,
@@ -22,8 +22,8 @@
   "control_branch": "agent-control",
   "default_branch": "main",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 55460,
+  "worker_pid": 70650,
   "supervisor_pid": 71830,
-  "last_task_id": "20260831-c6-establish-versioned-idf-path",
+  "last_task_id": "20260901-v4114-doc-alignment-candidate",
   "execution_variant": "parallel"
 }
