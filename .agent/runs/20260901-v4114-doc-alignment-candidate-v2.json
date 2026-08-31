@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260901-v4114-doc-alignment-candidate-v2",
+  "task_digest": "22f96edbb57e23501a8669e3fca2bc15ee4bff79fdd019865a05f6bad55874b6",
+  "idle_timeout": 300,
+  "task_timeout": 1200,
+  "memory_limit_mb": 512,
+  "started_at": "2026-08-31T22:11:01.209456+00:00",
+  "attempt_id": "4ecf9c0ad6abb887d0d8a7ac",
+  "daemon_version": "4.11.4",
+  "daemon_pid": 72659,
+  "updated_at": "2026-08-31T22:11:01.210723+00:00",
+  "pid": 72659
+}
