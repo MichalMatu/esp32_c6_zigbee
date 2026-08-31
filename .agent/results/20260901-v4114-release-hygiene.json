@@ -1,0 +1,57 @@
+{
+  "id": "20260901-v4114-release-hygiene",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-08-31T22:17:06.530936+00:00",
+  "command_timeout": 180,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail; LA=\"$HOME/local-agent\"; SHA=9231f06db70c84028c43b88b14d91d6dfb83f070; test \"$(git -C \"$LA\" branch --show-current)\" = main; test \"$(git -C \"$LA\" rev-parse HEAD)\" = \"$SHA\"; test -z \"$(git -C \"$LA\" status --porcelain --untracked-files=normal)\"; test \"$(PYTHONPATH=\"$LA\" \"$LA/.venv/bin/python\" -c 'import agent_version; print(agent_version.RELEASE_VERSION)')\" = '4.11.4'; git -C \"$LA\" fetch --quiet origin main; test \"$(git -C \"$LA\" rev-parse origin/main)\" = \"$SHA\"; if git -C \"$LA\" rev-parse -q --verify refs/tags/v4.11.4 >/dev/null; then test \"$(git -C \"$LA\" rev-parse 'v4.11.4^{}')\" = \"$SHA\"; else git -C \"$LA\" tag -a v4.11.4 \"$SHA\" -m 'local-agent v4.11.4'; fi; git -C \"$LA\" push origin refs/tags/v4.11.4; test \"$(git -C \"$LA\" ls-remote origin 'refs/tags/v4.11.4^{}' | cut -f1)\" = \"$SHA\"; test ! -e \"$LA/docs/.staging-marker\"; test ! -e \"$LA/docs/.branch-note\"; test ! -e \"$LA/noop\"; test -z \"$(git -C \"$LA\" status --porcelain --untracked-files=normal)\"; printf 'v4.11.4 RELEASE_HYGIENE_OK\\n'",
+      "exit_code": 0,
+      "output": "To https://github.com/MichalMatu/local-agent.git\n * [new tag]         v4.11.4 -> v4.11.4\nv4.11.4 RELEASE_HYGIENE_OK\n",
+      "elapsed_seconds": 4.271,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 256,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 22.53,
+      "current_rss_mb": 22.53,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 4.271
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.216
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.19
+  },
+  "finished_at": "2026-08-31T22:17:14.026819+00:00",
+  "task_digest": "c593c7f0421e671eca06f780a9c9b92792dd3f3e53ba9c70d07bec588a7c9840",
+  "idle_timeout": 300,
+  "task_timeout": 420,
+  "memory_limit_mb": 256,
+  "attempt_id": "141aa899c5a8064a5e56786a",
+  "daemon_version": "4.11.4"
+}
