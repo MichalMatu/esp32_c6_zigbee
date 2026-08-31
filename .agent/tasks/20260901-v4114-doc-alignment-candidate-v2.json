@@ -1,0 +1,12 @@
+{
+  "id": "20260901-v4114-doc-alignment-candidate-v2",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "memory_limit_mb": 512,
+  "command_timeout": 900,
+  "task_timeout": 1200,
+  "commands": [
+    "set -euo pipefail; LA=\"$HOME/local-agent\"; test \"$(git -C \"$LA\" branch --show-current)\" = main; test \"$(git -C \"$LA\" rev-parse HEAD)\" = '140f78d83f95dc2fde74bd3a69b7330d6b10803b'; git -C \"$LA\" fetch --quiet origin main; test \"$(git -C \"$LA\" rev-parse origin/main)\" = '140f78d83f95dc2fde74bd3a69b7330d6b10803b'; cd \"$LA\"; test \"$(git status --porcelain --untracked-files=normal | awk '{print $2}' | sort | tr '\\n' ' ')\" = 'README.md agent_version.py docs/OPERATIONS.md docs/RELEASE_NOTES_V4.11.4.md '; grep -Fq 'RELEASE_VERSION = \"4.11.4\"' agent_version.py; grep -Fq '**Current release:** `v4.11.4`' README.md; grep -Fq 'ESP32-C6 Zigbee (`esp32-c6-zigbee`)' docs/OPERATIONS.md; test -f docs/RELEASE_NOTES_V4.11.4.md; git diff --check; env -u LOCAL_AGENT_LEASE_FDS -u LOCAL_AGENT_LEASE_KEYS_DIGEST .venv/bin/python -m unittest discover -q; git add -- README.md agent_version.py docs/OPERATIONS.md docs/RELEASE_NOTES_V4.11.4.md; git diff --cached --check; test \"$(git diff --cached --name-only | sort | tr '\\n' ' ')\" = 'README.md agent_version.py docs/OPERATIONS.md docs/RELEASE_NOTES_V4.11.4.md '; git commit -m 'Align downstream documentation for v4.11.4'; git push origin HEAD:main; SHA=$(git rev-parse HEAD); test \"$(git ls-remote origin refs/heads/main | cut -f1)\" = \"$SHA\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; echo CANDIDATE_SHA=$SHA"
+  ]
+}
