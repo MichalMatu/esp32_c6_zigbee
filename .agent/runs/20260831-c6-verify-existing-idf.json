@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260831-c6-verify-existing-idf",
+  "task_digest": "99c35a4b36e94dcf1cbb1652974259e4a501ae204517dc1fa2f9b9235062d255",
+  "idle_timeout": 300,
+  "task_timeout": 300,
+  "memory_limit_mb": 256,
+  "started_at": "2026-08-31T21:39:38.406779+00:00",
+  "attempt_id": "744cec36a4905a23f255cc80",
+  "daemon_version": "4.11.3",
+  "daemon_pid": 54781,
+  "updated_at": "2026-08-31T21:39:38.407065+00:00",
+  "pid": 54781
+}
