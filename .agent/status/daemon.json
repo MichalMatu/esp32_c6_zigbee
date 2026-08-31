@@ -2,8 +2,8 @@
   "version": 1,
   "daemon_version": "4.11.3",
   "state": "idle",
-  "pid": 51472,
-  "updated_at": "2026-08-31T21:34:43.505359+00:00",
+  "pid": 51703,
+  "updated_at": "2026-08-31T21:35:25.131215+00:00",
   "self_revision": "24cdbe6d13af25fadb9f2f78e995e2fa6b62ed8d",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -22,7 +22,8 @@
   "control_branch": "agent-control",
   "default_branch": "main",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 51472,
+  "worker_pid": 51703,
   "supervisor_pid": 71830,
+  "last_task_id": "20260831-c6-local-agent-onboarding-smoke",
   "execution_variant": "parallel"
 }
