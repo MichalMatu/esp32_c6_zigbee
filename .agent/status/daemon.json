@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "daemon_version": "4.11.3",
+  "daemon_version": "4.11.4",
   "state": "idle",
-  "pid": 70650,
-  "updated_at": "2026-08-31T22:10:00.791296+00:00",
-  "self_revision": "140f78d83f95dc2fde74bd3a69b7330d6b10803b",
+  "pid": 72659,
+  "updated_at": "2026-08-31T22:14:05.056395+00:00",
+  "self_revision": "9231f06db70c84028c43b88b14d91d6dfb83f070",
   "poll_seconds": 15,
   "self_update_seconds": 60,
   "command_timeout_default": 900,
@@ -22,8 +22,8 @@
   "control_branch": "agent-control",
   "default_branch": "main",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 70650,
+  "worker_pid": 72659,
   "supervisor_pid": 71830,
-  "last_task_id": "20260901-v4114-doc-alignment-candidate",
+  "last_task_id": "20260901-v4114-doc-alignment-candidate-v2",
   "execution_variant": "parallel"
 }
