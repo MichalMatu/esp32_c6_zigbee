@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "daemon_version": "4.11.4",
+  "daemon_version": "4.11.5",
   "state": "idle",
-  "pid": 78161,
-  "updated_at": "2026-08-31T22:17:24.369565+00:00",
-  "self_revision": "9231f06db70c84028c43b88b14d91d6dfb83f070",
+  "pid": 18500,
+  "updated_at": "2026-08-31T23:52:42.382248+00:00",
+  "self_revision": "1d019fa3ed7b8bed1fe3d5758105cd1141831ce7",
   "poll_seconds": 15,
   "self_update_seconds": 60,
   "command_timeout_default": 900,
@@ -22,8 +22,8 @@
   "control_branch": "agent-control",
   "default_branch": "main",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 78161,
+  "worker_pid": 18500,
   "supervisor_pid": 71830,
-  "last_task_id": "20260901-v4114-release-hygiene",
+  "last_task_id": "20260901-c6-merge-p1-quality-main-v1",
   "execution_variant": "parallel"
 }
