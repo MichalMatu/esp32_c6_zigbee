@@ -1,14 +1,13 @@
 {
-  "event": "task_started",
+  "event": "task_finished",
   "task_id": "20260831-c6-idf-toolchain-readiness",
   "task_digest": "8304adc91b81fd2af3fcaba9fce1294318dec529ce967372b44ee052b48d39cb",
-  "idle_timeout": 300,
-  "task_timeout": 300,
-  "memory_limit_mb": 256,
-  "started_at": "2026-08-31T21:37:55.179516+00:00",
+  "status": "failed",
+  "failure_reason": "command_failed",
+  "finished_at": "2026-08-31T21:37:58.054243+00:00",
   "attempt_id": "4cce21ca6c8c05bc5db30d2d",
   "daemon_version": "4.11.3",
   "daemon_pid": 53623,
-  "updated_at": "2026-08-31T21:37:55.179689+00:00",
+  "updated_at": "2026-08-31T21:37:58.538282+00:00",
   "pid": 53623
 }
