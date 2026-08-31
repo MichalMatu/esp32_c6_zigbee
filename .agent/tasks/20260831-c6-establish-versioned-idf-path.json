@@ -1,0 +1,12 @@
+{
+  "id": "20260831-c6-establish-versioned-idf-path",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "memory_limit_mb": 256,
+  "command_timeout": 120,
+  "task_timeout": 300,
+  "commands": [
+    "set -euo pipefail; SOURCE=\"$HOME/esp/esp-idf\"; ALIAS=\"$HOME/esp/esp-idf-v5.5.4\"; test \"$(git -C \"$SOURCE\" describe --tags --exact-match)\" = 'v5.5.4'; if [ -e \"$ALIAS\" ] || [ -L \"$ALIAS\" ]; then test \"$(cd \"$ALIAS\" && pwd -P)\" = \"$(cd \"$SOURCE\" && pwd -P)\"; else ln -s \"$SOURCE\" \"$ALIAS\"; fi; test -L \"$ALIAS\"; test \"$(readlink \"$ALIAS\")\" = \"$SOURCE\"; . \"$ALIAS/export.sh\" >/dev/null; VERSION=$(idf.py --version); printf '%s\\n' \"$VERSION\"; test \"$VERSION\" = 'ESP-IDF v5.5.4'; printf 'ESP32-C6 versioned ESP-IDF path ready\\n'"
+  ]
+}
