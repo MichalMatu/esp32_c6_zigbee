@@ -2,8 +2,8 @@
   "version": 1,
   "daemon_version": "4.11.3",
   "state": "idle",
-  "pid": 54139,
-  "updated_at": "2026-08-31T21:38:54.710944+00:00",
+  "pid": 54781,
+  "updated_at": "2026-08-31T21:40:05.838794+00:00",
   "self_revision": "24cdbe6d13af25fadb9f2f78e995e2fa6b62ed8d",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -22,8 +22,8 @@
   "control_branch": "agent-control",
   "default_branch": "main",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 54139,
+  "worker_pid": 54781,
   "supervisor_pid": 71830,
-  "last_task_id": "20260831-c6-discover-idf-toolchain",
+  "last_task_id": "20260831-c6-verify-existing-idf",
   "execution_variant": "parallel"
 }
