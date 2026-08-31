@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260831-c6-discover-idf-toolchain",
+  "task_digest": "dc0ac7311b4cc3aca81144d3c8412f91f209fe57c7045b8c4a19540107415b90",
+  "idle_timeout": 300,
+  "task_timeout": 240,
+  "memory_limit_mb": 128,
+  "started_at": "2026-08-31T21:38:42.332687+00:00",
+  "attempt_id": "81a5a405ce7d66b5215e2884",
+  "daemon_version": "4.11.3",
+  "daemon_pid": 54139,
+  "updated_at": "2026-08-31T21:38:42.332940+00:00",
+  "pid": 54139
+}
