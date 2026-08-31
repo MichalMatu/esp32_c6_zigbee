@@ -1,0 +1,13 @@
+{
+  "id": "20260831-c6-discover-idf-toolchain",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 128,
+  "command_timeout": 60,
+  "task_timeout": 240,
+  "commands": [
+    "set -u; echo '=== command ==='; command -v idf.py || true; echo '=== ~/esp ==='; ls -la \"$HOME/esp\" 2>/dev/null || true; echo '=== export.sh under ~/esp ==='; find \"$HOME/esp\" -maxdepth 3 -type f -name export.sh -print 2>/dev/null || true; echo '=== .espressif tools ==='; find \"$HOME/.espressif\" -maxdepth 2 -type f -name idf.py -print 2>/dev/null | head -20 || true; exit 0"
+  ]
+}
