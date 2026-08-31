@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260901-v4114-release-hygiene",
+  "task_digest": "c593c7f0421e671eca06f780a9c9b92792dd3f3e53ba9c70d07bec588a7c9840",
+  "idle_timeout": 300,
+  "task_timeout": 420,
+  "memory_limit_mb": 256,
+  "started_at": "2026-08-31T22:17:06.530767+00:00",
+  "attempt_id": "141aa899c5a8064a5e56786a",
+  "daemon_version": "4.11.4",
+  "daemon_pid": 78161,
+  "updated_at": "2026-08-31T22:17:06.531051+00:00",
+  "pid": 78161
+}
