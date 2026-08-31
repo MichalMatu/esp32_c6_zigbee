@@ -1,0 +1,56 @@
+{
+  "id": "20260831-c6-local-agent-onboarding-smoke",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-08-31T21:35:12.749977+00:00",
+  "command_timeout": 60,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail; test \"$(git branch --show-current)\" = 'agent-work'; test \"$(git rev-parse HEAD)\" = \"$(git rev-parse origin/main)\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; test -f AGENTS.md; grep -Fq 'local-agent repository id: `esp32-c6-zigbee`' AGENTS.md; grep -Fq 'ESP-IDF: v5.5.4' AGENTS.md; grep -Fq 'espressif/esp-zigbee-lib` v2.0.4' README.md; test -f CMakeLists.txt; printf 'ESP32-C6 Local Agent onboarding smoke OK\\n'",
+      "exit_code": 0,
+      "output": "ESP32-C6 Local Agent onboarding smoke OK\n",
+      "elapsed_seconds": 0.488,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 128,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": null,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 0.488
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.22
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.166
+  },
+  "finished_at": "2026-08-31T21:35:16.158018+00:00",
+  "task_digest": "d942f9cea741d25fa4dd00524d9e2a326994784bf22ee4de79a5f3b42be14a96",
+  "idle_timeout": 300,
+  "task_timeout": 240,
+  "memory_limit_mb": 128,
+  "attempt_id": "31d01a2cafb48fc51cd89f3f",
+  "daemon_version": "4.11.3"
+}
