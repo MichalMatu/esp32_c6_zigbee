@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260901-c6-set-target-build-second-board-v1",
+  "task_digest": "0d6c5f9d957679021d0a59d7f48f0ce8458ab588b0a27316f25b1ea6f8abc32b",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-01T18:52:21.026818+00:00",
+  "attempt_id": "5bb33986dcbf45943fa740e9",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 64457,
+  "updated_at": "2026-09-01T18:52:21.026960+00:00",
+  "pid": 64457
+}
