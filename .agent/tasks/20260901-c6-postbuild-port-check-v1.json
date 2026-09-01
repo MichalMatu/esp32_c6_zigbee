@@ -1,0 +1,14 @@
+{
+  "id": "20260901-c6-postbuild-port-check-v1",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": ["machine"],
+  "memory_limit_mb": 512,
+  "command_timeout": 120,
+  "idle_timeout": 60,
+  "task_timeout": 300,
+  "commands": [
+    "set -euo pipefail; git restore --source=HEAD -- dependencies.lock; test -z \"$(git status --porcelain --untracked-files=normal)\"; echo '=== USBMODEM ==='; ls -l /dev/cu.usbmodem* /dev/tty.usbmodem* 2>/dev/null || true; if [ -e /dev/cu.usbmodem1101 ]; then echo TARGET_PRESENT=/dev/cu.usbmodem1101; else echo TARGET_MISSING=/dev/cu.usbmodem1101; fi"
+  ]
+}
