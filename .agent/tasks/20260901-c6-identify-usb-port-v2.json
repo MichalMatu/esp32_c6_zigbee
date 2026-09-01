@@ -1,0 +1,13 @@
+{
+  "id": "20260901-c6-identify-usb-port-v2",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "command_timeout": 120,
+  "idle_timeout": 60,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "commands": [
+    "set -u; . ~/esp/esp-idf-v5.5.4/export.sh >/dev/null 2>&1 || true; echo '=== CURRENT CANDIDATES ==='; ls -l /dev/cu.usb* /dev/tty.usb* 2>/dev/null || true; echo; for p in /dev/cu.usbmodem* /dev/cu.usbserial* /dev/cu.SLAB_USBtoUART* /dev/cu.wchusbserial*; do [ -e \"$p\" ] || continue; echo \"=== PROBE $p ===\"; python -m esptool --port \"$p\" --baud 115200 chip_id 2>&1 || true; echo \"=== SECURITY $p ===\"; python -m esptool --port \"$p\" --baud 115200 get_security_info 2>&1 || true; done"
+  ]
+}
