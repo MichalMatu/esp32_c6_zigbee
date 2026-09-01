@@ -11,10 +11,16 @@ static uint8_t s_queue_buffer[GATEWAY_EVENT_QUEUE_DEPTH * sizeof(gateway_event_t
 static QueueHandle_t s_queue;
 static atomic_uint_fast32_t s_dropped;
 
-void gateway_events_init(void)
+bool gateway_events_init(void)
 {
-    s_queue = xQueueCreateStatic(GATEWAY_EVENT_QUEUE_DEPTH, sizeof(gateway_event_t), s_queue_buffer, &s_queue_storage);
+    s_queue = xQueueCreateStatic(
+        GATEWAY_EVENT_QUEUE_DEPTH,
+        sizeof(gateway_event_t),
+        s_queue_buffer,
+        &s_queue_storage
+    );
     atomic_store(&s_dropped, 0U);
+    return s_queue != NULL;
 }
 
 bool gateway_event_publish(const gateway_event_t *event)

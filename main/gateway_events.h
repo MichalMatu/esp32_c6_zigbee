@@ -132,7 +132,7 @@ typedef struct {
     } data;
 } gateway_event_t;
 
-void gateway_events_init(void);
+bool gateway_events_init(void);
 bool gateway_event_publish(const gateway_event_t *event);
 bool gateway_event_receive(gateway_event_t *event, uint32_t timeout_ticks);
 uint32_t gateway_event_take_dropped(void);

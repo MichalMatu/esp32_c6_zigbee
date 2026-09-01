@@ -48,12 +48,19 @@ static void serial_command_task(void *arg)
     }
 }
 
+static esp_err_t start_serial_command_task(void)
+{
+    return xTaskCreate(
+        serial_command_task, "serial_commands", 3072, NULL, 4, NULL
+    ) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM;
+}
+
 void app_main(void)
 {
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(nvs_flash_init_partition("zb_storage"));
-    gateway_events_init();
-    gateway_transport_start();
-    zigbee_gateway_start();
-    xTaskCreate(serial_command_task, "serial_commands", 3072, NULL, 4, NULL);
+    ESP_ERROR_CHECK(gateway_events_init() ? ESP_OK : ESP_ERR_NO_MEM);
+    ESP_ERROR_CHECK(gateway_transport_start());
+    ESP_ERROR_CHECK(zigbee_gateway_start());
+    ESP_ERROR_CHECK(start_serial_command_task());
 }

@@ -2,5 +2,7 @@
 
 #include <stdint.h>
 
-void zigbee_gateway_start(void);
+#include "esp_err.h"
+
+esp_err_t zigbee_gateway_start(void);
 void zigbee_gateway_set_permit_join(uint8_t seconds);

@@ -1,3 +1,5 @@
 #pragma once
 
-void gateway_transport_start(void);
+#include "esp_err.h"
+
+esp_err_t gateway_transport_start(void);

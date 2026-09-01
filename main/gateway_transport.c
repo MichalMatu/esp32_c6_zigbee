@@ -162,7 +162,9 @@ static void gateway_transport_task(void *arg)
     }
 }
 
-void gateway_transport_start(void)
+esp_err_t gateway_transport_start(void)
 {
-    xTaskCreate(gateway_transport_task, "gateway_transport", 4096, NULL, 5, NULL);
+    return xTaskCreate(
+        gateway_transport_task, "gateway_transport", 4096, NULL, 5, NULL
+    ) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM;
 }

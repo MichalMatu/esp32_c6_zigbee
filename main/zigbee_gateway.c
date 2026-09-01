@@ -1038,6 +1038,12 @@ static bool app_signal_handler(const ezb_app_signal_t *signal)
     return false;
 }
 
+static void fail_zigbee_task(const char *message)
+{
+    warning(NULL, message);
+    vTaskDelete(NULL);
+}
+
 static void zigbee_task(void *arg)
 {
     (void)arg;
@@ -1053,6 +1059,7 @@ static void zigbee_task(void *arg)
         },
     };
     if (esp_zigbee_init(&config) != ESP_OK) {
+        fail_zigbee_task("esp_zigbee_init failed");
         return;
     }
 
@@ -1062,6 +1069,10 @@ static void zigbee_task(void *arg)
         s_discovery_queue_buffer,
         &s_discovery_queue_storage
     );
+    if (s_discovery_queue == NULL) {
+        fail_zigbee_task("discovery queue creation failed");
+        return;
+    }
     ezb_bdb_set_primary_channel_set(GATEWAY_CHANNEL_MASK);
 
     const ezb_af_ep_config_t endpoint_config = {
@@ -1076,6 +1087,7 @@ static void zigbee_task(void *arg)
         endpoint == EZB_INVALID_AF_EP_DESC ||
         ezb_af_device_add_endpoint_desc(device, endpoint) != EZB_ERR_NONE ||
         ezb_af_device_desc_register(device) != EZB_ERR_NONE) {
+        fail_zigbee_task("gateway endpoint registration failed");
         return;
     }
 
@@ -1083,16 +1095,20 @@ static void zigbee_task(void *arg)
     ezb_zcl_core_action_handler_register(zcl_core_action_handler);
     ezb_secur_tcpol_set_allow_rejoins_with_well_known_key(true);
     if (esp_zigbee_start(false) != ESP_OK) {
+        fail_zigbee_task("esp_zigbee_start failed");
         return;
     }
     network_event(GATEWAY_EVENT_STACK_READY);
-    xTaskCreate(discovery_task, "zb_discovery", 4096, NULL, 5, NULL);
+    if (xTaskCreate(discovery_task, "zb_discovery", 4096, NULL, 5, NULL) != pdPASS) {
+        warning(NULL, "discovery task creation failed; discovery disabled");
+    }
     esp_zigbee_launch_mainloop();
 }
 
-void zigbee_gateway_start(void)
+esp_err_t zigbee_gateway_start(void)
 {
-    xTaskCreate(zigbee_task, "zigbee_main", 6144, NULL, 5, NULL);
+    return xTaskCreate(zigbee_task, "zigbee_main", 6144, NULL, 5, NULL) == pdPASS ?
+        ESP_OK : ESP_ERR_NO_MEM;
 }
 
 void zigbee_gateway_set_permit_join(uint8_t seconds)
