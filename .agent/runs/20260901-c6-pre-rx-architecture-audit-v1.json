@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260901-c6-pre-rx-architecture-audit-v1",
+  "task_digest": "7bbaf8e36ea612c2e8ae185c325d3b1a1c7d841af90c1c1244de8b83511de888",
+  "idle_timeout": 60,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "started_at": "2026-09-01T21:54:02.732514+00:00",
+  "attempt_id": "ea65a25419e6cb1d79511c12",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 50451,
+  "updated_at": "2026-09-01T21:54:02.732662+00:00",
+  "pid": 50451
+}
