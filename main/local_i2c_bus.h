@@ -9,6 +9,7 @@
 #define LOCAL_I2C_SDA_GPIO 1
 
 esp_err_t local_i2c_bus_init(void);
+esp_err_t local_i2c_bus_probe(uint16_t address, uint32_t timeout_ms);
 esp_err_t local_i2c_bus_add_device(
     uint16_t address,
     uint32_t scl_speed_hz,

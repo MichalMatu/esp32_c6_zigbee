@@ -164,7 +164,15 @@ static void log_event(const gateway_event_t *event)
             ESP_LOG_BUFFER_HEX(TAG, event->data.raw.bytes, event->data.raw.copied_length);
         }
         break;
-    case GATEWAY_EVENT_WARNING: ESP_LOGW(TAG, "%s", event->data.text.value); break;
+    case GATEWAY_EVENT_WARNING:
+        if (event->input.id[0] != '\0') {
+            char input[80];
+            format_input(&event->input, input, sizeof(input));
+            ESP_LOGW(TAG, "%s: %s", input, event->data.text.value);
+        } else {
+            ESP_LOGW(TAG, "%s", event->data.text.value);
+        }
+        break;
     default: break;
     }
 }

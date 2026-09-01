@@ -14,6 +14,7 @@
 #define SCD4X_INPUT_TASK_STACK 4096U
 #define SCD4X_INPUT_TASK_PRIORITY 4U
 #define SCD4X_INPUT_I2C_SPEED_HZ 100000U
+#define SCD4X_INPUT_PROBE_TIMEOUT_MS 100U
 #define SCD4X_INPUT_POLL_MS 1000U
 #define SCD4X_INPUT_INIT_RETRY_MS 5000U
 #define SCD4X_INPUT_WARNING_INTERVAL_MS 30000U
@@ -96,14 +97,6 @@ static void scd4x_input_task(void *arg)
 
     i2c_master_dev_handle_t i2c_device = NULL;
     gateway_input_id_t input = fallback_input();
-    const esp_err_t add_result = local_i2c_bus_add_device(
-        SCD4X_I2C_ADDR, SCD4X_INPUT_I2C_SPEED_HZ, &i2c_device);
-    if (add_result != ESP_OK) {
-        gateway_event_warning_input(&input, "SCD4x I2C device registration failed");
-        vTaskDelete(NULL);
-        return;
-    }
-
     scd4x_t *sensor = NULL;
     const char *model = "SCD4x";
     bool measuring = false;
@@ -113,11 +106,30 @@ static void scd4x_input_task(void *arg)
 
     for (;;) {
         if (sensor == NULL) {
+            if (local_i2c_bus_probe(SCD4X_I2C_ADDR, SCD4X_INPUT_PROBE_TIMEOUT_MS) != ESP_OK) {
+                warning_throttled(
+                    &input,
+                    "SCD4x not present on local I2C bus",
+                    &last_warning_ms);
+                vTaskDelay(pdMS_TO_TICKS(SCD4X_INPUT_INIT_RETRY_MS));
+                continue;
+            }
+            if (i2c_device == NULL) {
+                const esp_err_t add_result = local_i2c_bus_add_device(
+                    SCD4X_I2C_ADDR, SCD4X_INPUT_I2C_SPEED_HZ, &i2c_device);
+                if (add_result != ESP_OK) {
+                    gateway_event_warning_input(
+                        &input, "SCD4x I2C device registration failed");
+                    vTaskDelete(NULL);
+                    return;
+                }
+            }
+
             sensor = scd4x_init(i2c_device);
             if (sensor == NULL) {
                 warning_throttled(
                     &input,
-                    "SCD4x not responding on local I2C bus",
+                    "SCD4x initialization failed after successful I2C probe",
                     &last_warning_ms);
                 vTaskDelay(pdMS_TO_TICKS(SCD4X_INPUT_INIT_RETRY_MS));
                 continue;

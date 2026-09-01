@@ -12,13 +12,21 @@ esp_err_t local_i2c_bus_init(void)
 
     const i2c_master_bus_config_t config = {
         .i2c_port = I2C_NUM_0,
-        .sda_io_num = GPIO_NUM_1,
-        .scl_io_num = GPIO_NUM_0,
+        .sda_io_num = (gpio_num_t)LOCAL_I2C_SDA_GPIO,
+        .scl_io_num = (gpio_num_t)LOCAL_I2C_SCL_GPIO,
         .clk_source = I2C_CLK_SRC_DEFAULT,
         .glitch_ignore_cnt = 7U,
         .flags.enable_internal_pullup = true,
     };
     return i2c_new_master_bus(&config, &s_bus);
+}
+
+esp_err_t local_i2c_bus_probe(uint16_t address, uint32_t timeout_ms)
+{
+    if (s_bus == NULL) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    return i2c_master_probe(s_bus, address, (int)timeout_ms);
 }
 
 esp_err_t local_i2c_bus_add_device(
