@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260901-c6-identify-usb-port-v2",
+  "task_digest": "c1ce50065b0d230bf06a1455d9f1348cf5fd133eabd21e2e8a5497c2599439f0",
+  "idle_timeout": 60,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "started_at": "2026-09-01T17:27:12.421518+00:00",
+  "attempt_id": "9d6fea9c42dee4bf6e1462e4",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 18145,
+  "updated_at": "2026-09-01T17:27:12.421681+00:00",
+  "pid": 18145
+}
