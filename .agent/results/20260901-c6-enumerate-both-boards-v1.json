@@ -1,0 +1,58 @@
+{
+  "id": "20260901-c6-enumerate-both-boards-v1",
+  "status": "failed",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-09-01T21:47:36.978406+00:00",
+  "command_timeout": 120,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail; echo '=== CU USBMODEM ==='; ls -l /dev/cu.usbmodem* 2>/dev/null || true; echo '=== TTY USBMODEM ==='; ls -l /dev/tty.usbmodem* 2>/dev/null || true; echo '=== CU USBSERIAL (NAMES ONLY; DO NOT OPEN) ==='; ls -l /dev/cu.usbserial* 2>/dev/null || true; echo '=== TTY USBSERIAL (NAMES ONLY; DO NOT OPEN) ==='; ls -l /dev/tty.usbserial* 2>/dev/null || true; echo '=== USB DESCRIPTORS (READ-ONLY IOREG; NO SERIAL PORT OPEN) ==='; ioreg -p IOUSB -l -w 0 | grep -E 'USB Serial|USB JTAG|Espressif|CP210|CH34|FTDI|idVendor|idProduct|USB Product Name|USB Serial Number' || true",
+      "exit_code": 125,
+      "output": "",
+      "elapsed_seconds": 0.0,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limited": false,
+      "not_started": true,
+      "budget_exhausted": true,
+      "budget_remaining_seconds": 177.315,
+      "required_budget_seconds": 180.0,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "not_started",
+      "elapsed_seconds": 0.0
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.21
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.178
+  },
+  "failure_reason": "task_budget_exhausted",
+  "finished_at": "2026-09-01T21:47:40.052282+00:00",
+  "task_digest": "1ed644d183737b6ac5c0f0ecbb0dc3548cdbaad2d0fdca65caecb062f55bc04f",
+  "idle_timeout": 60,
+  "task_timeout": 180,
+  "memory_limit_mb": 512,
+  "attempt_id": "7c7ba64e7d4b6a8dd32d646f",
+  "daemon_version": "4.12.2"
+}
