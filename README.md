@@ -18,7 +18,7 @@ The local sensor does not enter `zigbee_gateway.c`: Zigbee reports and SCD4x rea
 
 ## GatewayLink to ESP32-S3
 
-The protocol-neutral C6-to-S3 contract is specified in [docs/GATEWAY_LINK_V1.md](docs/GATEWAY_LINK_V1.md). GatewayLink v1 uses bounded binary COBS frames with CRC32 and carries stable input identity, descriptors, normalized measurements and versioned controls. UART1 runs at 460800 baud on TX GPIO18 / RX GPIO19. TX is bounded/non-blocking to event handling; RX resynchronizes at COBS delimiters and currently handles HELLO/ACK, PING/PONG and `PERMIT_JOIN`. Snapshot and source-neutral measurement-policy application remain disabled until their real backing state/policy layers are implemented.
+The protocol-neutral C6-to-S3 contract is specified in [docs/GATEWAY_LINK_V1.md](docs/GATEWAY_LINK_V1.md). GatewayLink v1 uses bounded binary COBS frames with CRC32 and carries stable input identity, descriptors, normalized measurements and versioned controls. UART1 runs at 460800 baud on TX GPIO18 / RX GPIO19. TX is bounded/non-blocking to event handling; RX resynchronizes at COBS delimiters and currently handles HELLO/ACK, PING/PONG and `PERMIT_JOIN`. Descriptor snapshot/resync is implemented with a bounded transport cache and TX-task replay; source-neutral measurement-policy application remains disabled until its real backing policy layer is implemented.
 
 ## Build and flash
 

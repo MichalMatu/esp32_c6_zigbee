@@ -11,6 +11,7 @@ typedef enum {
     GATEWAY_LINK_CONTROL_HELLO,
     GATEWAY_LINK_CONTROL_HELLO_ACK,
     GATEWAY_LINK_CONTROL_PING,
+    GATEWAY_LINK_CONTROL_SNAPSHOT_REQUEST,
     GATEWAY_LINK_CONTROL_PERMIT_JOIN,
     GATEWAY_LINK_CONTROL_MEASUREMENT_POLICY_UNSUPPORTED,
     GATEWAY_LINK_CONTROL_INVALID,
@@ -31,6 +32,8 @@ bool gateway_link_control_peer_compatible(const gateway_link_hello_t *peer);
 bool gateway_link_make_hello_message(gateway_link_message_t *message);
 bool gateway_link_make_hello_ack_message(gateway_link_message_t *message);
 bool gateway_link_make_pong_message(uint32_t token, gateway_link_message_t *message);
+bool gateway_link_make_snapshot_marker_message(
+    uint8_t type, uint32_t token, gateway_link_message_t *message);
 bool gateway_link_make_config_result_message(
     uint32_t request_id,
     gateway_link_config_status_t status,

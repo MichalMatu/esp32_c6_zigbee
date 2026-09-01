@@ -45,13 +45,13 @@ static void test_hello_builders_truthfully_advertise_permit_join(void)
     assert(gateway_link_decode_hello_payload(
         message.payload, message.payload_length, &hello) == GATEWAY_LINK_OK);
     assert(hello.role == GATEWAY_LINK_ROLE_C6_GATEWAY);
-    assert(hello.features == GATEWAY_LINK_FEATURE_PERMIT_JOIN);
+    assert(hello.features == (GATEWAY_LINK_FEATURE_SNAPSHOT | GATEWAY_LINK_FEATURE_PERMIT_JOIN));
 
     assert(gateway_link_make_hello_ack_message(&message));
     assert(message.type == GATEWAY_LINK_MSG_HELLO_ACK);
     assert(gateway_link_decode_hello_payload(
         message.payload, message.payload_length, &hello) == GATEWAY_LINK_OK);
-    assert(hello.features == GATEWAY_LINK_FEATURE_PERMIT_JOIN);
+    assert(hello.features == (GATEWAY_LINK_FEATURE_SNAPSHOT | GATEWAY_LINK_FEATURE_PERMIT_JOIN));
 }
 
 static void test_ping_and_pong(void)
@@ -94,6 +94,28 @@ static void test_permit_join_and_result(void)
     assert(decoded.status == GATEWAY_LINK_CONFIG_APPLIED);
 }
 
+static void test_snapshot_request_and_markers(void)
+{
+    gateway_link_frame_t frame = {.type = GATEWAY_LINK_MSG_SNAPSHOT_REQUEST};
+    assert(gateway_link_encode_u32_payload(
+        0x1234abcdUL, frame.payload, sizeof(frame.payload), &frame.payload_length) == GATEWAY_LINK_OK);
+    const gateway_link_control_action_t action = gateway_link_control_parse(&frame);
+    assert(action.kind == GATEWAY_LINK_CONTROL_SNAPSHOT_REQUEST);
+    assert(action.token == 0x1234abcdUL);
+
+    gateway_link_message_t message;
+    assert(gateway_link_make_snapshot_marker_message(
+        GATEWAY_LINK_MSG_SNAPSHOT_BEGIN, action.token, &message));
+    uint32_t token = 0U;
+    assert(gateway_link_decode_u32_payload(
+        message.payload, message.payload_length, &token) == GATEWAY_LINK_OK);
+    assert(token == action.token);
+    assert(gateway_link_make_snapshot_marker_message(
+        GATEWAY_LINK_MSG_SNAPSHOT_END, action.token, &message));
+    assert(!gateway_link_make_snapshot_marker_message(
+        GATEWAY_LINK_MSG_PING, action.token, &message));
+}
+
 static void test_measurement_policy_truthfully_unsupported(void)
 {
     gateway_link_frame_t frame = {.type = GATEWAY_LINK_MSG_SET_MEASUREMENT_POLICY};
@@ -127,6 +149,7 @@ int main(void)
     test_hello_compatibility();
     test_hello_builders_truthfully_advertise_permit_join();
     test_ping_and_pong();
+    test_snapshot_request_and_markers();
     test_permit_join_and_result();
     test_measurement_policy_truthfully_unsupported();
     test_malformed_control_is_invalid();

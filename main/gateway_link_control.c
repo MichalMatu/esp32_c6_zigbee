@@ -14,7 +14,7 @@ static bool make_hello(uint8_t type, gateway_link_message_t *message)
         .min_version = GATEWAY_LINK_PROTOCOL_VERSION,
         .max_version = GATEWAY_LINK_PROTOCOL_VERSION,
         .max_frame_bytes = GATEWAY_LINK_MAX_FRAME_BYTES,
-        .features = GATEWAY_LINK_FEATURE_PERMIT_JOIN,
+        .features = GATEWAY_LINK_FEATURE_SNAPSHOT | GATEWAY_LINK_FEATURE_PERMIT_JOIN,
     };
     return gateway_link_encode_hello_payload(
         &hello,
@@ -51,6 +51,15 @@ gateway_link_control_action_t gateway_link_control_parse(
             return action;
         }
         action.kind = GATEWAY_LINK_CONTROL_PING;
+        return action;
+
+    case GATEWAY_LINK_MSG_SNAPSHOT_REQUEST:
+        if (gateway_link_decode_u32_payload(
+                frame->payload, frame->payload_length, &action.token) != GATEWAY_LINK_OK) {
+            action.kind = GATEWAY_LINK_CONTROL_INVALID;
+            return action;
+        }
+        action.kind = GATEWAY_LINK_CONTROL_SNAPSHOT_REQUEST;
         return action;
 
     case GATEWAY_LINK_MSG_PERMIT_JOIN:
@@ -133,5 +142,20 @@ bool gateway_link_make_config_result_message(
     };
     return gateway_link_encode_config_result_payload(
         &result, message->payload, sizeof(message->payload),
+        &message->payload_length) == GATEWAY_LINK_OK;
+}
+
+bool gateway_link_make_snapshot_marker_message(
+    uint8_t type, uint32_t token, gateway_link_message_t *message)
+{
+    if (message == NULL ||
+        (type != GATEWAY_LINK_MSG_SNAPSHOT_BEGIN &&
+         type != GATEWAY_LINK_MSG_SNAPSHOT_END)) {
+        return false;
+    }
+    memset(message, 0, sizeof(*message));
+    message->type = type;
+    return gateway_link_encode_u32_payload(
+        token, message->payload, sizeof(message->payload),
         &message->payload_length) == GATEWAY_LINK_OK;
 }

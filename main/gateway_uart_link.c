@@ -12,6 +12,7 @@
 #include "gateway_link_control.h"
 #include "gateway_link_event_adapter.h"
 #include "gateway_link_protocol.h"
+#include "gateway_link_snapshot_cache.h"
 #include "gateway_link_stream.h"
 #include "zigbee_gateway.h"
 
@@ -27,8 +28,15 @@
 
 static const char *TAG = "gateway_uart_link";
 
+typedef enum {
+    LINK_TX_ITEM_MESSAGE = 0,
+    LINK_TX_ITEM_SNAPSHOT,
+} tx_item_kind_t;
+
 typedef struct {
+    tx_item_kind_t kind;
     uint32_t sequence;
+    uint32_t snapshot_token;
     gateway_link_message_t message;
 } tx_item_t;
 
@@ -40,6 +48,7 @@ static uint32_t s_dropped;
 static TaskHandle_t s_tx_task_handle;
 static TaskHandle_t s_rx_task_handle;
 static portMUX_TYPE s_state_lock = portMUX_INITIALIZER_UNLOCKED;
+static gateway_link_snapshot_cache_t s_snapshot_cache;
 
 static uint32_t allocate_sequence(void)
 {
@@ -71,8 +80,25 @@ static bool enqueue_message(const gateway_link_message_t *message)
         return false;
     }
     const tx_item_t item = {
+        .kind = LINK_TX_ITEM_MESSAGE,
         .sequence = allocate_sequence(),
         .message = *message,
+    };
+    if (xQueueSend(s_tx_queue, &item, 0U) != pdPASS) {
+        note_drop();
+        return false;
+    }
+    return true;
+}
+
+static bool enqueue_snapshot(uint32_t token)
+{
+    if (s_tx_queue == NULL) {
+        return false;
+    }
+    const tx_item_t item = {
+        .kind = LINK_TX_ITEM_SNAPSHOT,
+        .snapshot_token = token,
     };
     if (xQueueSend(s_tx_queue, &item, 0U) != pdPASS) {
         note_drop();
@@ -114,6 +140,12 @@ static void handle_control_frame(const gateway_link_frame_t *frame)
     case GATEWAY_LINK_CONTROL_PING:
         if (gateway_link_make_pong_message(action.token, &response)) {
             (void)enqueue_message(&response);
+        }
+        break;
+    case GATEWAY_LINK_CONTROL_SNAPSHOT_REQUEST:
+        if (!enqueue_snapshot(action.token)) {
+            ESP_LOGW(TAG, "failed to queue GatewayLink snapshot token=%lu",
+                     (unsigned long)action.token);
         }
         break;
     case GATEWAY_LINK_CONTROL_PERMIT_JOIN:
@@ -168,35 +200,93 @@ static void rx_task(void *arg)
     }
 }
 
+static void write_message(const gateway_link_message_t *message, uint32_t sequence)
+{
+    if (message == NULL) {
+        return;
+    }
+    gateway_link_frame_t frame = {
+        .type = message->type,
+        .flags = message->flags,
+        .sequence = sequence,
+        .payload_length = message->payload_length,
+    };
+    if (frame.payload_length != 0U) {
+        memcpy(frame.payload, message->payload, frame.payload_length);
+    }
+    uint8_t encoded[GATEWAY_LINK_MAX_FRAME_BYTES];
+    size_t encoded_length = 0U;
+    if (gateway_link_encode_frame(
+            &frame, encoded, sizeof(encoded), &encoded_length) != GATEWAY_LINK_OK) {
+        ESP_LOGW(TAG, "failed to encode GatewayLink frame type=0x%02x seq=%lu",
+                 frame.type, (unsigned long)frame.sequence);
+        return;
+    }
+    const int written = uart_write_bytes(LINK_UART, encoded, encoded_length);
+    if (written != (int)encoded_length) {
+        ESP_LOGW(TAG, "short UART write seq=%lu wrote=%d expected=%u",
+                 (unsigned long)frame.sequence, written, (unsigned)encoded_length);
+    }
+}
+
+static void transmit_snapshot(uint32_t token)
+{
+    gateway_link_message_t message;
+    if (!gateway_link_make_snapshot_marker_message(
+            GATEWAY_LINK_MSG_SNAPSHOT_BEGIN, token, &message)) {
+        return;
+    }
+    write_message(&message, allocate_sequence());
+
+    size_t sent = 0U;
+    for (size_t slot = 0U; slot < GATEWAY_LINK_SNAPSHOT_CACHE_CAPACITY; ++slot) {
+        gateway_link_input_descriptor_t descriptor;
+        const bool present = gateway_link_snapshot_cache_copy_slot(
+            &s_snapshot_cache, slot, &descriptor);
+        if (!present) {
+            continue;
+        }
+        memset(&message, 0, sizeof(message));
+        message.type = GATEWAY_LINK_MSG_INPUT_DESCRIPTOR;
+        if (gateway_link_encode_input_descriptor_payload(
+                &descriptor, message.payload, sizeof(message.payload),
+                &message.payload_length) != GATEWAY_LINK_OK) {
+            ESP_LOGW(TAG, "failed to encode snapshot descriptor slot=%u", (unsigned)slot);
+            continue;
+        }
+        write_message(&message, allocate_sequence());
+        ++sent;
+    }
+
+    if (gateway_link_make_snapshot_marker_message(
+            GATEWAY_LINK_MSG_SNAPSHOT_END, token, &message)) {
+        write_message(&message, allocate_sequence());
+    }
+    ESP_LOGI(TAG, "GatewayLink snapshot token=%lu descriptors=%u",
+             (unsigned long)token, (unsigned)sent);
+}
+
 static void tx_task(void *arg)
 {
     (void)arg;
     tx_item_t item;
-    uint8_t encoded[GATEWAY_LINK_MAX_FRAME_BYTES];
     for (;;) {
         if (xQueueReceive(s_tx_queue, &item, portMAX_DELAY) != pdPASS) {
             continue;
         }
-        gateway_link_frame_t frame = {
-            .type = item.message.type,
-            .flags = item.message.flags,
-            .sequence = item.sequence,
-            .payload_length = item.message.payload_length,
-        };
-        if (frame.payload_length != 0U) {
-            memcpy(frame.payload, item.message.payload, frame.payload_length);
-        }
-        size_t encoded_length = 0U;
-        if (gateway_link_encode_frame(
-                &frame, encoded, sizeof(encoded), &encoded_length) != GATEWAY_LINK_OK) {
-            ESP_LOGW(TAG, "failed to encode GatewayLink frame type=0x%02x seq=%lu",
-                     frame.type, (unsigned long)frame.sequence);
-            continue;
-        }
-        const int written = uart_write_bytes(LINK_UART, encoded, encoded_length);
-        if (written != (int)encoded_length) {
-            ESP_LOGW(TAG, "short UART write seq=%lu wrote=%d expected=%u",
-                     (unsigned long)frame.sequence, written, (unsigned)encoded_length);
+        if (item.kind == LINK_TX_ITEM_SNAPSHOT) {
+            transmit_snapshot(item.snapshot_token);
+        } else {
+            if (item.message.type == GATEWAY_LINK_MSG_INPUT_DESCRIPTOR) {
+                gateway_link_input_descriptor_t descriptor;
+                if (gateway_link_decode_input_descriptor_payload(
+                        item.message.payload, item.message.payload_length,
+                        &descriptor) != GATEWAY_LINK_OK ||
+                    !gateway_link_snapshot_cache_update(&s_snapshot_cache, &descriptor)) {
+                    note_drop();
+                }
+            }
+            write_message(&item.message, item.sequence);
         }
     }
 }
@@ -206,6 +296,8 @@ esp_err_t gateway_uart_link_start(void)
     if (s_tx_queue != NULL) {
         return ESP_OK;
     }
+
+    gateway_link_snapshot_cache_init(&s_snapshot_cache);
 
     s_tx_queue = xQueueCreateStatic(
         LINK_TX_QUEUE_DEPTH,

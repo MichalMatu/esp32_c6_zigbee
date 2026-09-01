@@ -4,7 +4,7 @@ GatewayLink is the protocol-neutral MCU-to-MCU link between the ESP32-C6 input g
 
 ## Physical link reserved for the next stage
 
-The C6 application link uses UART1 at 460800 baud, 8-N-1, no flow control, with C6 TX on GPIO18 and C6 RX on GPIO19. GPIO0/GPIO1 remain the local I2C SCL/SDA pair used by SCD4x. The RX pin has an internal pull-up so an unconnected S3 does not create a floating UART input. TX uses a bounded queue and RX uses an incremental delimiter-resynchronizing decoder. The C6 currently implements HELLO/HELLO_ACK, PING/PONG and PERMIT_JOIN control in addition to descriptor/measurement TX. Snapshot and measurement-policy application are not advertised until their backing state/policy layers exist.
+The C6 application link uses UART1 at 460800 baud, 8-N-1, no flow control, with C6 TX on GPIO18 and C6 RX on GPIO19. GPIO0/GPIO1 remain the local I2C SCL/SDA pair used by SCD4x. The RX pin has an internal pull-up so an unconnected S3 does not create a floating UART input. TX uses a bounded queue and RX uses an incremental delimiter-resynchronizing decoder. The C6 currently implements HELLO/HELLO_ACK, PING/PONG and PERMIT_JOIN control in addition to descriptor/measurement TX. Snapshot is implemented as bounded descriptor replay; measurement-policy application is not advertised until its backing policy layer exists.
 
 ## Framing
 
@@ -55,7 +55,7 @@ For example the validated local sensor is `source=2`, `channel=0`, `id=scd4x:a12
 
 `role:u8, min_version:u8, max_version:u8, max_frame_bytes:u16, features:u32`.
 
-Roles are `1=C6 gateway`, `2=S3 host`. The C6 currently advertises only the `permit-join` feature bit. Snapshot and measurement-policy wire types are reserved by v1 but are not advertised until their runtime implementations exist.
+Roles are `1=C6 gateway`, `2=S3 host`. The C6 currently advertises `snapshot` and `permit-join`. Measurement-policy remains reserved by v1 but is not advertised until its runtime implementation exists.
 
 ## INPUT_DESCRIPTOR payload
 
@@ -96,3 +96,5 @@ This request is deliberately source-neutral. A local SCD4x adapter may implement
 The C6 owns physical input adapters, discovery and normalization. The S3 owns the current application input registry, freshness policy and LiteGraph-facing nodes. Neither side sends raw in-memory C structures.
 
 After either MCU reconnects, the S3 requests a snapshot. The C6 sends descriptors for all currently known stable inputs between `SNAPSHOT_BEGIN` and `SNAPSHOT_END`, then continues with incremental descriptors and measurements. A lost frame is detected by sequence gaps and/or CRC; COBS provides delimiter-level resynchronization.
+
+The C6 snapshot cache has a fixed capacity of 64 descriptors. Snapshot execution runs inside the UART TX task rather than enqueueing every descriptor into the normal 16-item TX queue, so a legitimate snapshot cannot self-overflow that queue. Cache exhaustion is counted as a visible link drop; no unbounded allocation is used.

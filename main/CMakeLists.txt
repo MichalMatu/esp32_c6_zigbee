@@ -8,6 +8,7 @@ idf_component_register(
         "gateway_link_protocol.c"
         "gateway_link_event_adapter.c"
         "gateway_link_stream.c"
+        "gateway_link_snapshot_cache.c"
         "gateway_link_control.c"
         "gateway_uart_link.c"
         "gateway_reporting_policy.c"
