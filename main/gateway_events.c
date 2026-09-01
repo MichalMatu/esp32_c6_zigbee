@@ -1,6 +1,7 @@
 #include "gateway_events.h"
 
 #include <stdatomic.h>
+#include <string.h>
 
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -21,6 +22,30 @@ bool gateway_events_init(void)
     );
     atomic_store(&s_dropped, 0U);
     return s_queue != NULL;
+}
+
+gateway_event_t gateway_event_make(
+    gateway_event_kind_t kind, const gateway_device_id_t *device)
+{
+    gateway_event_t event = {
+        .source = GATEWAY_SOURCE_ZIGBEE,
+        .kind = kind,
+        .uptime_ms = gateway_uptime_ms(),
+    };
+    if (device != NULL) {
+        event.device = *device;
+    }
+    return event;
+}
+
+bool gateway_event_warning(
+    const gateway_device_id_t *device, const char *text)
+{
+    gateway_event_t event = gateway_event_make(GATEWAY_EVENT_WARNING, device);
+    if (text != NULL) {
+        strncpy(event.data.text.value, text, sizeof(event.data.text.value) - 1U);
+    }
+    return gateway_event_publish(&event);
 }
 
 bool gateway_event_publish(const gateway_event_t *event)

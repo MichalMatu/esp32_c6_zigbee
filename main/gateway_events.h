@@ -133,6 +133,10 @@ typedef struct {
 } gateway_event_t;
 
 bool gateway_events_init(void);
+gateway_event_t gateway_event_make(
+    gateway_event_kind_t kind, const gateway_device_id_t *device);
+bool gateway_event_warning(
+    const gateway_device_id_t *device, const char *text);
 bool gateway_event_publish(const gateway_event_t *event);
 bool gateway_event_receive(gateway_event_t *event, uint32_t timeout_ticks);
 uint32_t gateway_event_take_dropped(void);

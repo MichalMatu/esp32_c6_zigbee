@@ -1,0 +1,32 @@
+# Architecture
+
+The ESP32-C6 firmware is intentionally split into a small SDK-facing shell and host-testable domain modules. Keep dependencies flowing toward the normalized event/state contracts rather than letting transport, device policy, or raw SDK callbacks grow into one central file.
+
+## Module boundaries
+
+- `app_main.c` is the composition root. It initializes NVS and starts the event bus, transport, Zigbee gateway, and console. It contains no protocol logic.
+- `gateway_console.c/.h` owns the USB console command parser and delegates Zigbee actions through the public gateway API.
+- `gateway_events.c/.h` defines the normalized internal event contract, static event queue, drop accounting, timestamps, and common warning/event construction helpers.
+- `gateway_transport.c/.h` consumes normalized events and renders the current serial/log transport. It must not own Zigbee state or interpretation policy.
+- `gateway_zcl_value.c/.h` is a pure, host-testable ZCL attribute normalization layer. Unsupported or scaling-dependent data stays raw instead of being guessed.
+- `gateway_reporting_policy.c/.h` is the pure, host-testable table for standard binding/reporting masks and Configure Reporting parameters.
+- `gateway_device_state.c/.h` owns the bounded IEEE-first device/endpoint registry, generation-safe references, short-address replacement, and reclaim rules. It has no ESP Zigbee or FreeRTOS dependency.
+- `zigbee_gateway.c/.h` is the SDK integration/orchestration boundary: stack lifecycle, app/ZCL signal dispatch, discovery jobs, bounded async callback contexts, binding/reporting submission, and permit-join control.
+
+## Invariants
+
+IEEE identity is authoritative; 16-bit Zigbee short addresses are mutable routes. Async work must use generation-safe device references so a recycled slot or reused short address cannot be mistaken for the old device.
+
+Zigbee SDK callbacks must remain bounded and non-blocking. They may copy/normalize payloads, update bounded per-device request state when a response determines that state, publish normalized events, and enqueue follow-up discovery/retry work. They must not wait indefinitely for locks, run blocking discovery loops, or perform transport I/O.
+
+The event bus is the transport boundary. Zigbee code publishes normalized events; the current logger consumes them. A later UART/SPI link to another MCU should replace or extend the transport without moving Zigbee interpretation into the transport layer.
+
+All fixed-capacity structures must fail visibly rather than allocate without bounds or silently overwrite live state. Startup/task creation failures must return an error to the composition root or publish a warning before a task terminates.
+
+## Verification
+
+`gateway_zcl_value`, `gateway_reporting_policy`, and `gateway_device_state` have strict C11 host tests compiled with `-Wall -Wextra -Werror -pedantic`. GitHub CI also builds the complete firmware with the pinned ESP-IDF/ESP Zigbee versions. Hardware/RF behavior remains a separate validation gate after source/CI validation.
+
+## Growth rule
+
+Prefer extending the pure policy/state modules when adding supported clusters or device lifecycle behavior. Keep SDK-specific request/callback lifetime management in the gateway integration layer unless a future extraction creates a smaller coherent discovery API rather than merely moving functions between files.

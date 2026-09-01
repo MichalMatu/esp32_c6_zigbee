@@ -31,7 +31,7 @@ Use this repository's own `agent-control` branch for Local Agent tasks and evide
 
 Before queueing work:
 
-1. Read this file and the current `README.md`.
+1. Read this file, the current `README.md`, and `docs/ARCHITECTURE.md`.
 2. Inspect the exact source branch/HEAD relevant to the request.
 3. Inspect `.agent/status/daemon.json` on `agent-control` and treat `daemon_version`, `self_revision`, `execution_model` / `execution_variant`, current task state, and `supervisor_pid` as repository-worker truth. Supervisor-wide fields such as `max_parallel_workers` are not guaranteed to be repeated in every repository-worker snapshot; read the shared supervisor status when that field matters.
 4. Follow any active task instead of queueing a duplicate.
@@ -83,7 +83,8 @@ Do not erase flash or deliberately destroy the persisted Zigbee network unless t
 
 - Keep execution content, code, comments, logs, task metadata, and commit messages in English.
 - Keep changes scoped and avoid unrelated refactors.
-- Preserve the IEEE-first device identity and callback-copy/enqueue architecture unless the requested change intentionally revisits it.
+- Preserve IEEE-first device identity and the bounded/non-blocking callback architecture unless the requested change intentionally revisits it. Callbacks may update bounded state and enqueue follow-up work, but must not wait indefinitely or perform long-running discovery/transport work.
+- Respect the module ownership documented in `docs/ARCHITECTURE.md`; prefer extending a cohesive state/policy module over growing `zigbee_gateway.c` with unrelated responsibilities.
 - Do not fabricate support for Zigbee clusters/attributes that the firmware does not actually interpret.
 - Update README/docs when behavior, pairing/rejoin flow, supported reports, or hardware-test expectations materially change.
 - Run the narrowest meaningful verification first, then broaden only when the changed integration boundary warrants it.

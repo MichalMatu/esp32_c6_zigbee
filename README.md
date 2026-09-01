@@ -4,6 +4,10 @@ Native ESP-IDF firmware for an ESP32-C6 coordinator. It is pinned to **ESP-IDF v
 
 This is SDK 2.x firmware: it uses the `esp_zigbee_*` and `ezb_*` APIs and one `ezb_af_create_gateway_endpoint()` gateway endpoint. It does not add a pretend client-cluster data model, nor does it use a ZBOSS/v1 compatibility API, Wi-Fi, BLE, Matter, Thread, MQTT, an external RCP, or an SCD41.
 
+## Architecture
+
+The firmware keeps ESP Zigbee SDK integration separate from normalized events, transport, value decoding, reporting policy, device state, and console handling. The pure value/policy/state modules have strict host tests in addition to the full ESP-IDF firmware build. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for module responsibilities and invariants.
+
 ## Build and flash
 
 Install the official ESP-IDF v5.5.4 toolchain, then source its environment:
@@ -83,7 +87,7 @@ Other attributes delivered through the normal ZCL report callback are preserved 
 
 `ZIGBEE_DEVICE_LEAVE_RESET`, `ZIGBEE_DEVICE_LEAVE_REJOIN`, `ZIGBEE_DEVICE_LEAVE_UNKNOWN`, `ZIGBEE_DEVICE_UPDATE`, and `ZIGBEE_DEVICE_UNAVAILABLE` are distinct events. In particular, `DEVICE_UNAVAILABLE` is intentionally not converted to an authoritative generic offline state.
 
-Callbacks only validate/copy/enqueue. A static 16-event queue feeds the serial transport task; queue overflows are counted and reported as aggregated warnings. This narrow transport boundary is the intended replacement point for a later C6 normalized-events → UART/SPI → ESP32-S3 pipeline.
+Zigbee SDK callbacks stay bounded and non-blocking: they copy/normalize payloads, update bounded request state when a response determines that state, publish normalized events, and enqueue longer discovery/retry work. They never wait indefinitely for the Zigbee lock or run blocking discovery loops in callback context. A static 16-event queue feeds the serial transport task; queue overflows are counted and reported as aggregated warnings. This narrow transport boundary is the intended replacement point for a later C6 normalized-events → UART/SPI → ESP32-S3 pipeline.
 
 ## MVP limitation and hardware test checklist
 

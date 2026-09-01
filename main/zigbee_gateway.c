@@ -74,33 +74,12 @@ static uint8_t s_discovery_queue_buffer[
 ];
 static QueueHandle_t s_discovery_queue;
 
-static gateway_event_t event_base(
-    gateway_event_kind_t kind, const gateway_device_id_t *device)
-{
-    gateway_event_t event = {
-        .source = GATEWAY_SOURCE_ZIGBEE,
-        .kind = kind,
-        .uptime_ms = gateway_uptime_ms(),
-    };
-    if (device != NULL) {
-        event.device = *device;
-    }
-    return event;
-}
-
-static void warning(const gateway_device_id_t *device, const char *text)
-{
-    gateway_event_t event = event_base(GATEWAY_EVENT_WARNING, device);
-    strncpy(event.data.text.value, text, sizeof(event.data.text.value) - 1U);
-    gateway_event_publish(&event);
-}
-
 static endpoint_state_t *endpoint_state(
     device_slot_t *slot, uint8_t endpoint, bool create)
 {
     endpoint_state_t *state = gateway_device_endpoint_state(slot, endpoint, create);
     if (state == NULL && create && slot != NULL) {
-        warning(&slot->device, "endpoint state capacity exhausted");
+        gateway_event_warning(&slot->device, "endpoint state capacity exhausted");
     }
     return state;
 }
@@ -158,7 +137,7 @@ static device_slot_t *recover_report_source(const ezb_zcl_cmd_hdr_t *header)
         gateway_device_upsert(short_addr, ieee.u8) : gateway_device_upsert(short_addr, NULL);
     if (slot != NULL &&
         !queue_job(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U, 0U)) {
-        warning(&slot->device, "report recovery discovery queue full");
+        gateway_event_warning(&slot->device, "report recovery discovery queue full");
     }
     return slot;
 }
@@ -196,7 +175,7 @@ static bool schedule_basic(device_slot_t *slot, uint8_t endpoint)
         return false;
     }
     if (!queue_job(DISCOVERY_READ_BASIC, slot, endpoint, 0U, 0U)) {
-        warning(&slot->device, "Basic read queue full");
+        gateway_event_warning(&slot->device, "Basic read queue full");
         return false;
     }
     state->basic_state = BASIC_SCHEDULED;
@@ -215,7 +194,7 @@ static bool schedule_binding(
         return false;
     }
     if (!queue_job(DISCOVERY_BIND_CLUSTER, slot, endpoint, cluster, 0U)) {
-        warning(&slot->device, "binding queue full");
+        gateway_event_warning(&slot->device, "binding queue full");
         return false;
     }
     state->binding_requested |= mask;
@@ -235,7 +214,7 @@ static bool schedule_reporting(
         return false;
     }
     if (!queue_job(DISCOVERY_CONFIG_REPORTING, slot, endpoint, cluster, 0U)) {
-        warning(&slot->device, "reporting queue full");
+        gateway_event_warning(&slot->device, "reporting queue full");
         return false;
     }
     state->reporting_requested |= mask;
@@ -311,7 +290,7 @@ static void retry_or_fail(discovery_job_t job, const char *message)
         return;
     }
     clear_pending(slot, &job);
-    warning(&slot->device, message);
+    gateway_event_warning(&slot->device, message);
     gateway_device_maybe_reclaim(slot);
 }
 
@@ -339,7 +318,7 @@ static void publish_report(const ezb_zcl_cmd_report_attr_message_t *message)
                 &kind,
                 &unit,
                 &value)) {
-            gateway_event_t event = event_base(
+            gateway_event_t event = gateway_event_make(
                 GATEWAY_EVENT_MEASUREMENT, &device
             );
             event.endpoint = header->src_ep;
@@ -353,7 +332,7 @@ static void publish_report(const ezb_zcl_cmd_report_attr_message_t *message)
             };
             gateway_event_publish(&event);
         } else {
-            gateway_event_t event = event_base(
+            gateway_event_t event = gateway_event_make(
                 GATEWAY_EVENT_RAW_ATTRIBUTE, &device
             );
             event.endpoint = header->src_ep;
@@ -407,7 +386,7 @@ static void publish_basic_read(const ezb_zcl_cmd_read_attr_rsp_message_t *messag
         if (string[0] == 0xffU) {
             continue;
         }
-        gateway_event_t event = event_base(GATEWAY_EVENT_BASIC, &device);
+        gateway_event_t event = gateway_event_make(GATEWAY_EVENT_BASIC, &device);
         event.endpoint = header->src_ep;
         strncpy(
             event.data.text.key,
@@ -452,7 +431,7 @@ static void publish_config_response(
                 state->reporting_configured |= mask;
             }
         }
-        gateway_event_t event = event_base(
+        gateway_event_t event = gateway_event_make(
             GATEWAY_EVENT_REPORTING_CONFIG, &device
         );
         event.endpoint = header->src_ep;
@@ -502,13 +481,13 @@ static void handle_check_in(ezb_zcl_poll_control_check_in_message_t *message)
         }
     }
 
-    gateway_event_t event = event_base(
+    gateway_event_t event = gateway_event_make(
         GATEWAY_EVENT_DEVICE_CHECK_IN, &slot->device
     );
     event.endpoint = header->src_ep;
     gateway_event_publish(&event);
     if (!queue_job(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U, 0U)) {
-        warning(&slot->device, "check-in discovery queue full");
+        gateway_event_warning(&slot->device, "check-in discovery queue full");
     }
 }
 
@@ -567,7 +546,7 @@ static void binding_callback(const ezb_zdp_bind_req_result_t *result, void *user
                 "binding failed after retries"
             );
         }
-        gateway_event_t event = event_base(
+        gateway_event_t event = gateway_event_make(
             GATEWAY_EVENT_BINDING, &slot->device
         );
         event.endpoint = context->endpoint;
@@ -603,7 +582,7 @@ static void simple_callback(
     }
 
     const ezb_af_simple_desc_t *desc = &result->rsp->desc;
-    gateway_event_t event = event_base(GATEWAY_EVENT_ENDPOINT, &slot->device);
+    gateway_event_t event = gateway_event_make(GATEWAY_EVENT_ENDPOINT, &slot->device);
     event.endpoint = desc->ep_id;
     event.data.endpoint_desc.profile_id = desc->app_profile_id;
     event.data.endpoint_desc.device_id = desc->app_device_id;
@@ -673,7 +652,7 @@ static void active_callback(
                 result->rsp->active_ep_list[i],
                 0U,
                 0U)) {
-            warning(&slot->device, "simple descriptor queue full");
+            gateway_event_warning(&slot->device, "simple descriptor queue full");
         }
     }
     context_release(context);
@@ -842,7 +821,7 @@ static void discovery_task(void *arg)
         if (slot->state != SLOT_ACTIVE ||
             slot->device.short_addr != job.route_short_addr) {
             clear_pending(slot, &job);
-            warning(&slot->device, "discovery cancelled: route superseded");
+            gateway_event_warning(&slot->device, "discovery cancelled: route superseded");
             gateway_device_maybe_reclaim(slot);
             continue;
         }
@@ -871,7 +850,7 @@ static void discovery_task(void *arg)
 
 static void network_event(gateway_event_kind_t kind)
 {
-    gateway_event_t event = event_base(kind, NULL);
+    gateway_event_t event = gateway_event_make(kind, NULL);
     gateway_event_publish(&event);
 }
 
@@ -890,18 +869,18 @@ static void announce_and_discover(
     device_slot_t *slot = gateway_device_upsert(
         short_addr, ieee == NULL ? NULL : ieee->u8);
     if (slot == NULL) {
-        warning(NULL, "device registry capacity exhausted");
+        gateway_event_warning(NULL, "device registry capacity exhausted");
         return;
     }
 
-    gateway_event_t event = event_base(kind, &slot->device);
+    gateway_event_t event = gateway_event_make(kind, &slot->device);
     if (kind == GATEWAY_EVENT_DEVICE_REJOIN) {
         event.data.rejoin.old_short_addr = old_short_addr;
         event.data.rejoin.new_short_addr = slot->device.short_addr;
     }
     gateway_event_publish(&event);
     if (!queue_job(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U, 0U)) {
-        warning(&slot->device, "active endpoint queue full");
+        gateway_event_warning(&slot->device, "active endpoint queue full");
     }
 }
 
@@ -945,7 +924,7 @@ static void device_left(
         kind = GATEWAY_EVENT_DEVICE_LEAVE_REJOIN;
     }
 
-    gateway_event_t event = event_base(kind, &device);
+    gateway_event_t event = gateway_event_make(kind, &device);
     event.data.leave.leave_type = leave_type_known ? leave_type : UINT8_MAX;
     event.data.leave.record_retained = retained;
     gateway_event_publish(&event);
@@ -984,7 +963,7 @@ static bool app_signal_handler(const ezb_app_signal_t *signal)
         }
     } else if (type == EZB_NWK_SIGNAL_PERMIT_JOIN_STATUS) {
         const ezb_nwk_signal_permit_join_status_params_t *permit = params;
-        gateway_event_t event = event_base(GATEWAY_EVENT_PERMIT_JOIN, NULL);
+        gateway_event_t event = gateway_event_make(GATEWAY_EVENT_PERMIT_JOIN, NULL);
         event.data.permit.duration = permit == NULL ? 0U : permit->duration;
         gateway_event_publish(&event);
     } else if (type == EZB_ZDO_SIGNAL_DEVICE_ANNCE) {
@@ -1029,7 +1008,7 @@ static bool app_signal_handler(const ezb_app_signal_t *signal)
             if (slot != NULL) {
                 device = slot->device;
             }
-            gateway_event_t event = event_base(
+            gateway_event_t event = gateway_event_make(
                 GATEWAY_EVENT_DEVICE_UNAVAILABLE, &device
             );
             gateway_event_publish(&event);
@@ -1040,7 +1019,7 @@ static bool app_signal_handler(const ezb_app_signal_t *signal)
 
 static void fail_zigbee_task(const char *message)
 {
-    warning(NULL, message);
+    gateway_event_warning(NULL, message);
     vTaskDelete(NULL);
 }
 
@@ -1100,7 +1079,7 @@ static void zigbee_task(void *arg)
     }
     network_event(GATEWAY_EVENT_STACK_READY);
     if (xTaskCreate(discovery_task, "zb_discovery", 4096, NULL, 5, NULL) != pdPASS) {
-        warning(NULL, "discovery task creation failed; discovery disabled");
+        gateway_event_warning(NULL, "discovery task creation failed; discovery disabled");
     }
     esp_zigbee_launch_mainloop();
 }
@@ -1115,7 +1094,7 @@ void zigbee_gateway_set_permit_join(uint8_t seconds)
 {
     if (!esp_zigbee_lock_acquire(
             pdMS_TO_TICKS(GATEWAY_ZIGBEE_LOCK_TIMEOUT_MS))) {
-        warning(NULL, "permit command rejected: Zigbee lock timeout");
+        gateway_event_warning(NULL, "permit command rejected: Zigbee lock timeout");
         return;
     }
     if (seconds == 0U) {
