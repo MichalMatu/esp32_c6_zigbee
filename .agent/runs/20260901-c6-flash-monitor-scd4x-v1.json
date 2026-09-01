@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260901-c6-flash-monitor-scd4x-v1",
+  "task_digest": "e5bb65526ca91a565f77cca12eb9ebb8b3e50837a4efb9a1096ca49994a59634",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-01T19:36:27.711236+00:00",
+  "attempt_id": "538de0b99450d73b5ce2fbff",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 86609,
+  "updated_at": "2026-09-01T19:36:27.711500+00:00",
+  "pid": 86609
+}
