@@ -2,8 +2,8 @@
   "version": 1,
   "daemon_version": "4.12.2",
   "state": "idle",
-  "pid": 5943,
-  "updated_at": "2026-09-01T23:44:07.944459+00:00",
+  "pid": 11633,
+  "updated_at": "2026-09-01T23:49:22.389286+00:00",
   "self_revision": "20f3ab645d4be384a6f20073330f2744694b7c4b",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -22,8 +22,8 @@
   "control_branch": "agent-control",
   "default_branch": "main",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 5943,
+  "worker_pid": 11633,
   "supervisor_pid": 71830,
-  "last_task_id": "20260902-c6-sonoff-stability-pair-v2",
+  "last_task_id": "20260902-c6-sonoff-security-flow-audit-v1",
   "execution_variant": "parallel"
 }
