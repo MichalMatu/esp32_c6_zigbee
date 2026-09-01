@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-c6-final-hardware-gate-v1",
+  "task_digest": "167cb28c18d499537db090ff0ec9d92adeb1383ed1b0da24f982a0eee2c98b73",
+  "idle_timeout": 300,
+  "task_timeout": 2400,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-01T23:03:53.775614+00:00",
+  "attempt_id": "965f7d3b646fd2edcb290975",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 87479,
+  "updated_at": "2026-09-01T23:03:53.775774+00:00",
+  "pid": 87479
+}
