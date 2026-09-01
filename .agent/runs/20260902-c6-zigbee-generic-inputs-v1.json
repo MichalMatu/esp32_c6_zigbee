@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-c6-zigbee-generic-inputs-v1",
+  "task_digest": "a07c0e59d8e9becf2291d6467a0f84100619eba23da035ad9981a0667676ed23",
+  "idle_timeout": 300,
+  "task_timeout": 3000,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-01T22:24:02.080739+00:00",
+  "attempt_id": "524f9c9a0a437e19910bd6e2",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 65224,
+  "updated_at": "2026-09-01T22:24:02.080911+00:00",
+  "pid": 65224
+}
