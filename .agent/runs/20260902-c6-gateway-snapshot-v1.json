@@ -1,16 +1,16 @@
 {
   "event": "command_started",
   "phase": "commands",
-  "index": 1,
+  "index": 2,
   "total": 4,
-  "command": "set -euo pipefail; EXPECTED=717b8671c4c8d7f6b81ca7b9e89b7309af7485f1; git fetch --quiet origin main agent-control; git reset --hard \"$EXPECTED\"; git clean -fd; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; test \"$(git rev-parse origin/main)\" = \"$EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git show origin/agent-control:.agent/scripts/add_gateway_snapshot_v1.py > /tmp/add_gateway_snapshot_v1.py; git show origin/agent-control:.agent/scripts/fix_gateway_snapshot_v1.py > /tmp/fix_gateway_snapshot_v1.py; python3 /tmp/add_gateway_snapshot_v1.py; python3 /tmp/fix_gateway_snapshot_v1.py; git diff --check; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_snapshot_cache.c main/gateway_link_snapshot_cache.c -o /tmp/test_gateway_link_snapshot_cache; /tmp/test_gateway_link_snapshot_cache; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_control.c main/gateway_link_control.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_control; /tmp/test_gateway_link_control; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_stream.c main/gateway_link_stream.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_stream; /tmp/test_gateway_link_stream; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_protocol.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_protocol; /tmp/test_gateway_link_protocol; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_event_adapter.c main/gateway_link_event_adapter.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_event_adapter; /tmp/test_gateway_link_event_adapter; cc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zigbee_input.c main/gateway_zigbee_input.c main/gateway_zcl_value.c main/gateway_inputs.c -lm -o /tmp/test_gateway_zigbee_input; /tmp/test_gateway_zigbee_input; cc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zcl_value.c main/gateway_zcl_value.c -lm -o /tmp/test_gateway_zcl_value; /tmp/test_gateway_zcl_value; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_inputs.c main/gateway_inputs.c -o /tmp/test_gateway_inputs; /tmp/test_gateway_inputs; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_device_state.c main/gateway_device_state.c -o /tmp/test_gateway_device_state; /tmp/test_gateway_device_state; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_reporting_policy.c main/gateway_reporting_policy.c -o /tmp/test_gateway_reporting_policy; /tmp/test_gateway_reporting_policy; git status --short; git diff --stat",
-  "pid": 75209,
+  "command": "set -euo pipefail; . ~/esp/esp-idf-v5.5.4/export.sh >/dev/null; grep -q '^CONFIG_IDF_TARGET=\"esp32c6\"' sdkconfig; idf.py build; git diff --check",
+  "pid": 75384,
   "timeout": 1200,
   "idle_timeout": 300,
   "memory_limit_mb": 4096,
-  "started_at": "2026-09-01T22:44:05.769879+00:00",
-  "stage_name": "command-1",
-  "stage_index": 1,
+  "started_at": "2026-09-01T22:44:15.784817+00:00",
+  "stage_name": "command-2",
+  "stage_index": 2,
   "stage_total": 4,
   "stage_phase": "commands",
   "task_id": "20260902-c6-gateway-snapshot-v1",
@@ -18,5 +18,5 @@
   "task_digest": "711c2212f73f11a7970cab952832b2a2fef0c131fccc89154e776829a7d624f9",
   "daemon_version": "4.12.2",
   "daemon_pid": 75120,
-  "updated_at": "2026-09-01T22:44:05.770301+00:00"
+  "updated_at": "2026-09-01T22:44:15.881225+00:00"
 }
