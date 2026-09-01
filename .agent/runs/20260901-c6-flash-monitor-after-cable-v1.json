@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260901-c6-flash-monitor-after-cable-v1",
+  "task_digest": "4f38cb56334007652c1debe65865caeecf68baec87512a612aac20715b50b9b1",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-01T18:23:04.121252+00:00",
+  "attempt_id": "88dce07ca5d5c7443af3e595",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 47699,
+  "updated_at": "2026-09-01T18:23:04.121674+00:00",
+  "pid": 47699
+}
