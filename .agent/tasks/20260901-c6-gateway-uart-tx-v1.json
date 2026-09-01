@@ -1,0 +1,17 @@
+{
+  "id": "20260901-c6-gateway-uart-tx-v1",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": true,
+  "resources": ["machine"],
+  "memory_limit_mb": 4096,
+  "command_timeout": 1200,
+  "idle_timeout": 300,
+  "task_timeout": 2400,
+  "commands": [
+    "set -euo pipefail; EXPECTED=ff38dfacf8a7241537baf35331cedd46f2f707cb; git fetch --quiet origin main agent-control; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; test \"$(git rev-parse origin/main)\" = \"$EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git show origin/agent-control:.agent/scripts/add_gateway_uart_tx_v1.py > /tmp/add_gateway_uart_tx_v1.py; python3 /tmp/add_gateway_uart_tx_v1.py; python3 -c \"from pathlib import Path; assert all(bytes([0]) not in p.read_bytes() for p in list(Path('main').glob('*.c')) + list(Path('main').glob('*.h')))\"; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_protocol.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_protocol; /tmp/test_gateway_link_protocol; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_event_adapter.c main/gateway_link_event_adapter.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_event_adapter; /tmp/test_gateway_link_event_adapter; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_inputs.c main/gateway_inputs.c -o /tmp/test_gateway_inputs; /tmp/test_gateway_inputs; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_device_state.c main/gateway_device_state.c -o /tmp/test_gateway_device_state; /tmp/test_gateway_device_state; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_reporting_policy.c main/gateway_reporting_policy.c -o /tmp/test_gateway_reporting_policy; /tmp/test_gateway_reporting_policy; cc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zcl_value.c main/gateway_zcl_value.c -lm -o /tmp/test_gateway_zcl_value; /tmp/test_gateway_zcl_value; git diff --check; git status --short; git diff --stat",
+    "set -euo pipefail; . ~/esp/esp-idf-v5.5.4/export.sh >/dev/null; grep -q '^CONFIG_IDF_TARGET=\"esp32c6\"' sdkconfig; idf.py build; git diff --check",
+    "set -euo pipefail; git add .github/workflows/quality.yml README.md docs/ARCHITECTURE.md docs/GATEWAY_LINK_V1.md main/CMakeLists.txt main/app_main.c main/gateway_transport.c main/gateway_link_event_adapter.c main/gateway_link_event_adapter.h main/gateway_uart_link.c main/gateway_uart_link.h tests/host/test_gateway_link_event_adapter.c; git commit -m 'Add GatewayLink UART transmit path'; git push origin HEAD:main",
+    "set -euo pipefail; git fetch --quiet origin main; test \"$(git rev-parse HEAD)\" = \"$(git rev-parse origin/main)\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; printf 'PUBLISHED_MAIN=%s\\n' \"$(git rev-parse HEAD)\""
+  ]
+}
