@@ -98,3 +98,7 @@ The C6 owns physical input adapters, discovery and normalization. The S3 owns th
 After either MCU reconnects, the S3 requests a snapshot. The C6 sends descriptors for all currently known stable inputs between `SNAPSHOT_BEGIN` and `SNAPSHOT_END`, then continues with incremental descriptors and measurements. A lost frame is detected by sequence gaps and/or CRC; COBS provides delimiter-level resynchronization.
 
 The C6 snapshot cache has a fixed capacity of 64 descriptors. Snapshot execution runs inside the UART TX task rather than enqueueing every descriptor into the normal 16-item TX queue, so a legitimate snapshot cannot self-overflow that queue. Cache exhaustion is counted as a visible link drop; no unbounded allocation is used.
+
+## Host end-to-end verification
+
+The C6 repository includes a virtual-S3 host test that exercises the real v1 codec, incremental stream decoder, control parser/response builders and descriptor snapshot cache together. It covers fragmented and concatenated frames, CRC corruption recovery, oversized-frame resynchronization, sequence wrap/gap preservation, HELLO compatibility, PING/PONG, snapshot framing/replay, explicit unsupported measurement-policy responses and unknown-message ignore behavior. This test does not emulate the ESP-IDF UART driver or Zigbee stack; those remain firmware/hardware gates.

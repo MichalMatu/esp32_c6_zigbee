@@ -148,6 +148,25 @@ jobs:
       - name: Run GatewayLink control host tests
         run: /tmp/test_gateway_link_control
 
+  host-link-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build GatewayLink virtual S3 E2E tests
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror -pedantic \
+            -Imain \
+            tests/host/test_gateway_link_e2e.c \
+            main/gateway_link_protocol.c \
+            main/gateway_link_stream.c \
+            main/gateway_link_control.c \
+            main/gateway_link_snapshot_cache.c \
+            main/gateway_inputs.c \
+            -lm \
+            -o /tmp/test_gateway_link_e2e
+      - name: Run GatewayLink virtual S3 E2E tests
+        run: /tmp/test_gateway_link_e2e
+
   host-reporting-policy:
     runs-on: ubuntu-latest
     steps:
