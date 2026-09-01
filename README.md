@@ -2,11 +2,19 @@
 
 Native ESP-IDF firmware for an ESP32-C6 coordinator. It is pinned to **ESP-IDF v5.5.4** and the exact managed component **`espressif/esp-zigbee-lib` v2.0.4**. The generated [dependencies.lock](dependencies.lock) is committed to retain that resolution.
 
-This is SDK 2.x firmware: it uses the `esp_zigbee_*` and `ezb_*` APIs and one `ezb_af_create_gateway_endpoint()` gateway endpoint. It does not add a pretend client-cluster data model, nor does it use a ZBOSS/v1 compatibility API, Wi-Fi, BLE, Matter, Thread, MQTT, an external RCP, or an SCD41.
+This is SDK 2.x firmware: it uses the `esp_zigbee_*` and `ezb_*` APIs and one `ezb_af_create_gateway_endpoint()` gateway endpoint. It does not add a pretend client-cluster data model, nor does it use a ZBOSS/v1 compatibility API, Wi-Fi, BLE, Matter, Thread, MQTT, or an external RCP. An SCD4x-family sensor is supported as an independent local I2C input adapter.
 
 ## Architecture
 
 The firmware keeps ESP Zigbee SDK integration separate from a protocol-neutral input contract, normalized events, transport, value decoding, reporting policy, device state, and console handling. Zigbee is one input adapter; local I2C sensors can use the same `gateway_input_id_t` + normalized measurement boundary. The pure input/value/policy/state modules have strict host tests in addition to the full ESP-IDF firmware build. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for module responsibilities and invariants.
+
+## Local SCD4x input
+
+The board-local SCD4x adapter uses the shared I2C bus with **SCL GPIO0**, **SDA GPIO1**, and the sensor's fixed address `0x62`. The managed dependency is pinned to `jef-sure/scd4x` v0.0.3.
+
+On successful detection the adapter publishes one protocol-neutral input identity based on the sensor's 48-bit serial number, advertises temperature / humidity / CO2 capabilities, starts periodic measurement, and publishes normalized `temperature` (C), `humidity` (%), and `co2` (ppm) events. Sensor absence or read failures are reported without stopping Zigbee operation.
+
+The local sensor does not enter `zigbee_gateway.c`: Zigbee reports and SCD4x readings converge only at `gateway_input_id_t` + `gateway_measurement_t`. This is the same boundary intended for the later C6 -> UART/SPI -> ESP32-S3 link and LiteGraph input registry.
 
 ## Build and flash
 

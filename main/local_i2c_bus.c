@@ -1,0 +1,42 @@
+#include "local_i2c_bus.h"
+
+#include "driver/gpio.h"
+
+static i2c_master_bus_handle_t s_bus;
+
+esp_err_t local_i2c_bus_init(void)
+{
+    if (s_bus != NULL) {
+        return ESP_OK;
+    }
+
+    const i2c_master_bus_config_t config = {
+        .i2c_port = I2C_NUM_0,
+        .sda_io_num = GPIO_NUM_1,
+        .scl_io_num = GPIO_NUM_0,
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7U,
+        .flags.enable_internal_pullup = true,
+    };
+    return i2c_new_master_bus(&config, &s_bus);
+}
+
+esp_err_t local_i2c_bus_add_device(
+    uint16_t address,
+    uint32_t scl_speed_hz,
+    i2c_master_dev_handle_t *device)
+{
+    if (s_bus == NULL) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    if (device == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    const i2c_device_config_t config = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = address,
+        .scl_speed_hz = scl_speed_hz,
+    };
+    return i2c_master_bus_add_device(s_bus, &config, device);
+}

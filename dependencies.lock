@@ -13,8 +13,19 @@ dependencies:
     source:
       type: idf
     version: 5.5.4
+  jef-sure/scd4x:
+    component_hash: 6eb4ba17520a4e3b7b340a6ac0a7242761fd646ea9d93facead8bd439cf0ce6e
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.2.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 0.0.3
 direct_dependencies:
 - espressif/esp-zigbee-lib
-manifest_hash: 544c1f60afcdf087b31d6222a2084b0b43434aaefd12a6dbd7aaf1c692677a85
+- jef-sure/scd4x
+manifest_hash: f130cd47aa3d48343a9642082ab581eb88729a2874f7d409f926be8954c47823
 target: esp32c6
 version: 2.0.0
