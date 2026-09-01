@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-c6-gateway-uart-rx-control-v2",
+  "task_digest": "41693fdb0f5933714784697b64b8b37559b54dce6218be8cc0d41d27fdc4504d",
+  "idle_timeout": 300,
+  "task_timeout": 3000,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-01T22:07:07.211110+00:00",
+  "attempt_id": "57cc46d234449160382c47ea",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 57126,
+  "updated_at": "2026-09-01T22:07:07.211350+00:00",
+  "pid": 57126
+}
