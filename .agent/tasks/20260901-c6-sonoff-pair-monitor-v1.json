@@ -1,0 +1,13 @@
+{
+  "id": "20260901-c6-sonoff-pair-monitor-v1",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "memory_limit_mb": 1024,
+  "command_timeout": 600,
+  "idle_timeout": 300,
+  "task_timeout": 900,
+  "commands": [
+    "set -euo pipefail; PORT=/dev/cu.usbmodem1101; test -e \"$PORT\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; . ~/esp/esp-idf-v5.5.4/export.sh >/dev/null; echo '=== SONOFF PAIRING WINDOW 210S ==='; python - <<'PY'\nimport serial, time\nport='/dev/cu.usbmodem1101'\ns=serial.Serial()\ns.port=port\ns.baudrate=115200\ns.timeout=0.20\ns.write_timeout=1\ns.dtr=False\ns.rts=False\ns.open()\nstart=time.monotonic(); end=start+210; sent=False\ntry:\n    while time.monotonic()<end:\n        elapsed=time.monotonic()-start\n        if not sent and elapsed>=1:\n            s.write(b'permit 180\\n'); s.flush(); print('>>> SENT: permit 180', flush=True); sent=True\n        data=s.readline()\n        if data:\n            print(data.decode('utf-8','replace').rstrip(), flush=True)\nfinally:\n    s.close()\nPY\ntest -z \"$(git status --porcelain --untracked-files=normal)\""
+  ]
+}
