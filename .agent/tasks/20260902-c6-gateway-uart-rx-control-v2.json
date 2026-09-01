@@ -1,0 +1,16 @@
+{
+  "id": "20260902-c6-gateway-uart-rx-control-v2",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": true,
+  "memory_limit_mb": 4096,
+  "command_timeout": 1200,
+  "idle_timeout": 300,
+  "task_timeout": 3000,
+  "commands": [
+    "set -euo pipefail; EXPECTED=62d408c55a0138e03311967199dbaac59b54e842; git fetch --quiet origin main agent-control; git reset --hard \"$EXPECTED\"; git clean -fd; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; test \"$(git rev-parse origin/main)\" = \"$EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git show origin/agent-control:.agent/scripts/add_gateway_uart_rx_control_v2.py > /tmp/add_gateway_uart_rx_control_v2.py; python3 /tmp/add_gateway_uart_rx_control_v2.py; python3 - <<'PY'\nfrom pathlib import Path\np = Path('main/gateway_link_event_adapter.h')\ns = p.read_text()\np.write_text(s.rstrip() + '\\n')\nPY\ngit diff --check; python3 -c \"from pathlib import Path; assert all(bytes([0]) not in p.read_bytes() for p in list(Path('main').glob('*.c')) + list(Path('main').glob('*.h')))\"; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_protocol.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_protocol; /tmp/test_gateway_link_protocol; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_event_adapter.c main/gateway_link_event_adapter.c main/gateway_link_control.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_event_adapter; /tmp/test_gateway_link_event_adapter; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_stream.c main/gateway_link_stream.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_stream; /tmp/test_gateway_link_stream; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_control.c main/gateway_link_control.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_control; /tmp/test_gateway_link_control; git status --short; git diff --stat",
+    "set -euo pipefail; . ~/esp/esp-idf-v5.5.4/export.sh >/dev/null; grep -q '^CONFIG_IDF_TARGET=\"esp32c6\"' sdkconfig; idf.py build; git diff --check",
+    "set -euo pipefail; git add .github/workflows/quality.yml README.md docs/ARCHITECTURE.md docs/GATEWAY_LINK_V1.md main/CMakeLists.txt main/gateway_console.c main/gateway_link_event_adapter.c main/gateway_link_event_adapter.h main/gateway_link_control.c main/gateway_link_control.h main/gateway_link_stream.c main/gateway_link_stream.h main/gateway_uart_link.c main/zigbee_gateway.c main/zigbee_gateway.h tests/host/test_gateway_link_event_adapter.c tests/host/test_gateway_link_control.c tests/host/test_gateway_link_stream.c; git commit -m 'Add GatewayLink UART receive control'; git push origin HEAD:main",
+    "set -euo pipefail; git fetch --quiet origin main; test \"$(git rev-parse HEAD)\" = \"$(git rev-parse origin/main)\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; printf 'PUBLISHED_MAIN=%s\\n' \"$(git rev-parse HEAD)\""
+  ]
+}
