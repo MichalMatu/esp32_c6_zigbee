@@ -1,0 +1,16 @@
+{
+  "id": "20260902-c6-zigbee-generic-inputs-v1",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": true,
+  "memory_limit_mb": 4096,
+  "command_timeout": 1200,
+  "idle_timeout": 300,
+  "task_timeout": 3000,
+  "commands": [
+    "set -euo pipefail; EXPECTED=a82b450009b889a27b4219bc93949ac2bdb06d24; git fetch --quiet origin main agent-control; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; test \"$(git rev-parse origin/main)\" = \"$EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git show origin/agent-control:.agent/scripts/add_zigbee_generic_inputs_v1.py > /tmp/add_zigbee_generic_inputs_v1.py; python3 /tmp/add_zigbee_generic_inputs_v1.py; git diff --check; cc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zigbee_input.c main/gateway_zigbee_input.c main/gateway_zcl_value.c main/gateway_inputs.c -lm -o /tmp/test_gateway_zigbee_input; /tmp/test_gateway_zigbee_input; cc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zcl_value.c main/gateway_zcl_value.c -lm -o /tmp/test_gateway_zcl_value; /tmp/test_gateway_zcl_value; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_device_state.c main/gateway_device_state.c -o /tmp/test_gateway_device_state; /tmp/test_gateway_device_state; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_event_adapter.c main/gateway_link_event_adapter.c main/gateway_link_control.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_event_adapter; /tmp/test_gateway_link_event_adapter; git status --short; git diff --stat",
+    "set -euo pipefail; . ~/esp/esp-idf-v5.5.4/export.sh >/dev/null; grep -q '^CONFIG_IDF_TARGET=\"esp32c6\"' sdkconfig; idf.py build; git diff --check",
+    "set -euo pipefail; git add .github/workflows/quality.yml README.md docs/ARCHITECTURE.md docs/GATEWAY_LINK_V1.md main/CMakeLists.txt main/gateway_device_state.h main/gateway_zcl_value.c main/gateway_zcl_value.h main/gateway_zigbee_input.c main/gateway_zigbee_input.h main/zigbee_gateway.c tests/host/test_gateway_zigbee_input.c; git commit -m 'Add protocol-neutral Zigbee input lifecycle'; git push origin HEAD:main",
+    "set -euo pipefail; git fetch --quiet origin main; test \"$(git rev-parse HEAD)\" = \"$(git rev-parse origin/main)\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; printf 'PUBLISHED_MAIN=%s\\n' \"$(git rev-parse HEAD)\""
+  ]
+}
