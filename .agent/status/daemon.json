@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "daemon_version": "4.11.5",
+  "daemon_version": "4.11.7",
   "state": "idle",
-  "pid": 35169,
-  "updated_at": "2026-09-01T00:32:30.810546+00:00",
-  "self_revision": "1d019fa3ed7b8bed1fe3d5758105cd1141831ce7",
+  "pid": 92194,
+  "updated_at": "2026-09-01T09:28:32.285594+00:00",
+  "self_revision": "c950a354fe76d4da4cc85f4047e9baabd7518bbe",
   "poll_seconds": 15,
   "self_update_seconds": 60,
   "command_timeout_default": 900,
@@ -22,8 +22,7 @@
   "control_branch": "agent-control",
   "default_branch": "main",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 35169,
+  "worker_pid": 92194,
   "supervisor_pid": 71830,
-  "last_task_id": "20260901-c6-console-events-docs-v1",
   "execution_variant": "parallel"
 }
