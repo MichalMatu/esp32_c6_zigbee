@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260901-c6-fix-transport-nul-v1",
+  "task_digest": "aac6485f8e0dbabcc0a8168264aadd223cf67e88e0454ffd98ad3c28309b5d51",
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "memory_limit_mb": 512,
+  "started_at": "2026-09-01T19:23:37.575164+00:00",
+  "attempt_id": "9551b255da13b014d2579995",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 80266,
+  "updated_at": "2026-09-01T19:23:37.575444+00:00",
+  "pid": 80266
+}
