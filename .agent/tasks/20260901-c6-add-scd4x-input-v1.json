@@ -1,0 +1,15 @@
+{
+  "id": "20260901-c6-add-scd4x-input-v1",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": true,
+  "memory_limit_mb": 4096,
+  "command_timeout": 1200,
+  "idle_timeout": 300,
+  "task_timeout": 2400,
+  "commands": [
+    "set -euo pipefail; EXPECTED=556be9b266824fb5624fcaea398b4a0ffe37f6c4; git fetch --quiet origin main agent-control; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; test \"$(git rev-parse origin/main)\" = \"$EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git show origin/agent-control:.agent/scripts/add_scd4x_input_v1.py > /tmp/add_scd4x_input_v1.py; python3 /tmp/add_scd4x_input_v1.py; python3 -c \"from pathlib import Path; [p.read_bytes().decode('utf-8') for p in Path('main').glob('*.c')]; assert all(bytes([0]) not in p.read_bytes() for p in Path('main').glob('*.c'))\"; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_inputs.c main/gateway_inputs.c -o /tmp/test_gateway_inputs; /tmp/test_gateway_inputs; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_device_state.c main/gateway_device_state.c -o /tmp/test_gateway_device_state; /tmp/test_gateway_device_state; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_reporting_policy.c main/gateway_reporting_policy.c -o /tmp/test_gateway_reporting_policy; /tmp/test_gateway_reporting_policy; cc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zcl_value.c main/gateway_zcl_value.c -lm -o /tmp/test_gateway_zcl_value; /tmp/test_gateway_zcl_value; git diff --check; . ~/esp/esp-idf-v5.5.4/export.sh >/dev/null; if ! grep -q '^CONFIG_IDF_TARGET=\"esp32c6\"' sdkconfig 2>/dev/null; then idf.py set-target esp32c6; rm -f sdkconfig.old; fi; echo '=== RECONFIGURE / RESOLVE SCD4X ==='; idf.py reconfigure; echo '=== BUILD ESP32C6 WITH SCD4X ==='; idf.py build; grep -q '^CONFIG_IDF_TARGET=\"esp32c6\"' sdkconfig; grep -q 'jef-sure/scd4x' main/idf_component.yml; grep -q 'jef-sure/scd4x' dependencies.lock; grep -q 'version: 0.0.3' dependencies.lock; test -e /dev/cu.usbmodem1101; git diff --check; git status --short; git diff --stat",
+    "set -euo pipefail; git add README.md docs/ARCHITECTURE.md main/CMakeLists.txt main/app_main.c main/idf_component.yml main/local_i2c_bus.c main/local_i2c_bus.h main/local_inputs.c main/local_inputs.h main/scd4x_input.c main/scd4x_input.h dependencies.lock; git commit -m 'Add SCD4x local input adapter'; git push origin HEAD:main",
+    "set -euo pipefail; git fetch --quiet origin main; test \"$(git rev-parse HEAD)\" = \"$(git rev-parse origin/main)\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; printf 'PUBLISHED_MAIN=%s\\n' \"$(git rev-parse HEAD)\""
+  ]
+}
