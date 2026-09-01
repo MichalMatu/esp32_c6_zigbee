@@ -2,8 +2,8 @@
   "version": 1,
   "daemon_version": "4.12.2",
   "state": "idle",
-  "pid": 79275,
-  "updated_at": "2026-09-01T19:21:50.688262+00:00",
+  "pid": 80266,
+  "updated_at": "2026-09-01T19:23:57.101718+00:00",
   "self_revision": "3fc7b1cf46fa4dda88aa7ba10d5bfc27a6b0bc45",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -22,8 +22,8 @@
   "control_branch": "agent-control",
   "default_branch": "main",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 79275,
+  "worker_pid": 80266,
   "supervisor_pid": 71830,
-  "last_task_id": "20260901-c6-generic-input-contract-v3",
+  "last_task_id": "20260901-c6-fix-transport-nul-v1",
   "execution_variant": "parallel"
 }
