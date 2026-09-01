@@ -1,0 +1,13 @@
+{
+  "id": "20260901-c6-check-usb-now-v1",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "memory_limit_mb": 512,
+  "command_timeout": 120,
+  "idle_timeout": 60,
+  "task_timeout": 300,
+  "commands": [
+    "set -u; echo '=== USBMODEM ==='; ls -l /dev/cu.usbmodem* /dev/tty.usbmodem* 2>/dev/null || true; if [ -e /dev/cu.usbmodem1201 ]; then echo 'TARGET_PRESENT=/dev/cu.usbmodem1201'; else echo 'TARGET_MISSING=/dev/cu.usbmodem1201'; fi"
+  ]
+}
