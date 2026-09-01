@@ -6,6 +6,8 @@ idf_component_register(
         "gateway_events.c"
         "gateway_inputs.c"
         "gateway_link_protocol.c"
+        "gateway_link_event_adapter.c"
+        "gateway_uart_link.c"
         "gateway_reporting_policy.c"
         "gateway_transport.c"
         "gateway_zcl_value.c"
@@ -14,5 +16,5 @@ idf_component_register(
         "scd4x_input.c"
         "zigbee_gateway.c"
     INCLUDE_DIRS "."
-    REQUIRES nvs_flash esp_timer esp_driver_i2c
+    REQUIRES nvs_flash esp_timer esp_driver_i2c esp_driver_uart
 )

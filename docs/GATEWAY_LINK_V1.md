@@ -4,7 +4,7 @@ GatewayLink is the protocol-neutral MCU-to-MCU link between the ESP32-C6 input g
 
 ## Physical link reserved for the next stage
 
-The intended C6 application UART is UART1 at 460800 baud, 8-N-1, no flow control, with C6 TX on GPIO18 and C6 RX on GPIO19. GPIO0/GPIO1 remain the local I2C SCL/SDA pair used by SCD4x. The v1 codec is hardware-independent; UART initialization is deliberately not part of this stage.
+The C6 application link uses UART1 at 460800 baud, 8-N-1, no flow control, with C6 TX on GPIO18 and C6 RX on GPIO19. GPIO0/GPIO1 remain the local I2C SCL/SDA pair used by SCD4x. The RX pin has an internal pull-up so an unconnected S3 does not create a floating UART input. The current firmware stage transmits HELLO, input descriptors and normalized measurements through a bounded TX queue; RX/control handling is added separately and therefore HELLO currently advertises no optional feature bits.
 
 ## Framing
 
