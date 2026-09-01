@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-c6-gateway-link-virtual-s3-e2e-v2",
+  "task_digest": "2436a98b4bd49746ae6edac2a8cde491fd4a8f5615c998fcf851abffd3dc2dd9",
+  "idle_timeout": 120,
+  "task_timeout": 900,
+  "memory_limit_mb": 1024,
+  "started_at": "2026-09-01T22:54:00.575220+00:00",
+  "attempt_id": "b2bf71a8bd9018947db3b5da",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 80857,
+  "updated_at": "2026-09-01T22:54:00.575343+00:00",
+  "pid": 80857
+}
