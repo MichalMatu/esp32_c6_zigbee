@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-c6-final-source-audit-build-v1",
+  "task_digest": "a6b10f8a0b84200e08c4606d1e56630918c112989e000eeff99b3a5f3b13b666",
+  "idle_timeout": 300,
+  "task_timeout": 3600,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-01T22:58:26.267362+00:00",
+  "attempt_id": "e02982aa3e80db2a41bb4944",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 83889,
+  "updated_at": "2026-09-01T22:58:26.267615+00:00",
+  "pid": 83889
+}
