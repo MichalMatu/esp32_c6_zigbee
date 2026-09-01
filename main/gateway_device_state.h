@@ -23,6 +23,8 @@ typedef struct {
     uint8_t binding_requested;
     uint8_t binding_configured;
     uint32_t binding_requested_at_ms;
+    gateway_input_capabilities_t input_capabilities;
+    bool input_announced;
 } endpoint_state_t;
 
 typedef struct {

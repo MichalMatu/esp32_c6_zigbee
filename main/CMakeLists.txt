@@ -13,6 +13,7 @@ idf_component_register(
         "gateway_reporting_policy.c"
         "gateway_transport.c"
         "gateway_zcl_value.c"
+        "gateway_zigbee_input.c"
         "local_i2c_bus.c"
         "local_inputs.c"
         "scd4x_input.c"

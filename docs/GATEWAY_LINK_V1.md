@@ -38,6 +38,7 @@ Every input-bearing payload begins with:
 | id | N | stable UTF-8/ASCII identifier, not NUL terminated on wire |
 
 For example the validated local sensor is `source=2`, `channel=0`, `id=scd4x:a12bef073b43`. A Zigbee adapter should expose the authoritative IEEE-based identity before publishing it over GatewayLink; mutable short addresses are not application identities.
+ The C6 Zigbee adapter enforces this rule: supported endpoints are announced only after IEEE recovery succeeds, and known reset/rejoin leaves emit protocol-neutral unavailability for those stable identities.
 
 ## Message types
 

@@ -79,6 +79,34 @@ static bool read_float(const void *value, uint8_t type, float *out)
     return true;
 }
 
+gateway_input_capabilities_t gateway_zcl_capabilities_for_server_cluster(
+    uint16_t cluster)
+{
+    if (cluster == EZB_ZCL_CLUSTER_ID_POWER_CONFIG) {
+        return GATEWAY_INPUT_CAP_BATTERY_VOLTAGE |
+            GATEWAY_INPUT_CAP_BATTERY_PERCENT;
+    }
+    if (cluster == EZB_ZCL_CLUSTER_ID_ON_OFF) {
+        return GATEWAY_INPUT_CAP_ON_OFF;
+    }
+    if (cluster == EZB_ZCL_CLUSTER_ID_ILLUMINANCE_MEASUREMENT) {
+        return GATEWAY_INPUT_CAP_ILLUMINANCE;
+    }
+    if (cluster == EZB_ZCL_CLUSTER_ID_TEMPERATURE_MEASUREMENT) {
+        return GATEWAY_INPUT_CAP_TEMPERATURE;
+    }
+    if (cluster == EZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT) {
+        return GATEWAY_INPUT_CAP_HUMIDITY;
+    }
+    if (cluster == EZB_ZCL_CLUSTER_ID_OCCUPANCY_SENSING) {
+        return GATEWAY_INPUT_CAP_OCCUPANCY;
+    }
+    if (cluster == EZB_ZCL_CLUSTER_ID_CARBON_DIOXIDE_MEASUREMENT) {
+        return GATEWAY_INPUT_CAP_CO2;
+    }
+    return 0U;
+}
+
 bool gateway_zcl_normalize(uint16_t cluster,
                            uint16_t attribute,
                            uint8_t type,

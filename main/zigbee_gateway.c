@@ -23,6 +23,7 @@
 #include "gateway_events.h"
 #include "gateway_reporting_policy.h"
 #include "gateway_zcl_value.h"
+#include "gateway_zigbee_input.h"
 
 #define GATEWAY_ENDPOINT 1U
 #define GATEWAY_PROFILE_ID 0x0104U
@@ -574,6 +575,30 @@ static void binding_callback(const ezb_zdp_bind_req_result_t *result, void *user
     context_release(context);
 }
 
+static bool publish_generic_input(
+    device_slot_t *slot, endpoint_state_t *state, bool available)
+{
+    if (slot == NULL || state == NULL || state->input_capabilities == 0U) {
+        return false;
+    }
+    gateway_input_id_t input;
+    if (!gateway_zigbee_stable_input_id(
+            slot->device.ieee, slot->device.ieee_valid,
+            state->endpoint, &input)) {
+        return false;
+    }
+    gateway_event_t event = gateway_event_make_input(
+        available ? GATEWAY_EVENT_INPUT_AVAILABLE : GATEWAY_EVENT_INPUT_UNAVAILABLE,
+        &input);
+    event.endpoint = state->endpoint;
+    event.data.input_desc.capabilities = state->input_capabilities;
+    if (!gateway_event_publish(&event)) {
+        return false;
+    }
+    state->input_announced = available;
+    return true;
+}
+
 static void simple_callback(
     const ezb_zdo_simple_desc_req_result_t *result, void *user_ctx)
 {
@@ -599,6 +624,25 @@ static void simple_callback(
     }
 
     const ezb_af_simple_desc_t *desc = &result->rsp->desc;
+    endpoint_state_t *input_state = endpoint_state(slot, desc->ep_id, true);
+    const gateway_input_capabilities_t capabilities =
+        gateway_zigbee_capabilities_from_clusters(
+            desc->app_cluster_list, desc->app_input_cluster_count);
+    if (!slot->device.ieee_valid) {
+        ezb_extaddr_t resolved_ieee;
+        if (ezb_address_extended_by_short(slot->device.short_addr, &resolved_ieee) ==
+            EZB_ERR_NONE) {
+            memcpy(slot->device.ieee, resolved_ieee.u8, sizeof(slot->device.ieee));
+            slot->device.ieee_valid = true;
+        }
+    }
+    if (input_state != NULL && input_state->input_announced && capabilities == 0U) {
+        (void)publish_generic_input(slot, input_state, false);
+    }
+    if (input_state != NULL) {
+        input_state->input_capabilities = capabilities;
+    }
+
     gateway_event_t event = gateway_event_make(GATEWAY_EVENT_ENDPOINT, &slot->device);
     event.endpoint = desc->ep_id;
     event.data.endpoint_desc.profile_id = desc->app_profile_id;
@@ -620,6 +664,9 @@ static void simple_callback(
             desc->app_cluster_list[desc->app_input_cluster_count + i];
     }
     gateway_event_publish(&event);
+    if (input_state != NULL && capabilities != 0U) {
+        (void)publish_generic_input(slot, input_state, true);
+    }
 
     bool basic = false;
     for (uint8_t i = 0; i < desc->app_input_cluster_count; ++i) {
@@ -920,6 +967,19 @@ static gateway_device_id_t leave_device_id(
     return device;
 }
 
+static void publish_slot_inputs_unavailable(device_slot_t *slot)
+{
+    if (slot == NULL || !slot->device.ieee_valid) {
+        return;
+    }
+    for (size_t i = 0U; i < GATEWAY_MAX_ENDPOINTS_PER_DEVICE; ++i) {
+        endpoint_state_t *state = &slot->endpoints[i];
+        if (state->in_use && state->input_announced) {
+            (void)publish_generic_input(slot, state, false);
+        }
+    }
+}
+
 static void device_left(
     ezb_shortaddr_t short_addr,
     const ezb_extaddr_t *ieee,
@@ -948,6 +1008,10 @@ static void device_left(
 
     if (slot == NULL) {
         return;
+    }
+    if (kind == GATEWAY_EVENT_DEVICE_LEAVE_RESET ||
+        kind == GATEWAY_EVENT_DEVICE_LEAVE_REJOIN) {
+        publish_slot_inputs_unavailable(slot);
     }
     if (kind == GATEWAY_EVENT_DEVICE_LEAVE_RESET) {
         slot->state = SLOT_LEAVING;

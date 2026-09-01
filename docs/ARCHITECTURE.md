@@ -18,6 +18,7 @@ The ESP32-C6 firmware is intentionally split into a small SDK-facing shell and h
 - `local_inputs.c/.h` is the composition point for board-local input adapters. Local-bus absence is reported but does not disable the Zigbee gateway.
 - `scd4x_input.c/.h` adapts an SCD4x-family sensor into the protocol-neutral input contract. It probes before driver initialization, throttles absence/read warnings, and owns SCD4x polling/recovery policy, not transport or Zigbee behavior.
 - `gateway_zcl_value.c/.h` is a pure, host-testable ZCL attribute normalization layer. Unsupported or scaling-dependent data stays raw instead of being guessed.
+- `gateway_zigbee_input.c/.h` is the pure Zigbee-to-generic input adapter for capability aggregation and stable IEEE-based input identity. It deliberately refuses provisional short-address identities.
 - `gateway_reporting_policy.c/.h` is the pure, host-testable table for standard binding/reporting masks and Configure Reporting parameters.
 - `gateway_device_state.c/.h` owns the bounded IEEE-first device/endpoint registry, generation-safe references, short-address replacement, and reclaim rules. It has no ESP Zigbee or FreeRTOS dependency.
 - `zigbee_gateway.c/.h` is the SDK integration/orchestration boundary: stack lifecycle, app/ZCL signal dispatch, discovery jobs, bounded async callback contexts, binding/reporting submission, and permit-join control.
