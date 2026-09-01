@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-c6-sonoff-security-flow-audit-v1",
+  "task_digest": "ea55b62483556a7f6c7ba174b6997d459faf7133083a3b4fc0a6d87ea48f9b94",
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "started_at": "2026-09-01T23:49:04.853079+00:00",
+  "attempt_id": "ec7ee8bd65e636a080001986",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 11633,
+  "updated_at": "2026-09-01T23:49:04.862909+00:00",
+  "pid": 11633
+}
