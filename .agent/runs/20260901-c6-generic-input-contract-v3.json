@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260901-c6-generic-input-contract-v3",
+  "task_digest": "dee822d0827c1da38303c3259fa1eca3efdc0219431e3e204ccdb5133d25791d",
+  "idle_timeout": 180,
+  "task_timeout": 1200,
+  "memory_limit_mb": 768,
+  "started_at": "2026-09-01T19:21:24.622514+00:00",
+  "attempt_id": "e3ffda418f30aa9dfa580155",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 79275,
+  "updated_at": "2026-09-01T19:21:24.622906+00:00",
+  "pid": 79275
+}
