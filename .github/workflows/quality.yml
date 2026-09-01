@@ -39,6 +39,20 @@ jobs:
       - name: Run device state host tests
         run: /tmp/test_gateway_device_state
 
+  host-inputs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build generic input host tests
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror -pedantic \
+            -Imain \
+            tests/host/test_gateway_inputs.c \
+            main/gateway_inputs.c \
+            -o /tmp/test_gateway_inputs
+      - name: Run generic input host tests
+        run: /tmp/test_gateway_inputs
+
   host-reporting-policy:
     runs-on: ubuntu-latest
     steps:

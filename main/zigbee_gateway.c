@@ -304,6 +304,9 @@ static void publish_report(const ezb_zcl_cmd_report_attr_message_t *message)
     gateway_device_id_t device =
         slot == NULL ? device_from_header(header) : slot->device;
 
+    const gateway_input_id_t input = gateway_input_make_zigbee(
+        device.ieee, device.ieee_valid, device.short_addr, header->src_ep);
+
     for (ezb_zcl_report_attr_variable_t *item = message->in.variables;
          item != NULL;
          item = item->next) {
@@ -318,17 +321,13 @@ static void publish_report(const ezb_zcl_cmd_report_attr_message_t *message)
                 &kind,
                 &unit,
                 &value)) {
-            gateway_event_t event = gateway_event_make(
-                GATEWAY_EVENT_MEASUREMENT, &device
-            );
+            gateway_event_t event = gateway_event_make_input(
+                GATEWAY_EVENT_MEASUREMENT, &input);
             event.endpoint = header->src_ep;
-            event.data.measurement = (typeof(event.data.measurement)){
+            event.data.measurement = (gateway_measurement_t){
                 .kind = kind,
                 .unit = unit,
                 .value = value,
-                .cluster_id = header->cluster_id,
-                .attribute_id = item->attr_id,
-                .zcl_type = item->attr_type,
             };
             gateway_event_publish(&event);
         } else {

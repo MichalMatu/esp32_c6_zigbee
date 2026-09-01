@@ -6,7 +6,8 @@ The ESP32-C6 firmware is intentionally split into a small SDK-facing shell and h
 
 - `app_main.c` is the composition root. It initializes NVS and starts the event bus, transport, Zigbee gateway, and console. It contains no protocol logic.
 - `gateway_console.c/.h` owns the USB console command parser and delegates Zigbee actions through the public gateway API.
-- `gateway_events.c/.h` defines the normalized internal event contract, static event queue, drop accounting, timestamps, and common warning/event construction helpers.
+- `gateway_inputs.c/.h` defines the protocol-neutral input identity, measurement kinds/units, and capability bits. Zigbee endpoints and local buses must normalize into this contract before transport.
+- `gateway_events.c/.h` defines the normalized internal event envelope, static event queue, drop accounting, timestamps, and common warning/event construction helpers. Zigbee lifecycle metadata may remain Zigbee-specific, while measurement events carry a protocol-neutral `gateway_input_id_t`.
 - `gateway_transport.c/.h` consumes normalized events and renders the current serial/log transport. It must not own Zigbee state or interpretation policy.
 - `gateway_zcl_value.c/.h` is a pure, host-testable ZCL attribute normalization layer. Unsupported or scaling-dependent data stays raw instead of being guessed.
 - `gateway_reporting_policy.c/.h` is the pure, host-testable table for standard binding/reporting masks and Configure Reporting parameters.
@@ -19,13 +20,15 @@ IEEE identity is authoritative; 16-bit Zigbee short addresses are mutable routes
 
 Zigbee SDK callbacks must remain bounded and non-blocking. They may copy/normalize payloads, update bounded per-device request state when a response determines that state, publish normalized events, and enqueue follow-up discovery/retry work. They must not wait indefinitely for locks, run blocking discovery loops, or perform transport I/O.
 
-The event bus is the transport boundary. Zigbee code publishes normalized events; the current logger consumes them. A later UART/SPI link to another MCU should replace or extend the transport without moving Zigbee interpretation into the transport layer.
+The event bus is the transport boundary. Input adapters normalize measurements before publishing them. `gateway_transport` must consume `gateway_input_id_t` plus normalized measurements without branching on Zigbee cluster IDs or local sensor register formats. A later UART/SPI link to another MCU should serialize this normalized input contract; the ESP32-S3 can then own the current input list/state used by LiteGraph.
+
+Stable input identity belongs to the adapter boundary. Zigbee uses IEEE identity plus endpoint as the logical channel; short addresses are only a provisional fallback when IEEE recovery has not completed. Local sensors use a stable hardware identity such as the SCD4x serial number, with a board-local fallback only when the device cannot expose one.
 
 All fixed-capacity structures must fail visibly rather than allocate without bounds or silently overwrite live state. Startup/task creation failures must return an error to the composition root or publish a warning before a task terminates.
 
 ## Verification
 
-`gateway_zcl_value`, `gateway_reporting_policy`, and `gateway_device_state` have strict C11 host tests compiled with `-Wall -Wextra -Werror -pedantic`. GitHub CI also builds the complete firmware with the pinned ESP-IDF/ESP Zigbee versions. Hardware/RF behavior remains a separate validation gate after source/CI validation.
+`gateway_inputs`, `gateway_zcl_value`, `gateway_reporting_policy`, and `gateway_device_state` have strict C11 host tests compiled with `-Wall -Wextra -Werror -pedantic`. GitHub CI also builds the complete firmware with the pinned ESP-IDF/ESP Zigbee versions. Hardware/RF behavior remains a separate validation gate after source/CI validation.
 
 ## Growth rule
 

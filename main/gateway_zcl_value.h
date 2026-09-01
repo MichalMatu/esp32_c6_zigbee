@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "gateway_events.h"
+#include "gateway_inputs.h"
 
 #ifdef __cplusplus
 extern "C" {

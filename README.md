@@ -6,7 +6,7 @@ This is SDK 2.x firmware: it uses the `esp_zigbee_*` and `ezb_*` APIs and one `e
 
 ## Architecture
 
-The firmware keeps ESP Zigbee SDK integration separate from normalized events, transport, value decoding, reporting policy, device state, and console handling. The pure value/policy/state modules have strict host tests in addition to the full ESP-IDF firmware build. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for module responsibilities and invariants.
+The firmware keeps ESP Zigbee SDK integration separate from a protocol-neutral input contract, normalized events, transport, value decoding, reporting policy, device state, and console handling. Zigbee is one input adapter; local I2C sensors can use the same `gateway_input_id_t` + normalized measurement boundary. The pure input/value/policy/state modules have strict host tests in addition to the full ESP-IDF firmware build. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for module responsibilities and invariants.
 
 ## Build and flash
 

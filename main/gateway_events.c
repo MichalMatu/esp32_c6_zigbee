@@ -34,6 +34,22 @@ gateway_event_t gateway_event_make(
     };
     if (device != NULL) {
         event.device = *device;
+        event.input = gateway_input_make_zigbee(
+            device->ieee, device->ieee_valid, device->short_addr, 0U);
+    }
+    return event;
+}
+
+gateway_event_t gateway_event_make_input(
+    gateway_event_kind_t kind, const gateway_input_id_t *input)
+{
+    gateway_event_t event = {
+        .source = input == NULL ? GATEWAY_SOURCE_ZIGBEE : input->source,
+        .kind = kind,
+        .uptime_ms = gateway_uptime_ms(),
+    };
+    if (input != NULL) {
+        event.input = *input;
     }
     return event;
 }
@@ -42,6 +58,16 @@ bool gateway_event_warning(
     const gateway_device_id_t *device, const char *text)
 {
     gateway_event_t event = gateway_event_make(GATEWAY_EVENT_WARNING, device);
+    if (text != NULL) {
+        strncpy(event.data.text.value, text, sizeof(event.data.text.value) - 1U);
+    }
+    return gateway_event_publish(&event);
+}
+
+bool gateway_event_warning_input(
+    const gateway_input_id_t *input, const char *text)
+{
+    gateway_event_t event = gateway_event_make_input(GATEWAY_EVENT_WARNING, input);
     if (text != NULL) {
         strncpy(event.data.text.value, text, sizeof(event.data.text.value) - 1U);
     }

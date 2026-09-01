@@ -3,14 +3,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "gateway_inputs.h"
+
 #define GATEWAY_EVENT_QUEUE_DEPTH 16U
 #define GATEWAY_RAW_ATTRIBUTE_MAX_BYTES 96U
 #define GATEWAY_TEXT_MAX_BYTES 64U
 #define GATEWAY_MAX_DESCRIPTOR_CLUSTERS 48U
-
-typedef enum {
-    GATEWAY_SOURCE_ZIGBEE,
-} gateway_source_t;
 
 typedef struct {
     uint16_t short_addr;
@@ -35,39 +33,12 @@ typedef enum {
     GATEWAY_EVENT_ENDPOINT,
     GATEWAY_EVENT_BASIC,
     GATEWAY_EVENT_REPORTING_CONFIG,
+    GATEWAY_EVENT_INPUT_AVAILABLE,
+    GATEWAY_EVENT_INPUT_UNAVAILABLE,
     GATEWAY_EVENT_MEASUREMENT,
     GATEWAY_EVENT_RAW_ATTRIBUTE,
     GATEWAY_EVENT_WARNING,
 } gateway_event_kind_t;
-
-typedef enum {
-    GATEWAY_MEAS_TEMPERATURE,
-    GATEWAY_MEAS_HUMIDITY,
-    GATEWAY_MEAS_ILLUMINANCE,
-    GATEWAY_MEAS_OCCUPANCY,
-    GATEWAY_MEAS_CO2,
-    GATEWAY_MEAS_BATTERY_VOLTAGE,
-    GATEWAY_MEAS_BATTERY_PERCENT,
-    GATEWAY_MEAS_MAINS_VOLTAGE,
-    GATEWAY_MEAS_VOLTAGE,
-    GATEWAY_MEAS_CURRENT,
-    GATEWAY_MEAS_POWER,
-    GATEWAY_MEAS_ENERGY,
-    GATEWAY_MEAS_ON_OFF,
-} gateway_measurement_kind_t;
-
-typedef enum {
-    GATEWAY_UNIT_NONE,
-    GATEWAY_UNIT_CELSIUS,
-    GATEWAY_UNIT_PERCENT,
-    GATEWAY_UNIT_LUX_LOG,
-    GATEWAY_UNIT_PPM,
-    GATEWAY_UNIT_VOLTS,
-    GATEWAY_UNIT_AMPS,
-    GATEWAY_UNIT_WATTS,
-    GATEWAY_UNIT_KILOWATT_HOURS,
-    GATEWAY_UNIT_BOOLEAN,
-} gateway_unit_t;
 
 typedef struct {
     uint16_t cluster_id;
@@ -83,6 +54,7 @@ typedef struct {
     gateway_source_t source;
     gateway_event_kind_t kind;
     gateway_device_id_t device;
+    gateway_input_id_t input;
     uint8_t endpoint;
     uint32_t uptime_ms;
     union {
@@ -108,13 +80,10 @@ typedef struct {
             uint16_t output_clusters[GATEWAY_MAX_DESCRIPTOR_CLUSTERS];
         } endpoint_desc;
         struct {
-            gateway_measurement_kind_t kind;
-            gateway_unit_t unit;
-            double value;
-            uint16_t cluster_id;
-            uint16_t attribute_id;
-            uint8_t zcl_type;
-        } measurement;
+            gateway_input_capabilities_t capabilities;
+            char model[24];
+        } input_desc;
+        gateway_measurement_t measurement;
         struct {
             uint16_t cluster_id;
             uint16_t attribute_id;
@@ -135,8 +104,12 @@ typedef struct {
 bool gateway_events_init(void);
 gateway_event_t gateway_event_make(
     gateway_event_kind_t kind, const gateway_device_id_t *device);
+gateway_event_t gateway_event_make_input(
+    gateway_event_kind_t kind, const gateway_input_id_t *input);
 bool gateway_event_warning(
     const gateway_device_id_t *device, const char *text);
+bool gateway_event_warning_input(
+    const gateway_input_id_t *input, const char *text);
 bool gateway_event_publish(const gateway_event_t *event);
 bool gateway_event_receive(gateway_event_t *event, uint32_t timeout_ticks);
 uint32_t gateway_event_take_dropped(void);
