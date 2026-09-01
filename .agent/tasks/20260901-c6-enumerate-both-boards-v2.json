@@ -1,0 +1,14 @@
+{
+  "id": "20260901-c6-enumerate-both-boards-v2",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": ["machine"],
+  "memory_limit_mb": 512,
+  "command_timeout": 120,
+  "idle_timeout": 60,
+  "task_timeout": 300,
+  "commands": [
+    "set -euo pipefail; echo '=== CU USBMODEM ==='; ls -l /dev/cu.usbmodem* 2>/dev/null || true; echo '=== TTY USBMODEM ==='; ls -l /dev/tty.usbmodem* 2>/dev/null || true; echo '=== CU USBSERIAL (NAMES ONLY; DO NOT OPEN) ==='; ls -l /dev/cu.usbserial* 2>/dev/null || true; echo '=== TTY USBSERIAL (NAMES ONLY; DO NOT OPEN) ==='; ls -l /dev/tty.usbserial* 2>/dev/null || true; echo '=== USB DESCRIPTORS (READ-ONLY IOREG; NO SERIAL PORT OPEN) ==='; ioreg -p IOUSB -l -w 0 | grep -E 'USB Serial|USB JTAG|Espressif|CP210|CH34|FTDI|idVendor|idProduct|USB Product Name|USB Serial Number' || true"
+  ]
+}
