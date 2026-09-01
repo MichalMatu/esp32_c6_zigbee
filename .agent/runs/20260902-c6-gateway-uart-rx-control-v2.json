@@ -1,16 +1,16 @@
 {
   "event": "command_started",
   "phase": "commands",
-  "index": 3,
+  "index": 4,
   "total": 4,
-  "command": "set -euo pipefail; git add .github/workflows/quality.yml README.md docs/ARCHITECTURE.md docs/GATEWAY_LINK_V1.md main/CMakeLists.txt main/gateway_console.c main/gateway_link_event_adapter.c main/gateway_link_event_adapter.h main/gateway_link_control.c main/gateway_link_control.h main/gateway_link_stream.c main/gateway_link_stream.h main/gateway_uart_link.c main/zigbee_gateway.c main/zigbee_gateway.h tests/host/test_gateway_link_event_adapter.c tests/host/test_gateway_link_control.c tests/host/test_gateway_link_stream.c; git commit -m 'Add GatewayLink UART receive control'; git push origin HEAD:main",
-  "pid": 58549,
+  "command": "set -euo pipefail; git fetch --quiet origin main; test \"$(git rev-parse HEAD)\" = \"$(git rev-parse origin/main)\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; printf 'PUBLISHED_MAIN=%s\\n' \"$(git rev-parse HEAD)\"",
+  "pid": 58598,
   "timeout": 1200,
   "idle_timeout": 300,
   "memory_limit_mb": 4096,
-  "started_at": "2026-09-01T22:08:28.557396+00:00",
-  "stage_name": "command-3",
-  "stage_index": 3,
+  "started_at": "2026-09-01T22:08:31.328942+00:00",
+  "stage_name": "command-4",
+  "stage_index": 4,
   "stage_total": 4,
   "stage_phase": "commands",
   "task_id": "20260902-c6-gateway-uart-rx-control-v2",
@@ -18,5 +18,5 @@
   "task_digest": "41693fdb0f5933714784697b64b8b37559b54dce6218be8cc0d41d27fdc4504d",
   "daemon_version": "4.12.2",
   "daemon_pid": 57126,
-  "updated_at": "2026-09-01T22:08:28.667750+00:00"
+  "updated_at": "2026-09-01T22:08:31.411880+00:00"
 }
