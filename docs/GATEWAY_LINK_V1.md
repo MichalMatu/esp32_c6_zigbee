@@ -4,7 +4,7 @@ GatewayLink is the protocol-neutral MCU-to-MCU link between the ESP32-C6 input g
 
 ## Physical link reserved for the next stage
 
-The C6 application link uses UART1 at 460800 baud, 8-N-1, no flow control, with C6 TX on GPIO18 and C6 RX on GPIO19. GPIO0/GPIO1 remain the local I2C SCL/SDA pair used by SCD4x. The RX pin has an internal pull-up so an unconnected S3 does not create a floating UART input. The current firmware stage transmits HELLO, input descriptors and normalized measurements through a bounded TX queue; RX/control handling is added separately and therefore HELLO currently advertises no optional feature bits.
+The C6 application link uses UART1 at 460800 baud, 8-N-1, no flow control, with C6 TX on GPIO18 and C6 RX on GPIO19. GPIO0/GPIO1 remain the local I2C SCL/SDA pair used by SCD4x. The RX pin has an internal pull-up so an unconnected S3 does not create a floating UART input. TX uses a bounded queue and RX uses an incremental delimiter-resynchronizing decoder. The C6 currently implements HELLO/HELLO_ACK, PING/PONG and PERMIT_JOIN control in addition to descriptor/measurement TX. Snapshot and measurement-policy application are not advertised until their backing state/policy layers exist.
 
 ## Framing
 
@@ -54,7 +54,7 @@ For example the validated local sensor is `source=2`, `channel=0`, `id=scd4x:a12
 
 `role:u8, min_version:u8, max_version:u8, max_frame_bytes:u16, features:u32`.
 
-Roles are `1=C6 gateway`, `2=S3 host`. Feature bits currently advertise snapshot, measurement-policy and permit-join support.
+Roles are `1=C6 gateway`, `2=S3 host`. The C6 currently advertises only the `permit-join` feature bit. Snapshot and measurement-policy wire types are reserved by v1 but are not advertised until their runtime implementations exist.
 
 ## INPUT_DESCRIPTOR payload
 

@@ -73,6 +73,24 @@ static uint8_t s_discovery_queue_buffer[
     GATEWAY_DISCOVERY_QUEUE_DEPTH * sizeof(discovery_job_t)
 ];
 static QueueHandle_t s_discovery_queue;
+static portMUX_TYPE s_gateway_state_lock = portMUX_INITIALIZER_UNLOCKED;
+static bool s_stack_ready;
+
+static void set_stack_ready(bool ready)
+{
+    portENTER_CRITICAL(&s_gateway_state_lock);
+    s_stack_ready = ready;
+    portEXIT_CRITICAL(&s_gateway_state_lock);
+}
+
+static bool stack_is_ready(void)
+{
+    portENTER_CRITICAL(&s_gateway_state_lock);
+    const bool ready = s_stack_ready;
+    portEXIT_CRITICAL(&s_gateway_state_lock);
+    return ready;
+}
+
 
 static endpoint_state_t *endpoint_state(
     device_slot_t *slot, uint8_t endpoint, bool create)
@@ -1025,6 +1043,7 @@ static void fail_zigbee_task(const char *message)
 static void zigbee_task(void *arg)
 {
     (void)arg;
+    set_stack_ready(false);
     const esp_zigbee_config_t config = {
         .device_config = {
             .device_type = EZB_NWK_DEVICE_TYPE_COORDINATOR,
@@ -1076,6 +1095,7 @@ static void zigbee_task(void *arg)
         fail_zigbee_task("esp_zigbee_start failed");
         return;
     }
+    set_stack_ready(true);
     network_event(GATEWAY_EVENT_STACK_READY);
     if (xTaskCreate(discovery_task, "zb_discovery", 4096, NULL, 5, NULL) != pdPASS) {
         gateway_event_warning(NULL, "discovery task creation failed; discovery disabled");
@@ -1089,12 +1109,16 @@ esp_err_t zigbee_gateway_start(void)
         ESP_OK : ESP_ERR_NO_MEM;
 }
 
-void zigbee_gateway_set_permit_join(uint8_t seconds)
+esp_err_t zigbee_gateway_set_permit_join(uint8_t seconds)
 {
+    if (!stack_is_ready()) {
+        gateway_event_warning(NULL, "permit command rejected: Zigbee stack not ready");
+        return ESP_ERR_INVALID_STATE;
+    }
     if (!esp_zigbee_lock_acquire(
             pdMS_TO_TICKS(GATEWAY_ZIGBEE_LOCK_TIMEOUT_MS))) {
         gateway_event_warning(NULL, "permit command rejected: Zigbee lock timeout");
-        return;
+        return ESP_ERR_TIMEOUT;
     }
     if (seconds == 0U) {
         ezb_bdb_close_network();
@@ -1102,4 +1126,5 @@ void zigbee_gateway_set_permit_join(uint8_t seconds)
         ezb_bdb_open_network(seconds);
     }
     esp_zigbee_lock_release();
+    return ESP_OK;
 }

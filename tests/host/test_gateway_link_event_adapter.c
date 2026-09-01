@@ -14,20 +14,6 @@ static gateway_input_id_t scd41_input(void)
     return input;
 }
 
-static void test_hello_truthfully_advertises_tx_only_stage(void)
-{
-    gateway_link_message_t message;
-    assert(gateway_link_make_hello_message(&message));
-    assert(message.type == GATEWAY_LINK_MSG_HELLO);
-    gateway_link_hello_t hello = {0};
-    assert(gateway_link_decode_hello_payload(
-        message.payload, message.payload_length, &hello) == GATEWAY_LINK_OK);
-    assert(hello.role == GATEWAY_LINK_ROLE_C6_GATEWAY);
-    assert(hello.min_version == 1U && hello.max_version == 1U);
-    assert(hello.max_frame_bytes == GATEWAY_LINK_MAX_FRAME_BYTES);
-    assert(hello.features == 0U);
-}
-
 static void test_input_descriptor_event(void)
 {
     gateway_event_t event = {0};
@@ -91,7 +77,6 @@ static void test_protocol_specific_event_is_not_forwarded(void)
 
 int main(void)
 {
-    test_hello_truthfully_advertises_tx_only_stage();
     test_input_descriptor_event();
     test_measurement_event();
     test_protocol_specific_event_is_not_forwarded();

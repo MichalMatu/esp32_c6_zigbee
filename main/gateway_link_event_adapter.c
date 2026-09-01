@@ -2,27 +2,6 @@
 
 #include <string.h>
 
-bool gateway_link_make_hello_message(gateway_link_message_t *message)
-{
-    if (message == NULL) {
-        return false;
-    }
-    memset(message, 0, sizeof(*message));
-    message->type = GATEWAY_LINK_MSG_HELLO;
-    const gateway_link_hello_t hello = {
-        .role = GATEWAY_LINK_ROLE_C6_GATEWAY,
-        .min_version = GATEWAY_LINK_PROTOCOL_VERSION,
-        .max_version = GATEWAY_LINK_PROTOCOL_VERSION,
-        .max_frame_bytes = GATEWAY_LINK_MAX_FRAME_BYTES,
-        .features = 0U,
-    };
-    return gateway_link_encode_hello_payload(
-        &hello,
-        message->payload,
-        sizeof(message->payload),
-        &message->payload_length) == GATEWAY_LINK_OK;
-}
-
 bool gateway_link_message_from_event(
     const gateway_event_t *event,
     gateway_link_message_t *message)

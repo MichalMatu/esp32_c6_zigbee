@@ -16,5 +16,3 @@ typedef struct {
 bool gateway_link_message_from_event(
     const gateway_event_t *event,
     gateway_link_message_t *message);
-
-bool gateway_link_make_hello_message(gateway_link_message_t *message);

@@ -31,7 +31,7 @@ static void serial_command_task(void *arg)
             char *end = NULL;
             const long seconds = strtol(line + 7, &end, 10);
             if (end != line + 7 && *end == '\0' && seconds >= 0L && seconds <= 255L) {
-                zigbee_gateway_set_permit_join((uint8_t)seconds);
+                (void)zigbee_gateway_set_permit_join((uint8_t)seconds);
                 continue;
             }
         }
