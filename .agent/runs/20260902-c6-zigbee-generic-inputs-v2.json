@@ -1,16 +1,16 @@
 {
   "event": "command_started",
   "phase": "commands",
-  "index": 1,
+  "index": 2,
   "total": 4,
-  "command": "set -euo pipefail; EXPECTED=a82b450009b889a27b4219bc93949ac2bdb06d24; git fetch --quiet origin main agent-control; git reset --hard \"$EXPECTED\"; git clean -fd; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; test \"$(git rev-parse origin/main)\" = \"$EXPECTED\"; git show origin/agent-control:.agent/scripts/add_zigbee_generic_inputs_v1.py > /tmp/add_zigbee_generic_inputs_v1.py; python3 /tmp/add_zigbee_generic_inputs_v1.py; python3 - <<'PY'\nfrom pathlib import Path\np = Path('tests/host/test_gateway_zigbee_input.c')\ns = p.read_text()\nold = 'const uint8_t ieee[8] = {0x00, 0x12, 0x4b, 0x00, 0xaa, 0xbb, 0xcc, 0xdd};'\nnew = 'const uint8_t ieee[8] = {0xdd, 0xcc, 0xbb, 0xaa, 0x00, 0x4b, 0x12, 0x00};'\nassert old in s\np.write_text(s.replace(old, new, 1))\nPY\ngit diff --check; cc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zigbee_input.c main/gateway_zigbee_input.c main/gateway_zcl_value.c main/gateway_inputs.c -lm -o /tmp/test_gateway_zigbee_input; /tmp/test_gateway_zigbee_input; cc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zcl_value.c main/gateway_zcl_value.c -lm -o /tmp/test_gateway_zcl_value; /tmp/test_gateway_zcl_value; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_inputs.c main/gateway_inputs.c -o /tmp/test_gateway_inputs; /tmp/test_gateway_inputs; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_device_state.c main/gateway_device_state.c -o /tmp/test_gateway_device_state; /tmp/test_gateway_device_state; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_event_adapter.c main/gateway_link_event_adapter.c main/gateway_link_control.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_event_adapter; /tmp/test_gateway_link_event_adapter; git status --short; git diff --stat",
-  "pid": 68907,
+  "command": "set -euo pipefail; . ~/esp/esp-idf-v5.5.4/export.sh >/dev/null; grep -q '^CONFIG_IDF_TARGET=\"esp32c6\"' sdkconfig; idf.py build; git diff --check",
+  "pid": 69009,
   "timeout": 1200,
   "idle_timeout": 300,
   "memory_limit_mb": 4096,
-  "started_at": "2026-09-01T22:31:33.289361+00:00",
-  "stage_name": "command-1",
-  "stage_index": 1,
+  "started_at": "2026-09-01T22:31:39.723936+00:00",
+  "stage_name": "command-2",
+  "stage_index": 2,
   "stage_total": 4,
   "stage_phase": "commands",
   "task_id": "20260902-c6-zigbee-generic-inputs-v2",
@@ -18,5 +18,5 @@
   "task_digest": "a2be0b1753f18d4ff04f4153025ef4f490cd4347187b0a5fef2359aff9595796",
   "daemon_version": "4.12.2",
   "daemon_pid": 68816,
-  "updated_at": "2026-09-01T22:31:33.289929+00:00"
+  "updated_at": "2026-09-01T22:31:39.795917+00:00"
 }
