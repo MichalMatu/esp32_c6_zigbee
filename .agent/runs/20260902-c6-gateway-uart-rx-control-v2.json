@@ -1,16 +1,16 @@
 {
   "event": "command_started",
   "phase": "commands",
-  "index": 1,
+  "index": 2,
   "total": 4,
-  "command": "set -euo pipefail; EXPECTED=62d408c55a0138e03311967199dbaac59b54e842; git fetch --quiet origin main agent-control; git reset --hard \"$EXPECTED\"; git clean -fd; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; test \"$(git rev-parse origin/main)\" = \"$EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git show origin/agent-control:.agent/scripts/add_gateway_uart_rx_control_v2.py > /tmp/add_gateway_uart_rx_control_v2.py; python3 /tmp/add_gateway_uart_rx_control_v2.py; python3 - <<'PY'\nfrom pathlib import Path\np = Path('main/gateway_link_event_adapter.h')\ns = p.read_text()\np.write_text(s.rstrip() + '\\n')\nPY\ngit diff --check; python3 -c \"from pathlib import Path; assert all(bytes([0]) not in p.read_bytes() for p in list(Path('main').glob('*.c')) + list(Path('main').glob('*.h')))\"; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_protocol.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_protocol; /tmp/test_gateway_link_protocol; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_event_adapter.c main/gateway_link_event_adapter.c main/gateway_link_control.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_event_adapter; /tmp/test_gateway_link_event_adapter; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_stream.c main/gateway_link_stream.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_stream; /tmp/test_gateway_link_stream; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_control.c main/gateway_link_control.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_control; /tmp/test_gateway_link_control; git status --short; git diff --stat",
-  "pid": 57192,
+  "command": "set -euo pipefail; . ~/esp/esp-idf-v5.5.4/export.sh >/dev/null; grep -q '^CONFIG_IDF_TARGET=\"esp32c6\"' sdkconfig; idf.py build; git diff --check",
+  "pid": 57322,
   "timeout": 1200,
   "idle_timeout": 300,
   "memory_limit_mb": 4096,
-  "started_at": "2026-09-01T22:07:09.770365+00:00",
-  "stage_name": "command-1",
-  "stage_index": 1,
+  "started_at": "2026-09-01T22:07:17.511517+00:00",
+  "stage_name": "command-2",
+  "stage_index": 2,
   "stage_total": 4,
   "stage_phase": "commands",
   "task_id": "20260902-c6-gateway-uart-rx-control-v2",
@@ -18,5 +18,5 @@
   "task_digest": "41693fdb0f5933714784697b64b8b37559b54dce6218be8cc0d41d27fdc4504d",
   "daemon_version": "4.12.2",
   "daemon_pid": 57126,
-  "updated_at": "2026-09-01T22:07:09.771138+00:00"
+  "updated_at": "2026-09-01T22:07:17.585578+00:00"
 }
