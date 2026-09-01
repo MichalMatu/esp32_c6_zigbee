@@ -25,6 +25,20 @@ jobs:
       - name: Run host ZCL tests
         run: /tmp/test_gateway_zcl_value
 
+  host-reporting-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build reporting policy host tests
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror -pedantic \
+            -Imain \
+            tests/host/test_gateway_reporting_policy.c \
+            main/gateway_reporting_policy.c \
+            -o /tmp/test_gateway_reporting_policy
+      - name: Run reporting policy host tests
+        run: /tmp/test_gateway_reporting_policy
+
   firmware:
     runs-on: ubuntu-latest
     steps:

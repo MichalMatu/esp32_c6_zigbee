@@ -21,6 +21,7 @@
 #include <ezbee/zdo/zdo_dev_srv_disc.h>
 
 #include "gateway_events.h"
+#include "gateway_reporting_policy.h"
 #include "gateway_zcl_value.h"
 
 #define GATEWAY_ENDPOINT 1U
@@ -42,22 +43,6 @@
 
 #define ZCL_ATTR_BASIC_MANUFACTURER_NAME 0x0004U
 #define ZCL_ATTR_BASIC_MODEL_IDENTIFIER 0x0005U
-#define ZCL_ATTR_MEASURED_VALUE 0x0000U
-#define ZCL_ATTR_BATTERY_PERCENT 0x0021U
-
-#define REPORTING_TEMPERATURE 0x01U
-#define REPORTING_HUMIDITY 0x02U
-#define REPORTING_BATTERY_PERCENT 0x04U
-#define BINDING_POLL_CONTROL 0x08U
-#define REPORTING_TEMPERATURE_MIN_SECONDS 60U
-#define REPORTING_TEMPERATURE_MAX_SECONDS 300U
-#define REPORTING_TEMPERATURE_CHANGE 10
-#define REPORTING_HUMIDITY_MIN_SECONDS 60U
-#define REPORTING_HUMIDITY_MAX_SECONDS 300U
-#define REPORTING_HUMIDITY_CHANGE 100U
-#define REPORTING_BATTERY_MIN_SECONDS 3600U
-#define REPORTING_BATTERY_MAX_SECONDS 21600U
-#define REPORTING_BATTERY_PERCENT_CHANGE 2U
 
 typedef enum { SLOT_EMPTY, SLOT_ACTIVE, SLOT_REJOIN_PENDING, SLOT_LEAVING } slot_state_t;
 typedef enum { BASIC_NOT_SCHEDULED, BASIC_SCHEDULED, BASIC_COMPLETE } basic_state_t;
@@ -340,27 +325,6 @@ static device_slot_t *recover_report_source(const ezb_zcl_cmd_hdr_t *header)
     return slot;
 }
 
-static uint8_t reporting_mask(uint16_t cluster)
-{
-    if (cluster == EZB_ZCL_CLUSTER_ID_TEMPERATURE_MEASUREMENT) {
-        return REPORTING_TEMPERATURE;
-    }
-    if (cluster == EZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT) {
-        return REPORTING_HUMIDITY;
-    }
-    if (cluster == EZB_ZCL_CLUSTER_ID_POWER_CONFIG) {
-        return REPORTING_BATTERY_PERCENT;
-    }
-    return 0U;
-}
-
-static uint8_t binding_mask(uint16_t cluster)
-{
-    const uint8_t report = reporting_mask(cluster);
-    return report != 0U ? report :
-        (cluster == EZB_ZCL_CLUSTER_ID_POLL_CONTROL ? BINDING_POLL_CONTROL : 0U);
-}
-
 static bool queue_job(
     discovery_kind_t kind,
     device_slot_t *slot,
@@ -405,7 +369,7 @@ static bool schedule_basic(device_slot_t *slot, uint8_t endpoint)
 static bool schedule_binding(
     device_slot_t *slot, uint8_t endpoint, uint16_t cluster)
 {
-    const uint8_t mask = binding_mask(cluster);
+    const uint8_t mask = gateway_reporting_policy_binding_mask(cluster);
     endpoint_state_t *state = endpoint_state(slot, endpoint, true);
     if (state == NULL || mask == 0U ||
         (state->binding_requested & mask) != 0U ||
@@ -424,7 +388,7 @@ static bool schedule_binding(
 static bool schedule_reporting(
     device_slot_t *slot, uint8_t endpoint, uint16_t cluster)
 {
-    const uint8_t mask = reporting_mask(cluster);
+    const uint8_t mask = gateway_reporting_policy_reporting_mask(cluster);
     endpoint_state_t *state = endpoint_state(slot, endpoint, true);
     if (state == NULL || mask == 0U ||
         (state->binding_configured & mask) == 0U ||
@@ -485,10 +449,10 @@ static void clear_pending(device_slot_t *slot, const discovery_job_t *job)
         state->basic_state = BASIC_NOT_SCHEDULED;
     }
     if (job->kind == DISCOVERY_BIND_CLUSTER) {
-        state->binding_requested &= (uint8_t)~binding_mask(job->cluster_id);
+        state->binding_requested &= (uint8_t)~gateway_reporting_policy_binding_mask(job->cluster_id);
     }
     if (job->kind == DISCOVERY_CONFIG_REPORTING) {
-        state->reporting_requested &= (uint8_t)~reporting_mask(job->cluster_id);
+        state->reporting_requested &= (uint8_t)~gateway_reporting_policy_reporting_mask(job->cluster_id);
     }
 }
 
@@ -639,7 +603,7 @@ static void publish_config_response(
     device_slot_t *slot = find_by_short(device.short_addr, false);
     endpoint_state_t *state =
         slot == NULL ? NULL : endpoint_state(slot, header->src_ep, false);
-    const uint8_t mask = reporting_mask(header->cluster_id);
+    const uint8_t mask = gateway_reporting_policy_reporting_mask(header->cluster_id);
 
     for (ezb_zcl_config_report_rsp_variable_t *item = message->in.variables;
          item != NULL;
@@ -747,12 +711,12 @@ static void binding_callback(const ezb_zdp_bind_req_result_t *result, void *user
             slot, context->endpoint, false
         );
         if (status == EZB_ZDP_STATUS_SUCCESS && state != NULL) {
-            const uint8_t mask = binding_mask(context->cluster_id);
+            const uint8_t mask = gateway_reporting_policy_binding_mask(context->cluster_id);
             state->binding_requested &= (uint8_t)~mask;
             state->binding_configured |= mask;
             schedule_reporting(slot, context->endpoint, context->cluster_id);
         } else if (state != NULL) {
-            state->binding_requested |= binding_mask(context->cluster_id);
+            state->binding_requested |= gateway_reporting_policy_binding_mask(context->cluster_id);
             retry_or_fail(
                 (discovery_job_t){
                     .kind = DISCOVERY_BIND_CLUSTER,
@@ -829,9 +793,9 @@ static void simple_callback(
         if (cluster == EZB_ZCL_CLUSTER_ID_BASIC) {
             basic = true;
         }
-        if (binding_mask(cluster) != 0U) {
+        if (gateway_reporting_policy_binding_mask(cluster) != 0U) {
             schedule_binding(slot, desc->ep_id, cluster);
-        } else if (reporting_mask(cluster) != 0U) {
+        } else if (gateway_reporting_policy_reporting_mask(cluster) != 0U) {
             schedule_reporting(slot, desc->ep_id, cluster);
         }
     }
@@ -983,34 +947,30 @@ static bool submit_binding(device_slot_t *slot, const discovery_job_t *job)
 
 static bool submit_reporting(device_slot_t *slot, const discovery_job_t *job)
 {
+    gateway_reporting_spec_t spec;
+    if (!gateway_reporting_policy_spec(job->cluster_id, &spec)) {
+        return true;
+    }
+
     ezb_zcl_config_report_record_t record = {
         .direction = EZB_ZCL_REPORTING_SEND,
-        .attr_id = ZCL_ATTR_MEASURED_VALUE,
+        .attr_id = spec.attribute_id,
     };
-    if (job->cluster_id == EZB_ZCL_CLUSTER_ID_TEMPERATURE_MEASUREMENT) {
-        record.client = (typeof(record.client)){
-            .attr_type = EZB_ZCL_ATTR_TYPE_INT16,
-            .min_interval = REPORTING_TEMPERATURE_MIN_SECONDS,
-            .max_interval = REPORTING_TEMPERATURE_MAX_SECONDS,
-            .reportable_change = {.s16 = REPORTING_TEMPERATURE_CHANGE},
-        };
-    } else if (job->cluster_id == EZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT) {
-        record.client = (typeof(record.client)){
-            .attr_type = EZB_ZCL_ATTR_TYPE_UINT16,
-            .min_interval = REPORTING_HUMIDITY_MIN_SECONDS,
-            .max_interval = REPORTING_HUMIDITY_MAX_SECONDS,
-            .reportable_change = {.u16 = REPORTING_HUMIDITY_CHANGE},
-        };
-    } else if (job->cluster_id == EZB_ZCL_CLUSTER_ID_POWER_CONFIG) {
-        record.attr_id = ZCL_ATTR_BATTERY_PERCENT;
-        record.client = (typeof(record.client)){
-            .attr_type = EZB_ZCL_ATTR_TYPE_UINT8,
-            .min_interval = REPORTING_BATTERY_MIN_SECONDS,
-            .max_interval = REPORTING_BATTERY_MAX_SECONDS,
-            .reportable_change = {.u8 = REPORTING_BATTERY_PERCENT_CHANGE},
-        };
-    } else {
-        return true;
+    record.client.attr_type = spec.attribute_type;
+    record.client.min_interval = spec.min_interval;
+    record.client.max_interval = spec.max_interval;
+    switch (spec.change_kind) {
+    case GATEWAY_REPORTING_CHANGE_S16:
+        record.client.reportable_change.s16 = (int16_t)spec.reportable_change;
+        break;
+    case GATEWAY_REPORTING_CHANGE_U16:
+        record.client.reportable_change.u16 = (uint16_t)spec.reportable_change;
+        break;
+    case GATEWAY_REPORTING_CHANGE_U8:
+        record.client.reportable_change.u8 = (uint8_t)spec.reportable_change;
+        break;
+    default:
+        return false;
     }
 
     const ezb_zcl_config_report_cmd_t request = {
