@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260901-c6-flash-monitor-second-board-v1",
+  "task_digest": "7c91f21ea15eb1e8311027bd4efdd4ac07f95d82eaf69f3163085b991416982f",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-01T18:58:28.523335+00:00",
+  "attempt_id": "fc579aea0962d89a3f327927",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 71414,
+  "updated_at": "2026-09-01T18:58:28.523591+00:00",
+  "pid": 71414
+}
