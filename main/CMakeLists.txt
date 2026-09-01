@@ -5,6 +5,7 @@ idf_component_register(
         "gateway_device_state.c"
         "gateway_events.c"
         "gateway_inputs.c"
+        "gateway_link_protocol.c"
         "gateway_reporting_policy.c"
         "gateway_transport.c"
         "gateway_zcl_value.c"
