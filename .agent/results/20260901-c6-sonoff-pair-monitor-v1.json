@@ -1,0 +1,60 @@
+{
+  "id": "20260901-c6-sonoff-pair-monitor-v1",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-09-01T19:03:20.310776+00:00",
+  "command_timeout": 600,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail; PORT=/dev/cu.usbmodem1101; test -e \"$PORT\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; . ~/esp/esp-idf-v5.5.4/export.sh >/dev/null; echo '=== SONOFF PAIRING WINDOW 210S ==='; python - <<'PY'\nimport serial, time\nport='/dev/cu.usbmodem1101'\ns=serial.Serial()\ns.port=port\ns.baudrate=115200\ns.timeout=0.20\ns.write_timeout=1\ns.dtr=False\ns.rts=False\ns.open()\nstart=time.monotonic(); end=start+210; sent=False\ntry:\n    while time.monotonic()<end:\n        elapsed=time.monotonic()-start\n        if not sent and elapsed>=1:\n            s.write(b'permit 180\\n'); s.flush(); print('>>> SENT: permit 180', flush=True); sent=True\n        data=s.readline()\n        if data:\n            print(data.decode('utf-8','replace').rstrip(), flush=True)\nfinally:\n    s.close()\nPY\ntest -z \"$(git status --porcelain --untracked-files=normal)\"",
+      "exit_code": 0,
+      "output": "Activating ESP-IDF 5.5\nSetting IDF_PATH to '/Users/michal/esp/esp-idf'.\n* Checking python version ... 3.13.9\n* Checking python dependencies ... OK\n* Deactivating the current ESP-IDF environment (if any) ... OK\n* Establishing a new ESP-IDF environment ... OK\n* Identifying shell ... bash\n* Detecting outdated tools in system ... OK - no outdated tools found\n* Shell completion ... Autocompletion code generated\n=== SONOFF PAIRING WINDOW 210S ===\nmode:DIO, clock div:2\nload:0x40875730,len:0x1734\nload:0x4086b910,len:0xe78\nload:0x4086e610,len:0x31a8\nentry 0x4086b91a\nI (23) boot: ESP-IDF v5.5.4 2nd stage bootloader\nI (23) boot: compile time Sep  1 2026 20:56:58\nI (23) boot: chip revision: v0.1\nI (23) boot: efuse block revision: v0.2\nI (24) boot.esp32c6: SPI Speed      : 80MHz\nI (24) boot.esp32c6: SPI Mode       : DIO\nI (24) boot.esp32c6: SPI Flash Size : 4MB\nI (25) boot: Enabling RNG early entropy source...\nI (25) boot: Partition Table:\nI (25) boot: ## Label            Usage          Type ST Offset   Length\nI (25) boot:  0 nvs              WiFi data        01 02 00009000 00006000\nI (26) boot:  1 phy_init         RF data          01 01 0000f000 00001000\nI (27) boot:  2 factory          factory app      00 00 00010000 0015e000\nI (27) boot:  3 zb_storage       WiFi data        01 02 0016e000 00008000\nI (28) boot:  4 zb_fct           Unknown data     01 81 00176000 00000400\nI (28) boot: End of partition table\nI (29) esp_image: segment 0: paddr=00010020 vaddr=42070020 size=0d374h ( 54132) map\nI (39) esp_image: segment 1: paddr=0001d39c vaddr=40800000 size=02c7ch ( 11388) load\nI (42) esp_image: segment 2: paddr=00020020 vaddr=42000020 size=62954h (403796) map\nI (117) esp_image: segment 3: paddr=0008297c vaddr=40802c7c size=0d89ch ( 55452) load\nI (130) esp_image: segment 4: paddr=00090220 vaddr=40810520 size=02c98h ( 11416) load\nI (137) boot: Loaded app from partition at offset 0x10000\nI (137) boot: Disabling RNG early entropy source...\nI (138) cpu_start: Unicore app\nI (147) cpu_start: Pro cpu start user code\nI (147) cpu_start: cpu freq: 160000000 Hz\nI (147) app_init: Application information:\nI (147) app_init: Project name:     esp32_c6_zigbee_gateway\nI (148) app_init: App version:      bfebcc9\nI (148) app_init: Compile time:     Sep  1 2026 20:55:27\nI (148) app_init: ELF file SHA256:  86d72ec05...\nI (148) app_init: ESP-IDF:          v5.5.4\nI (149) efuse_init: Min chip rev:     v0.0\nI (149) efuse_init: Max chip rev:     v0.99\nI (149) efuse_init: Chip rev:         v0.1\nI (149) heap_init: Initializing. RAM available for dynamic allocation:\nI (150) heap_init: At 40817A00 len 00064C10 (403 KiB): RAM\nI (150) heap_init: At 4087C610 len 00002F54 (11 KiB): RAM\nI (150) heap_init: At 50000000 len 00003FE8 (15 KiB): RTCRAM\nI (151) spi_flash: detected chip: generic\nI (151) spi_flash: flash io: dio\nI (152) sleep_gpio: Configure to isolate all GPIO pins in sleep state\nI (152) sleep_gpio: Enable automatic switching of GPIO sleep configuration\nI (153) main_task: Started on CPU0\nI (153) main_task: Calling app_main()\nI (170) phy_init: phy_version 343,b513b46,Nov 14 2025,16:34:12\nI (255) phy_init: Saving new calibration data due to checksum failure or outdated calibration data, mode(0)\nW (263) gateway_transport: commands: help | permit <1..255> | permit 0\nI (266) phy: libbtbb version: c493933, Nov 14 2025, 16:34:25\nI (276) gateway_transport: zigbee stack ready; endpoint=1, storage=zb_storage\nI (279) gateway_transport: persisted coordinator network restored; joining remains closed\nI (279) main_task: Returned from app_main()\n>>> SENT: permit 180\nI (2165) gateway_transport: permit join duration=180\nI (181382) gateway_transport: permit join duration=0\n",
+      "elapsed_seconds": 217.069,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 1024,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 88.58,
+      "output_policy": "stream",
+      "captured_output_chars": 3680,
+      "output_truncated": false,
+      "current_rss_mb": 16.84,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 217.069
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.298
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.976
+  },
+  "finished_at": "2026-09-01T19:07:01.765449+00:00",
+  "task_digest": "b04ac07164184a203aa507b260c698f2e60e43ae7bfcee79b04e691a103513ce",
+  "idle_timeout": 300,
+  "task_timeout": 900,
+  "memory_limit_mb": 1024,
+  "attempt_id": "358bc6f40dfbb9f9f0528fe2",
+  "daemon_version": "4.12.2"
+}
