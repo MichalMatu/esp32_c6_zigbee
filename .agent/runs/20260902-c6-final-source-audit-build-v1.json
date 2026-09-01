@@ -1,16 +1,16 @@
 {
   "event": "command_started",
   "phase": "commands",
-  "index": 2,
+  "index": 3,
   "total": 4,
-  "command": "set -euo pipefail; cc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zcl_value.c main/gateway_zcl_value.c -lm -o /tmp/test_gateway_zcl_value; /tmp/test_gateway_zcl_value; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_device_state.c main/gateway_device_state.c -o /tmp/test_gateway_device_state; /tmp/test_gateway_device_state; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_inputs.c main/gateway_inputs.c -o /tmp/test_gateway_inputs; /tmp/test_gateway_inputs; cc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zigbee_input.c main/gateway_zigbee_input.c main/gateway_zcl_value.c main/gateway_inputs.c -lm -o /tmp/test_gateway_zigbee_input; /tmp/test_gateway_zigbee_input; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_protocol.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_protocol; /tmp/test_gateway_link_protocol; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_event_adapter.c main/gateway_link_event_adapter.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_event_adapter; /tmp/test_gateway_link_event_adapter; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_stream.c main/gateway_link_stream.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_stream; /tmp/test_gateway_link_stream; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_snapshot_cache.c main/gateway_link_snapshot_cache.c -o /tmp/test_gateway_link_snapshot_cache; /tmp/test_gateway_link_snapshot_cache; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_control.c main/gateway_link_control.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_control; /tmp/test_gateway_link_control; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_e2e.c main/gateway_link_protocol.c main/gateway_link_stream.c main/gateway_link_control.c main/gateway_link_snapshot_cache.c main/gateway_inputs.c -lm -o /tmp/test_gateway_link_e2e; /tmp/test_gateway_link_e2e; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_reporting_policy.c main/gateway_reporting_policy.c -o /tmp/test_gateway_reporting_policy; /tmp/test_gateway_reporting_policy; printf 'ALL_HOST_TESTS=PASS\\n'",
-  "pid": 84017,
+  "command": "set -euo pipefail; . ~/esp/esp-idf-v5.5.4/export.sh >/dev/null; grep -q '^CONFIG_IDF_TARGET=\"esp32c6\"' sdkconfig; idf.py build; idf.py size; git diff --check; test -z \"$(git status --porcelain --untracked-files=normal)\"; printf 'FULL_BUILD=PASS\\n'",
+  "pid": 84160,
   "timeout": 1200,
   "idle_timeout": 300,
   "memory_limit_mb": 4096,
-  "started_at": "2026-09-01T22:58:31.692918+00:00",
-  "stage_name": "command-2",
-  "stage_index": 2,
+  "started_at": "2026-09-01T22:58:40.342018+00:00",
+  "stage_name": "command-3",
+  "stage_index": 3,
   "stage_total": 4,
   "stage_phase": "commands",
   "task_id": "20260902-c6-final-source-audit-build-v1",
@@ -18,5 +18,5 @@
   "task_digest": "a6b10f8a0b84200e08c4606d1e56630918c112989e000eeff99b3a5f3b13b666",
   "daemon_version": "4.12.2",
   "daemon_pid": 83889,
-  "updated_at": "2026-09-01T22:58:31.809713+00:00"
+  "updated_at": "2026-09-01T22:58:40.432576+00:00"
 }
