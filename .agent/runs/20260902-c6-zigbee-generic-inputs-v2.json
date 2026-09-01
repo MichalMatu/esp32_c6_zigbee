@@ -1,16 +1,16 @@
 {
   "event": "command_started",
   "phase": "commands",
-  "index": 2,
+  "index": 3,
   "total": 4,
-  "command": "set -euo pipefail; . ~/esp/esp-idf-v5.5.4/export.sh >/dev/null; grep -q '^CONFIG_IDF_TARGET=\"esp32c6\"' sdkconfig; idf.py build; git diff --check",
-  "pid": 69009,
+  "command": "set -euo pipefail; git add .github/workflows/quality.yml README.md docs/ARCHITECTURE.md docs/GATEWAY_LINK_V1.md main/CMakeLists.txt main/gateway_device_state.h main/gateway_zcl_value.c main/gateway_zcl_value.h main/gateway_zigbee_input.c main/gateway_zigbee_input.h main/zigbee_gateway.c tests/host/test_gateway_zigbee_input.c; git commit -m 'Add protocol-neutral Zigbee inputs'; git push origin HEAD:main",
+  "pid": 70115,
   "timeout": 1200,
   "idle_timeout": 300,
   "memory_limit_mb": 4096,
-  "started_at": "2026-09-01T22:31:39.723936+00:00",
-  "stage_name": "command-2",
-  "stage_index": 2,
+  "started_at": "2026-09-01T22:32:35.742518+00:00",
+  "stage_name": "command-3",
+  "stage_index": 3,
   "stage_total": 4,
   "stage_phase": "commands",
   "task_id": "20260902-c6-zigbee-generic-inputs-v2",
@@ -18,5 +18,5 @@
   "task_digest": "a2be0b1753f18d4ff04f4153025ef4f490cd4347187b0a5fef2359aff9595796",
   "daemon_version": "4.12.2",
   "daemon_pid": 68816,
-  "updated_at": "2026-09-01T22:31:39.795917+00:00"
+  "updated_at": "2026-09-01T22:32:35.807354+00:00"
 }
