@@ -1,0 +1,107 @@
+{
+  "id": "20260901-c6-extract-reporting-policy-v1",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": true,
+  "started_at": "2026-09-01T00:01:39.981775+00:00",
+  "command_timeout": 180,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail; EXPECTED=f4fbd69e00bbda19dcb90d7c8692b48c0dce21f6; git fetch --quiet origin main; test \"$(git rev-parse origin/main)\" = \"$EXPECTED\"; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; python3 - <<'PY'\nfrom pathlib import Path\n\nPath('main/gateway_reporting_policy.h').write_text(r'''#pragma once\n\n#include <stdbool.h>\n#include <stdint.h>\n\ntypedef enum {\n    GATEWAY_REPORTING_CHANGE_S16,\n    GATEWAY_REPORTING_CHANGE_U16,\n    GATEWAY_REPORTING_CHANGE_U8,\n} gateway_reporting_change_kind_t;\n\ntypedef struct {\n    uint16_t attribute_id;\n    uint8_t attribute_type;\n    uint16_t min_interval;\n    uint16_t max_interval;\n    gateway_reporting_change_kind_t change_kind;\n    int32_t reportable_change;\n} gateway_reporting_spec_t;\n\nuint8_t gateway_reporting_policy_reporting_mask(uint16_t cluster_id);\nuint8_t gateway_reporting_policy_binding_mask(uint16_t cluster_id);\nbool gateway_reporting_policy_spec(\n    uint16_t cluster_id, gateway_reporting_spec_t *out);\n''')\n\nPath('main/gateway_reporting_policy.c').write_text(r'''#include \"gateway_reporting_policy.h\"\n\n#include <stddef.h>\n\n#define ZCL_CLUSTER_POWER_CONFIG 0x0001U\n#define ZCL_CLUSTER_POLL_CONTROL 0x0020U\n#define ZCL_CLUSTER_TEMPERATURE 0x0402U\n#define ZCL_CLUSTER_REL_HUMIDITY 0x0405U\n\n#define ZCL_ATTR_MEASURED_VALUE 0x0000U\n#define ZCL_ATTR_BATTERY_PERCENT 0x0021U\n\n#define ZCL_TYPE_UINT8 0x20U\n#define ZCL_TYPE_UINT16 0x21U\n#define ZCL_TYPE_INT16 0x29U\n\n#define REPORTING_TEMPERATURE 0x01U\n#define REPORTING_HUMIDITY 0x02U\n#define REPORTING_BATTERY_PERCENT 0x04U\n#define BINDING_POLL_CONTROL 0x08U\n\ntypedef struct {\n    uint16_t cluster_id;\n    uint8_t state_mask;\n    gateway_reporting_spec_t spec;\n} reporting_policy_entry_t;\n\nstatic const reporting_policy_entry_t s_reporting_policy[] = {\n    {\n        .cluster_id = ZCL_CLUSTER_TEMPERATURE,\n        .state_mask = REPORTING_TEMPERATURE,\n        .spec = {\n            .attribute_id = ZCL_ATTR_MEASURED_VALUE,\n            .attribute_type = ZCL_TYPE_INT16,\n            .min_interval = 60U,\n            .max_interval = 300U,\n            .change_kind = GATEWAY_REPORTING_CHANGE_S16,\n            .reportable_change = 10,\n        },\n    },\n    {\n        .cluster_id = ZCL_CLUSTER_REL_HUMIDITY,\n        .state_mask = REPORTING_HUMIDITY,\n        .spec = {\n            .attribute_id = ZCL_ATTR_MEASURED_VALUE,\n            .attribute_type = ZCL_TYPE_UINT16,\n            .min_interval = 60U,\n            .max_interval = 300U,\n            .change_kind = GATEWAY_REPORTING_CHANGE_U16,\n            .reportable_change = 100,\n        },\n    },\n    {\n        .cluster_id = ZCL_CLUSTER_POWER_CONFIG,\n        .state_mask = REPORTING_BATTERY_PERCENT,\n        .spec = {\n            .attribute_id = ZCL_ATTR_BATTERY_PERCENT,\n            .attribute_type = ZCL_TYPE_UINT8,\n            .min_interval = 3600U,\n            .max_interval = 21600U,\n            .change_kind = GATEWAY_REPORTING_CHANGE_U8,\n            .reportable_change = 2,\n        },\n    },\n};\n\nstatic const reporting_policy_entry_t *find_policy(uint16_t cluster_id)\n{\n    for (size_t i = 0; i < sizeof(s_reporting_policy) / sizeof(s_reporting_policy[0]); ++i) {\n        if (s_reporting_policy[i].cluster_id == cluster_id) {\n            return &s_reporting_policy[i];\n        }\n    }\n    return NULL;\n}\n\nuint8_t gateway_reporting_policy_reporting_mask(uint16_t cluster_id)\n{\n    const reporting_policy_entry_t *entry = find_policy(cluster_id);\n    return entry == NULL ? 0U : entry->state_mask;\n}\n\nuint8_t gateway_reporting_policy_binding_mask(uint16_t cluster_id)\n{\n    const reporting_policy_entry_t *entry = find_policy(cluster_id);\n    if (entry != NULL) {\n        return entry->state_mask;\n    }\n    return cluster_id == ZCL_CLUSTER_POLL_CONTROL ? BINDING_POLL_CONTROL : 0U;\n}\n\nbool gateway_reporting_policy_spec(\n    uint16_t cluster_id, gateway_reporting_spec_t *out)\n{\n    if (out == NULL) {\n        return false;\n    }\n    const reporting_policy_entry_t *entry = find_policy(cluster_id);\n    if (entry == NULL) {\n        return false;\n    }\n    *out = entry->spec;\n    return true;\n}\n''')\n\nPath('tests/host/test_gateway_reporting_policy.c').write_text(r'''#include <assert.h>\n#include <stdio.h>\n\n#include \"gateway_reporting_policy.h\"\n\n#define CLUSTER_POWER_CONFIG 0x0001U\n#define CLUSTER_POLL_CONTROL 0x0020U\n#define CLUSTER_TEMPERATURE 0x0402U\n#define CLUSTER_HUMIDITY 0x0405U\n\nint main(void)\n{\n    gateway_reporting_spec_t spec;\n\n    assert(gateway_reporting_policy_reporting_mask(CLUSTER_TEMPERATURE) != 0U);\n    assert(gateway_reporting_policy_spec(CLUSTER_TEMPERATURE, &spec));\n    assert(spec.attribute_id == 0x0000U);\n    assert(spec.attribute_type == 0x29U);\n    assert(spec.min_interval == 60U);\n    assert(spec.max_interval == 300U);\n    assert(spec.change_kind == GATEWAY_REPORTING_CHANGE_S16);\n    assert(spec.reportable_change == 10);\n\n    assert(gateway_reporting_policy_spec(CLUSTER_HUMIDITY, &spec));\n    assert(spec.attribute_type == 0x21U);\n    assert(spec.reportable_change == 100);\n\n    assert(gateway_reporting_policy_spec(CLUSTER_POWER_CONFIG, &spec));\n    assert(spec.attribute_id == 0x0021U);\n    assert(spec.attribute_type == 0x20U);\n    assert(spec.min_interval == 3600U);\n    assert(spec.max_interval == 21600U);\n    assert(spec.change_kind == GATEWAY_REPORTING_CHANGE_U8);\n    assert(spec.reportable_change == 2);\n\n    assert(gateway_reporting_policy_reporting_mask(CLUSTER_POLL_CONTROL) == 0U);\n    assert(gateway_reporting_policy_binding_mask(CLUSTER_POLL_CONTROL) != 0U);\n    assert(!gateway_reporting_policy_spec(CLUSTER_POLL_CONTROL, &spec));\n    assert(gateway_reporting_policy_reporting_mask(0xffffU) == 0U);\n    assert(gateway_reporting_policy_binding_mask(0xffffU) == 0U);\n    assert(!gateway_reporting_policy_spec(0xffffU, &spec));\n    assert(!gateway_reporting_policy_spec(CLUSTER_TEMPERATURE, NULL));\n\n    puts(\"gateway_reporting_policy host tests passed\");\n    return 0;\n}\n''')\n\np = Path('main/zigbee_gateway.c')\ns = p.read_text()\ns = s.replace('#include \"gateway_events.h\"\\n#include \"gateway_zcl_value.h\"', '#include \"gateway_events.h\"\\n#include \"gateway_reporting_policy.h\"\\n#include \"gateway_zcl_value.h\"', 1)\nconst_start = s.index('#define ZCL_ATTR_MEASURED_VALUE 0x0000U')\nconst_end_marker = '#define REPORTING_BATTERY_PERCENT_CHANGE 2U\\n'\nconst_end = s.index(const_end_marker, const_start) + len(const_end_marker)\ns = s[:const_start] + s[const_end:]\npolicy_start = s.index('static uint8_t reporting_mask(uint16_t cluster)')\npolicy_end = s.index('static bool queue_job(', policy_start)\ns = s[:policy_start] + s[policy_end:]\ns = s.replace('reporting_mask(', 'gateway_reporting_policy_reporting_mask(')\ns = s.replace('binding_mask(', 'gateway_reporting_policy_binding_mask(')\nfn_start = s.index('static bool submit_reporting(device_slot_t *slot, const discovery_job_t *job)')\nbranch_end_marker = '    } else {\\n        return true;\\n    }\\n'\nbranch_end = s.index(branch_end_marker, fn_start) + len(branch_end_marker)\nnew_prefix = r'''static bool submit_reporting(device_slot_t *slot, const discovery_job_t *job)\n{\n    gateway_reporting_spec_t spec;\n    if (!gateway_reporting_policy_spec(job->cluster_id, &spec)) {\n        return true;\n    }\n\n    ezb_zcl_config_report_record_t record = {\n        .direction = EZB_ZCL_REPORTING_SEND,\n        .attr_id = spec.attribute_id,\n    };\n    record.client.attr_type = spec.attribute_type;\n    record.client.min_interval = spec.min_interval;\n    record.client.max_interval = spec.max_interval;\n    switch (spec.change_kind) {\n    case GATEWAY_REPORTING_CHANGE_S16:\n        record.client.reportable_change.s16 = (int16_t)spec.reportable_change;\n        break;\n    case GATEWAY_REPORTING_CHANGE_U16:\n        record.client.reportable_change.u16 = (uint16_t)spec.reportable_change;\n        break;\n    case GATEWAY_REPORTING_CHANGE_U8:\n        record.client.reportable_change.u8 = (uint8_t)spec.reportable_change;\n        break;\n    default:\n        return false;\n    }\n'''\ns = s[:fn_start] + new_prefix + s[branch_end:]\np.write_text(s)\n\ncm = Path('main/CMakeLists.txt')\nc = cm.read_text()\nneedle = '        \"gateway_events.c\"\\n        \"gateway_transport.c\"'\nreplacement = '        \"gateway_events.c\"\\n        \"gateway_reporting_policy.c\"\\n        \"gateway_transport.c\"'\nassert c.count(needle) == 1\ncm.write_text(c.replace(needle, replacement))\n\nwf = Path('.github/workflows/quality.yml')\nw = wf.read_text()\nmarker = '  firmware:\\n    runs-on: ubuntu-latest\\n'\njob = r'''  host-reporting-policy:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - name: Build reporting policy host tests\n        run: |\n          cc -std=c11 -Wall -Wextra -Werror -pedantic \\\n            -Imain \\\n            tests/host/test_gateway_reporting_policy.c \\\n            main/gateway_reporting_policy.c \\\n            -o /tmp/test_gateway_reporting_policy\n      - name: Run reporting policy host tests\n        run: /tmp/test_gateway_reporting_policy\n\n'''\nassert w.count(marker) == 1\nwf.write_text(w.replace(marker, job + marker))\nPY\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_reporting_policy.c main/gateway_reporting_policy.c -o /tmp/test_gateway_reporting_policy; /tmp/test_gateway_reporting_policy; cc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zcl_value.c main/gateway_zcl_value.c -lm -o /tmp/test_gateway_zcl_value; /tmp/test_gateway_zcl_value; git diff --check; git diff --stat; git status --short",
+      "exit_code": 0,
+      "output": "gateway_reporting_policy host tests passed\ngateway_zcl_value host tests passed\n .github/workflows/quality.yml |  14 ++++++\n main/CMakeLists.txt           |   1 +\n main/zigbee_gateway.c         | 102 +++++++++++++-----------------------------\n 3 files changed, 46 insertions(+), 71 deletions(-)\n M .github/workflows/quality.yml\n M main/CMakeLists.txt\n M main/zigbee_gateway.c\n?? main/gateway_reporting_policy.c\n?? main/gateway_reporting_policy.h\n?? tests/host/test_gateway_reporting_policy.c\n",
+      "elapsed_seconds": 3.368,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 512,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 7.38,
+      "current_rss_mb": 2.08,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 3,
+      "stage_phase": "commands"
+    },
+    {
+      "command": "set -euo pipefail; git add .github/workflows/quality.yml main/CMakeLists.txt main/zigbee_gateway.c main/gateway_reporting_policy.c main/gateway_reporting_policy.h tests/host/test_gateway_reporting_policy.c; git commit -m 'Extract Zigbee reporting policy'; git push origin HEAD:main",
+      "exit_code": 0,
+      "output": "[agent-work 0ed1abc] Extract Zigbee reporting policy\n 6 files changed, 220 insertions(+), 71 deletions(-)\n create mode 100644 main/gateway_reporting_policy.c\n create mode 100644 main/gateway_reporting_policy.h\n create mode 100644 tests/host/test_gateway_reporting_policy.c\nTo https://github.com/MichalMatu/esp32_c6_zigbee.git\n   f4fbd69..0ed1abc  HEAD -> main\n",
+      "elapsed_seconds": 2.648,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 512,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 2.08,
+      "current_rss_mb": 2.08,
+      "stage_name": "command-2",
+      "stage_index": 2,
+      "stage_total": 3,
+      "stage_phase": "commands"
+    },
+    {
+      "command": "set -euo pipefail; git fetch --quiet origin main; test \"$(git rev-parse HEAD)\" = \"$(git rev-parse origin/main)\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; printf 'PUBLISHED_MAIN=%s\\n' \"$(git rev-parse HEAD)\"",
+      "exit_code": 0,
+      "output": "PUBLISHED_MAIN=0ed1abcdcb6000c5a6a054b63bec40413e71e5b9\n",
+      "elapsed_seconds": 1.22,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 512,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 7.36,
+      "current_rss_mb": 7.36,
+      "stage_name": "command-3",
+      "stage_index": 3,
+      "stage_total": 3,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 3,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 3.368
+    },
+    {
+      "stage_name": "command-2",
+      "stage_index": 2,
+      "stage_total": 3,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 2.648
+    },
+    {
+      "stage_name": "command-3",
+      "stage_index": 3,
+      "stage_total": 3,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 1.22
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.161
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.174
+  },
+  "finished_at": "2026-09-01T00:01:50.323410+00:00",
+  "task_digest": "0f9197b0b078dd4ad3493d2bb048bfe78500c91ed0acb60831951800954da744",
+  "idle_timeout": 120,
+  "task_timeout": 900,
+  "memory_limit_mb": 512,
+  "attempt_id": "5d828eee48895a17fa9128da",
+  "daemon_version": "4.11.5"
+}
