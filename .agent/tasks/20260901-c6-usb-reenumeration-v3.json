@@ -1,0 +1,13 @@
+{
+  "id": "20260901-c6-usb-reenumeration-v3",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "memory_limit_mb": 512,
+  "command_timeout": 120,
+  "idle_timeout": 60,
+  "task_timeout": 300,
+  "commands": [
+    "set -u; echo '=== USBMODEM NODES ==='; ls -l /dev/cu.usbmodem* /dev/tty.usbmodem* 2>/dev/null || true; echo '=== USB SERIAL NODES (names only, not opened) ==='; ls -l /dev/cu.usbserial* /dev/tty.usbserial* 2>/dev/null || true; echo '=== USB TREE ==='; system_profiler SPUSBDataType 2>/dev/null | grep -E -B4 -A16 'Espressif|USB JTAG|Serial/JTAG|303a|ESP32' || true"
+  ]
+}
