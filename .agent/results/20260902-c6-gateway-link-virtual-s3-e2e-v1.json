@@ -1,0 +1,79 @@
+{
+  "id": "20260902-c6-gateway-link-virtual-s3-e2e-v1",
+  "status": "failed",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": true,
+  "started_at": "2026-09-01T22:51:04.665179+00:00",
+  "command_timeout": 300,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail; EXPECTED=1e08e1860e20d9c0f72ecdde33d5a7ddd111c9c5; git fetch --quiet origin main agent-control; git reset --hard \"$EXPECTED\"; git clean -fd; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; test \"$(git rev-parse origin/main)\" = \"$EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git show origin/agent-control:.agent/scripts/add_gateway_link_virtual_s3_e2e_v1.py > /tmp/add_gateway_link_virtual_s3_e2e_v1.py; python3 /tmp/add_gateway_link_virtual_s3_e2e_v1.py; git diff --check; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_e2e.c main/gateway_link_protocol.c main/gateway_link_stream.c main/gateway_link_control.c main/gateway_link_snapshot_cache.c main/gateway_inputs.c -lm -o /tmp/test_gateway_link_e2e; /tmp/test_gateway_link_e2e; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_protocol.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_protocol; /tmp/test_gateway_link_protocol; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_stream.c main/gateway_link_stream.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_stream; /tmp/test_gateway_link_stream; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_control.c main/gateway_link_control.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_control; /tmp/test_gateway_link_control; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_snapshot_cache.c main/gateway_link_snapshot_cache.c -o /tmp/test_gateway_link_snapshot_cache; /tmp/test_gateway_link_snapshot_cache; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_event_adapter.c main/gateway_link_event_adapter.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_event_adapter; /tmp/test_gateway_link_event_adapter; cc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zigbee_input.c main/gateway_zigbee_input.c main/gateway_zcl_value.c main/gateway_inputs.c -lm -o /tmp/test_gateway_zigbee_input; /tmp/test_gateway_zigbee_input; cc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zcl_value.c main/gateway_zcl_value.c -lm -o /tmp/test_gateway_zcl_value; /tmp/test_gateway_zcl_value; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_inputs.c main/gateway_inputs.c -o /tmp/test_gateway_inputs; /tmp/test_gateway_inputs; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_device_state.c main/gateway_device_state.c -o /tmp/test_gateway_device_state; /tmp/test_gateway_device_state; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_reporting_policy.c main/gateway_reporting_policy.c -o /tmp/test_gateway_reporting_policy; /tmp/test_gateway_reporting_policy; git status --short; git diff --stat",
+      "exit_code": 1,
+      "output": "HEAD is now at 1e08e18 Add GatewayLink descriptor snapshot\ntests/host/test_gateway_link_e2e.c:85:46: error: incompatible pointer types passing 'size_t *' (aka 'unsigned long *') to parameter of type 'uint16_t *' (aka 'unsigned short *') [-Werror,-Wincompatible-pointer-types]\n   85 |         &s3_hello, payload, sizeof(payload), &payload_length) == GATEWAY_LINK_OK);\n      |                                              ^~~~~~~~~~~~~~~\n/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/assert.h:72:25: note: expanded from macro 'assert'\n   72 |     (__builtin_expect(!(e), 0) ? __assert_rtn(__func__, __ASSERT_FILE_NAME, __LINE__, #e) : (void)0)\n      |                         ^\nmain/gateway_link_protocol.h:128:15: note: passing argument to parameter 'length' here\n  128 |     uint16_t *length);\n      |               ^\ntests/host/test_gateway_link_e2e.c:131:48: error: incompatible pointer types passing 'size_t *' (aka 'unsigned long *') to parameter of type 'uint16_t *' (aka 'unsigned short *') [-Werror,-Wincompatible-pointer-types]\n  131 |         0x1234abcdU, payload, sizeof(payload), &token_length) == GATEWAY_LINK_OK);\n      |                                                ^~~~~~~~~~~~~\n/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/assert.h:72:25: note: expanded from macro 'assert'\n   72 |     (__builtin_expect(!(e), 0) ? __assert_rtn(__func__, __ASSERT_FILE_NAME, __LINE__, #e) : (void)0)\n      |                         ^\nmain/gateway_link_protocol.h:194:15: note: passing argument to parameter 'length' here\n  194 |     uint16_t *length);\n      |               ^\ntests/host/test_gateway_link_e2e.c:180:48: error: incompatible pointer types passing 'size_t *' (aka 'unsigned long *') to parameter of type 'uint16_t *' (aka 'unsigned short *') [-Werror,-Wincompatible-pointer-types]\n  180 |         0x55aa1234U, payload, sizeof(payload), &payload_length) == GATEWAY_LINK_OK);\n      |                                                ^~~~~~~~~~~~~~~\n/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/assert.h:72:25: note: expanded from macro 'assert'\n   72 |     (__builtin_expect(!(e), 0) ? __assert_rtn(__func__, __ASSERT_FILE_NAME, __LINE__, #e) : (void)0)\n      |                         ^\nmain/gateway_link_protocol.h:194:15: note: passing argument to parameter 'length' here\n  194 |     uint16_t *length);\n      |               ^\ntests/host/test_gateway_link_e2e.c:233:39: error: incompatible pointer types passing 'size_t *' (aka 'unsigned long *') to parameter of type 'uint16_t *' (aka 'unsigned short *') [-Werror,-Wincompatible-pointer-types]\n  233 |         7U, payload, sizeof(payload), &payload_length) == GATEWAY_LINK_OK);\n      |                                       ^~~~~~~~~~~~~~~\n/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/assert.h:72:25: note: expanded from macro 'assert'\n   72 |     (__builtin_expect(!(e), 0) ? __assert_rtn(__func__, __ASSERT_FILE_NAME, __LINE__, #e) : (void)0)\n      |                         ^\nmain/gateway_link_protocol.h:194:15: note: passing argument to parameter 'length' here\n  194 |     uint16_t *length);\n      |               ^\ntests/host/test_gateway_link_e2e.c:379:10: error: field designator 'measurement' does not refer to any field in type 'gateway_link_measurement_policy_t'\n  379 |         .measurement = GATEWAY_MEAS_TEMPERATURE,\n      |         ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\ntests/host/test_gateway_link_e2e.c:382:10: error: field designator 'min_change' does not refer to any field in type 'gateway_link_measurement_policy_t'\n  382 |         .min_change = 0.5,\n      |         ~^~~~~~~~~~~~~~~~\ntests/host/test_gateway_link_e2e.c:387:9: error: incompatible pointer types passing 'size_t *' (aka 'unsigned long *') to parameter of type 'uint16_t *' (aka 'unsigned short *') [-Werror,-Wincompatible-pointer-types]\n  387 |         &policy_length) == GATEWAY_LINK_OK);\n      |         ^~~~~~~~~~~~~~\n/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/assert.h:72:25: note: expanded from macro 'assert'\n   72 |     (__builtin_expect(!(e), 0) ? __assert_rtn(__func__, __ASSERT_FILE_NAME, __LINE__, #e) : (void)0)\n      |                         ^\nmain/gateway_link_protocol.h:161:15: note: passing argument to parameter 'length' here\n  161 |     uint16_t *length);\n      |               ^\n7 errors generated.\n",
+      "elapsed_seconds": 3.029,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 1024,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 3.03,
+      "output_policy": "stream",
+      "captured_output_chars": 4368,
+      "output_truncated": false,
+      "current_rss_mb": 3.03,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 3,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 3,
+      "stage_phase": "commands",
+      "outcome": "failed",
+      "elapsed_seconds": 3.029
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": " M .github/workflows/quality.yml\n M docs/GATEWAY_LINK_V1.md\n?? tests/host/test_gateway_link_e2e.c\n",
+    "elapsed_seconds": 0.203
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "diff --git a/.github/workflows/quality.yml b/.github/workflows/quality.yml\nindex 1b8b692..8f67cdf 100644\n--- a/.github/workflows/quality.yml\n+++ b/.github/workflows/quality.yml\n@@ -148,6 +148,25 @@ jobs:\n       - name: Run GatewayLink control host tests\n         run: /tmp/test_gateway_link_control\n \n+  host-link-e2e:\n+    runs-on: ubuntu-latest\n+    steps:\n+      - uses: actions/checkout@v4\n+      - name: Build GatewayLink virtual S3 E2E tests\n+        run: |\n+          cc -std=c11 -Wall -Wextra -Werror -pedantic \\\n+            -Imain \\\n+            tests/host/test_gateway_link_e2e.c \\\n+            main/gateway_link_protocol.c \\\n+            main/gateway_link_stream.c \\\n+            main/gateway_link_control.c \\\n+            main/gateway_link_snapshot_cache.c \\\n+            main/gateway_inputs.c \\\n+            -lm \\\n+            -o /tmp/test_gateway_link_e2e\n+      - name: Run GatewayLink virtual S3 E2E tests\n+        run: /tmp/test_gateway_link_e2e\n+\n   host-reporting-policy:\n     runs-on: ubuntu-latest\n     steps:\ndiff --git a/docs/GATEWAY_LINK_V1.md b/docs/GATEWAY_LINK_V1.md\nindex 5a61dae..ffbc8df 100644\n--- a/docs/GATEWAY_LINK_V1.md\n+++ b/docs/GATEWAY_LINK_V1.md\n@@ -98,3 +98,7 @@ The C6 owns physical input adapters, discovery and normalization. The S3 owns th\n After either MCU reconnects, the S3 requests a snapshot. The C6 sends descriptors for all currently known stable inputs between `SNAPSHOT_BEGIN` and `SNAPSHOT_END`, then continues with incremental descriptors and measurements. A lost frame is detected by sequence gaps and/or CRC; COBS provides delimiter-level resynchronization.\n \n The C6 snapshot cache has a fixed capacity of 64 descriptors. Snapshot execution runs inside the UART TX task rather than enqueueing every descriptor into the normal 16-item TX queue, so a legitimate snapshot cannot self-overflow that queue. Cache exhaustion is counted as a visible link drop; no unbounded allocation is used.\n+\n+## Host end-to-end verification\n+\n+The C6 repository includes a virtual-S3 host test that exercises the real v1 codec, incremental stream decoder, control parser/response builders and descriptor snapshot cache together. It covers fragmented and concatenated frames, CRC corruption recovery, oversized-frame resynchronization, sequence wrap/gap preservation, HELLO compatibility, PING/PONG, snapshot framing/replay, explicit unsupported measurement-policy responses and unknown-message ignore behavior. This test does not emulate the ESP-IDF UART driver or Zigbee stack; those remain firmware/hardware gates.\n",
+    "elapsed_seconds": 0.185
+  },
+  "failure_reason": "command_failed",
+  "finished_at": "2026-09-01T22:51:10.330133+00:00",
+  "workspace_checkpoint": {
+    "version": 2,
+    "task_id": "20260902-c6-gateway-link-virtual-s3-e2e-v1",
+    "reason": "task-exit",
+    "created_at": "2026-09-01T22:51:10.871468+00:00",
+    "base_head": "1e08e1860e20d9c0f72ecdde33d5a7ddd111c9c5",
+    "work_branch": "agent-work",
+    "path": "/Users/michal/agent-workspace/repos/esp32-c6-zigbee/checkpoints/20260902-c6-gateway-link-virtual-s3-e2e-v1/1788303070643631000-task-exit",
+    "tracked_patch": "tracked.patch",
+    "untracked_root": "untracked",
+    "untracked_files": [
+      "tests/host/test_gateway_link_e2e.c"
+    ],
+    "tracked_patch_bytes": 2688,
+    "untracked_bytes": 16602,
+    "total_bytes": 19290,
+    "status": " M .github/workflows/quality.yml\n M docs/GATEWAY_LINK_V1.md\n?? tests/host/test_gateway_link_e2e.c\n"
+  },
+  "task_digest": "1d909cb8cb70b0592c344a98bf2b7ef0098938e4201d8e5e80b265bc65eaff65",
+  "idle_timeout": 120,
+  "task_timeout": 900,
+  "memory_limit_mb": 1024,
+  "attempt_id": "64de312e9340e20629765d45",
+  "daemon_version": "4.12.2"
+}
