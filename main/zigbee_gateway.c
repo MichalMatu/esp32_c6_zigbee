@@ -1,6 +1,5 @@
 #include "zigbee_gateway.h"
 
-#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -20,6 +19,7 @@
 #include <ezbee/zdo/zdo_bind_mgmt.h>
 #include <ezbee/zdo/zdo_dev_srv_disc.h>
 
+#include "gateway_device_state.h"
 #include "gateway_events.h"
 #include "gateway_reporting_policy.h"
 #include "gateway_zcl_value.h"
@@ -28,52 +28,18 @@
 #define GATEWAY_PROFILE_ID 0x0104U
 #define GATEWAY_DEVICE_ID 0x0000U
 #define GATEWAY_CHANNEL_MASK 0x07fff800UL
-#define GATEWAY_MAX_DEVICES 16U
-#define GATEWAY_MAX_ENDPOINTS_PER_DEVICE 8U
 #define GATEWAY_DISCOVERY_QUEUE_DEPTH 16U
 #define GATEWAY_MAX_ASYNC_CONTEXTS 32U
 #define GATEWAY_ZIGBEE_LOCK_TIMEOUT_MS 100U
 #define GATEWAY_DISCOVERY_MAX_RETRIES 3U
 #define GATEWAY_DISCOVERY_RETRY_DELAY_MS 50U
 #define GATEWAY_REQUEST_STALE_MS 10000U
-#define GATEWAY_INVALID_SHORT_ADDR 0xffffU
 
 /* Poll Control Check-In uses quarter-seconds, not the millisecond SDK macro. */
 #define GATEWAY_FAST_POLL_TIMEOUT_QUARTER_SECONDS 20U /* five seconds */
 
 #define ZCL_ATTR_BASIC_MANUFACTURER_NAME 0x0004U
 #define ZCL_ATTR_BASIC_MODEL_IDENTIFIER 0x0005U
-
-typedef enum { SLOT_EMPTY, SLOT_ACTIVE, SLOT_REJOIN_PENDING, SLOT_LEAVING } slot_state_t;
-typedef enum { BASIC_NOT_SCHEDULED, BASIC_SCHEDULED, BASIC_COMPLETE } basic_state_t;
-
-typedef struct {
-    bool in_use;
-    uint8_t endpoint;
-    basic_state_t basic_state;
-    uint32_t basic_scheduled_at_ms;
-    uint8_t reporting_requested;
-    uint8_t reporting_configured;
-    uint32_t reporting_requested_at_ms;
-    uint8_t binding_requested;
-    uint8_t binding_configured;
-    uint32_t binding_requested_at_ms;
-} endpoint_state_t;
-
-typedef struct {
-    slot_state_t state;
-    uint32_t generation;
-    gateway_device_id_t device;
-    ezb_shortaddr_t previous_short_addr;
-    uint8_t pending_jobs;
-    uint8_t pending_requests;
-    endpoint_state_t endpoints[GATEWAY_MAX_ENDPOINTS_PER_DEVICE];
-} device_slot_t;
-
-typedef struct {
-    uint8_t index;
-    uint32_t generation;
-} device_ref_t;
 
 typedef enum {
     DISCOVERY_ACTIVE_ENDPOINTS,
@@ -101,7 +67,6 @@ typedef struct {
     uint8_t retry_count;
 } async_context_t;
 
-static device_slot_t s_devices[GATEWAY_MAX_DEVICES];
 static async_context_t s_async_contexts[GATEWAY_MAX_ASYNC_CONTEXTS];
 static StaticQueue_t s_discovery_queue_storage;
 static uint8_t s_discovery_queue_buffer[
@@ -130,141 +95,14 @@ static void warning(const gateway_device_id_t *device, const char *text)
     gateway_event_publish(&event);
 }
 
-static bool ieee_matches(const device_slot_t *slot, const ezb_extaddr_t *ieee)
-{
-    return ieee != NULL && slot->device.ieee_valid &&
-        memcmp(slot->device.ieee, ieee->u8, sizeof(slot->device.ieee)) == 0;
-}
-
-static device_slot_t *find_by_ieee(const ezb_extaddr_t *ieee, bool include_leaving)
-{
-    for (size_t i = 0; ieee != NULL && i < GATEWAY_MAX_DEVICES; ++i) {
-        if (s_devices[i].state != SLOT_EMPTY &&
-            (include_leaving || s_devices[i].state == SLOT_ACTIVE) &&
-            ieee_matches(&s_devices[i], ieee)) {
-            return &s_devices[i];
-        }
-    }
-    return NULL;
-}
-
-static device_slot_t *find_by_short(
-    ezb_shortaddr_t short_addr, bool include_leaving)
-{
-    for (size_t i = 0; i < GATEWAY_MAX_DEVICES; ++i) {
-        if (s_devices[i].state != SLOT_EMPTY &&
-            (include_leaving || s_devices[i].state == SLOT_ACTIVE) &&
-            s_devices[i].device.short_addr == short_addr) {
-            return &s_devices[i];
-        }
-    }
-    return NULL;
-}
-
-static device_ref_t ref_for(const device_slot_t *slot)
-{
-    return (device_ref_t){
-        .index = (uint8_t)(slot - s_devices),
-        .generation = slot->generation,
-    };
-}
-
-static device_slot_t *from_ref(device_ref_t ref, bool include_leaving)
-{
-    if (ref.index >= GATEWAY_MAX_DEVICES) {
-        return NULL;
-    }
-    device_slot_t *slot = &s_devices[ref.index];
-    if (slot->state == SLOT_EMPTY || slot->generation != ref.generation ||
-        (!include_leaving && slot->state != SLOT_ACTIVE)) {
-        return NULL;
-    }
-    return slot;
-}
-
-static void maybe_reclaim(device_slot_t *slot)
-{
-    if (slot != NULL && slot->state == SLOT_LEAVING &&
-        slot->pending_jobs == 0U && slot->pending_requests == 0U) {
-        memset(slot->endpoints, 0, sizeof(slot->endpoints));
-        memset(&slot->device, 0, sizeof(slot->device));
-        slot->device.short_addr = GATEWAY_INVALID_SHORT_ADDR;
-        slot->state = SLOT_EMPTY;
-    }
-}
-
-static device_slot_t *allocate_device(ezb_shortaddr_t short_addr)
-{
-    for (size_t i = 0; i < GATEWAY_MAX_DEVICES; ++i) {
-        if (s_devices[i].state == SLOT_EMPTY) {
-            const uint32_t generation =
-                s_devices[i].generation == UINT32_MAX ? 1U :
-                s_devices[i].generation + 1U;
-            memset(&s_devices[i], 0, sizeof(s_devices[i]));
-            s_devices[i].state = SLOT_ACTIVE;
-            s_devices[i].generation = generation;
-            s_devices[i].device.short_addr = short_addr;
-            s_devices[i].previous_short_addr = GATEWAY_INVALID_SHORT_ADDR;
-            return &s_devices[i];
-        }
-    }
-    return NULL;
-}
-
-/* IEEE is authoritative identity; the 16-bit address is a mutable route. */
-static device_slot_t *upsert_device(
-    ezb_shortaddr_t short_addr, const ezb_extaddr_t *ieee)
-{
-    device_slot_t *slot = ieee == NULL ?
-        find_by_short(short_addr, false) : find_by_ieee(ieee, true);
-    if (slot == NULL) {
-        slot = allocate_device(short_addr);
-    }
-    if (slot == NULL) {
-        return NULL;
-    }
-
-    device_slot_t *old = find_by_short(short_addr, true);
-    if (old != NULL && old != slot) {
-        old->device.short_addr = GATEWAY_INVALID_SHORT_ADDR;
-        old->state = SLOT_LEAVING;
-        maybe_reclaim(old);
-    }
-
-    slot->state = SLOT_ACTIVE;
-    if (slot->device.short_addr != GATEWAY_INVALID_SHORT_ADDR &&
-        slot->device.short_addr != short_addr) {
-        slot->previous_short_addr = slot->device.short_addr;
-    }
-    slot->device.short_addr = short_addr;
-    if (ieee != NULL) {
-        memcpy(slot->device.ieee, ieee->u8, sizeof(slot->device.ieee));
-        slot->device.ieee_valid = true;
-    }
-    return slot;
-}
-
 static endpoint_state_t *endpoint_state(
     device_slot_t *slot, uint8_t endpoint, bool create)
 {
-    for (size_t i = 0; i < GATEWAY_MAX_ENDPOINTS_PER_DEVICE; ++i) {
-        if (slot->endpoints[i].in_use &&
-            slot->endpoints[i].endpoint == endpoint) {
-            return &slot->endpoints[i];
-        }
+    endpoint_state_t *state = gateway_device_endpoint_state(slot, endpoint, create);
+    if (state == NULL && create && slot != NULL) {
+        warning(&slot->device, "endpoint state capacity exhausted");
     }
-    if (!create) {
-        return NULL;
-    }
-    for (size_t i = 0; i < GATEWAY_MAX_ENDPOINTS_PER_DEVICE; ++i) {
-        if (!slot->endpoints[i].in_use) {
-            slot->endpoints[i].in_use = true;
-            slot->endpoints[i].endpoint = endpoint;
-            return &slot->endpoints[i];
-        }
-    }
-    warning(&slot->device, "endpoint state capacity exhausted");
-    return NULL;
+    return state;
 }
 
 static gateway_device_id_t device_from_header(const ezb_zcl_cmd_hdr_t *header)
@@ -275,7 +113,7 @@ static gateway_device_id_t device_from_header(const ezb_zcl_cmd_hdr_t *header)
     }
     if (header->src_addr.addr_mode == EZB_ADDR_MODE_SHORT) {
         device.short_addr = header->src_addr.u.short_addr;
-        device_slot_t *slot = find_by_short(device.short_addr, false);
+        device_slot_t *slot = gateway_device_find_by_short(device.short_addr, false);
         if (slot != NULL) {
             device = slot->device;
         }
@@ -286,8 +124,8 @@ static gateway_device_id_t device_from_header(const ezb_zcl_cmd_hdr_t *header)
             sizeof(device.ieee)
         );
         device.ieee_valid = true;
-        device_slot_t *slot = find_by_ieee(
-            &header->src_addr.u.extended_addr, false
+        device_slot_t *slot = gateway_device_find_by_ieee(
+            header->src_addr.u.extended_addr.u8, false
         );
         if (slot != NULL) {
             device = slot->device;
@@ -310,14 +148,14 @@ static device_slot_t *recover_report_source(const ezb_zcl_cmd_hdr_t *header)
         return NULL;
     }
     const ezb_shortaddr_t short_addr = header->src_addr.u.short_addr;
-    device_slot_t *slot = find_by_short(short_addr, false);
+    device_slot_t *slot = gateway_device_find_by_short(short_addr, false);
     if (slot != NULL) {
         return slot;
     }
 
     ezb_extaddr_t ieee;
     slot = ezb_address_extended_by_short(short_addr, &ieee) == EZB_ERR_NONE ?
-        upsert_device(short_addr, &ieee) : upsert_device(short_addr, NULL);
+        gateway_device_upsert(short_addr, ieee.u8) : gateway_device_upsert(short_addr, NULL);
     if (slot != NULL &&
         !queue_job(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U, 0U)) {
         warning(&slot->device, "report recovery discovery queue full");
@@ -338,7 +176,7 @@ static bool queue_job(
     }
     const discovery_job_t job = {
         .kind = kind,
-        .device = ref_for(slot),
+        .device = gateway_device_ref_for(slot),
         .route_short_addr = slot->device.short_addr,
         .endpoint = endpoint,
         .cluster_id = cluster,
@@ -412,7 +250,7 @@ static async_context_t *context_alloc(
         if (!s_async_contexts[i].in_use) {
             s_async_contexts[i] = (async_context_t){
                 .in_use = true,
-                .device = ref_for(slot),
+                .device = gateway_device_ref_for(slot),
                 .route_short_addr = slot->device.short_addr,
                 .endpoint = endpoint,
                 .cluster_id = cluster,
@@ -430,10 +268,10 @@ static void context_release(async_context_t *context)
     if (context == NULL || !context->in_use) {
         return;
     }
-    device_slot_t *slot = from_ref(context->device, true);
+    device_slot_t *slot = gateway_device_from_ref(context->device, true);
     if (slot != NULL && slot->pending_requests != 0U) {
         --slot->pending_requests;
-        maybe_reclaim(slot);
+        gateway_device_maybe_reclaim(slot);
     }
     context->in_use = false;
 }
@@ -458,7 +296,7 @@ static void clear_pending(device_slot_t *slot, const discovery_job_t *job)
 
 static void retry_or_fail(discovery_job_t job, const char *message)
 {
-    device_slot_t *slot = from_ref(job.device, true);
+    device_slot_t *slot = gateway_device_from_ref(job.device, true);
     if (slot == NULL) {
         return;
     }
@@ -474,7 +312,7 @@ static void retry_or_fail(discovery_job_t job, const char *message)
     }
     clear_pending(slot, &job);
     warning(&slot->device, message);
-    maybe_reclaim(slot);
+    gateway_device_maybe_reclaim(slot);
 }
 
 static void publish_report(const ezb_zcl_cmd_report_attr_message_t *message)
@@ -584,7 +422,7 @@ static void publish_basic_read(const ezb_zcl_cmd_read_attr_rsp_message_t *messag
         gateway_event_publish(&event);
     }
 
-    device_slot_t *slot = find_by_short(device.short_addr, false);
+    device_slot_t *slot = gateway_device_find_by_short(device.short_addr, false);
     endpoint_state_t *state =
         slot == NULL ? NULL : endpoint_state(slot, header->src_ep, false);
     if (seen && state != NULL) {
@@ -600,7 +438,7 @@ static void publish_config_response(
         return;
     }
     gateway_device_id_t device = device_from_header(header);
-    device_slot_t *slot = find_by_short(device.short_addr, false);
+    device_slot_t *slot = gateway_device_find_by_short(device.short_addr, false);
     endpoint_state_t *state =
         slot == NULL ? NULL : endpoint_state(slot, header->src_ep, false);
     const uint8_t mask = gateway_reporting_policy_reporting_mask(header->cluster_id);
@@ -636,7 +474,7 @@ static void handle_check_in(ezb_zcl_poll_control_check_in_message_t *message)
         header->src_addr.addr_mode != EZB_ADDR_MODE_SHORT) {
         return;
     }
-    device_slot_t *slot = upsert_device(header->src_addr.u.short_addr, NULL);
+    device_slot_t *slot = gateway_device_upsert(header->src_addr.u.short_addr, NULL);
     if (slot == NULL) {
         return;
     }
@@ -690,7 +528,7 @@ static void zcl_core_action_handler(
 
 static bool context_route(const async_context_t *context, device_slot_t **out)
 {
-    device_slot_t *slot = context == NULL ? NULL : from_ref(context->device, false);
+    device_slot_t *slot = context == NULL ? NULL : gateway_device_from_ref(context->device, false);
     if (slot == NULL || slot->device.short_addr != context->route_short_addr) {
         return false;
     }
@@ -994,7 +832,7 @@ static void discovery_task(void *arg)
         if (xQueueReceive(s_discovery_queue, &job, portMAX_DELAY) != pdPASS) {
             continue;
         }
-        device_slot_t *slot = from_ref(job.device, true);
+        device_slot_t *slot = gateway_device_from_ref(job.device, true);
         if (slot == NULL) {
             continue;
         }
@@ -1005,7 +843,7 @@ static void discovery_task(void *arg)
             slot->device.short_addr != job.route_short_addr) {
             clear_pending(slot, &job);
             warning(&slot->device, "discovery cancelled: route superseded");
-            maybe_reclaim(slot);
+            gateway_device_maybe_reclaim(slot);
             continue;
         }
         if (job.retry_count != 0U) {
@@ -1043,13 +881,14 @@ static void announce_and_discover(
     const ezb_extaddr_t *ieee)
 {
     device_slot_t *existing =
-        ieee == NULL ? NULL : find_by_ieee(ieee, true);
+        ieee == NULL ? NULL : gateway_device_find_by_ieee(ieee->u8, true);
     const ezb_shortaddr_t old_short_addr = existing == NULL ?
         GATEWAY_INVALID_SHORT_ADDR :
         (existing->device.short_addr == GATEWAY_INVALID_SHORT_ADDR ?
             existing->previous_short_addr : existing->device.short_addr);
 
-    device_slot_t *slot = upsert_device(short_addr, ieee);
+    device_slot_t *slot = gateway_device_upsert(
+        short_addr, ieee == NULL ? NULL : ieee->u8);
     if (slot == NULL) {
         warning(NULL, "device registry capacity exhausted");
         return;
@@ -1091,9 +930,9 @@ static void device_left(
     bool leave_type_known,
     ezb_zdo_leave_type_t leave_type)
 {
-    device_slot_t *slot = ieee == NULL ? NULL : find_by_ieee(ieee, true);
+    device_slot_t *slot = ieee == NULL ? NULL : gateway_device_find_by_ieee(ieee->u8, true);
     if (slot == NULL) {
-        slot = find_by_short(short_addr, true);
+        slot = gateway_device_find_by_short(short_addr, true);
     }
     const gateway_device_id_t device = leave_device_id(slot, short_addr, ieee);
 
@@ -1116,7 +955,7 @@ static void device_left(
     }
     if (kind == GATEWAY_EVENT_DEVICE_LEAVE_RESET) {
         slot->state = SLOT_LEAVING;
-        maybe_reclaim(slot);
+        gateway_device_maybe_reclaim(slot);
         return;
     }
     if (slot->device.short_addr != GATEWAY_INVALID_SHORT_ADDR) {
@@ -1183,9 +1022,9 @@ static bool app_signal_handler(const ezb_app_signal_t *signal)
             gateway_device_id_t device = {.short_addr = p->short_addr};
             memcpy(device.ieee, p->device_addr.u8, sizeof(device.ieee));
             device.ieee_valid = true;
-            device_slot_t *slot = find_by_ieee(&p->device_addr, false);
+            device_slot_t *slot = gateway_device_find_by_ieee(p->device_addr.u8, false);
             if (slot == NULL) {
-                slot = find_by_short(p->short_addr, false);
+                slot = gateway_device_find_by_short(p->short_addr, false);
             }
             if (slot != NULL) {
                 device = slot->device;
