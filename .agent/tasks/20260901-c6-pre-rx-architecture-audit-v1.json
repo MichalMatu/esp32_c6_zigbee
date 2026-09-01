@@ -1,0 +1,14 @@
+{
+  "id": "20260901-c6-pre-rx-architecture-audit-v1",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 512,
+  "command_timeout": 120,
+  "idle_timeout": 60,
+  "task_timeout": 300,
+  "commands": [
+    "set -euo pipefail; EXPECTED=62d408c55a0138e03311967199dbaac59b54e842; git fetch --quiet origin main; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; test \"$(git rev-parse origin/main)\" = \"$EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; echo '=== PERMIT JOIN API ==='; grep -n -C 12 'zigbee_gateway_set_permit_join' main/zigbee_gateway.c main/zigbee_gateway.h main/gateway_console.c || true; echo '=== MODULE LINE COUNTS ==='; wc -l main/*.c main/*.h | sort -n; echo '=== TASK CREATION / QUEUES ==='; grep -nE 'xTaskCreate|xQueueCreate|xQueueCreateStatic|uart_driver_install' main/*.c || true; echo '=== GATEWAYLINK OWNERSHIP REFS ==='; grep -nE 'gateway_uart_link|gateway_link_|gateway_event_receive|gateway_event_publish' main/*.c | head -n 240; echo '=== WORKTREE ==='; git status --short"
+  ]
+}
