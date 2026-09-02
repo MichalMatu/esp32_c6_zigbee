@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-c6-sonoff-lifecycle-fix-hw-v1",
+  "task_digest": "123bb8954d3b81b7f083158b37a58435fc9d26406bdfc7b9dc2b59232b978202",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-02T00:09:08.997300+00:00",
+  "attempt_id": "07c01067337184c9f5627b3f",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 31236,
+  "updated_at": "2026-09-02T00:09:08.997511+00:00",
+  "pid": 31236
+}
