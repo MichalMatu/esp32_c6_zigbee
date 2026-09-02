@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-local-agent-v413-final-full-gate-v1",
+  "task_digest": "310fd971e6ef16d83074ec363182a3182eca6f38264e3b111410087d1656d431",
+  "idle_timeout": 300,
+  "task_timeout": 3600,
+  "memory_limit_mb": 1536,
+  "started_at": "2026-09-02T16:32:13.483214+00:00",
+  "attempt_id": "ebbea1a7e492b55153a6aef5",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 77580,
+  "updated_at": "2026-09-02T16:32:13.483388+00:00",
+  "pid": 77580
+}
