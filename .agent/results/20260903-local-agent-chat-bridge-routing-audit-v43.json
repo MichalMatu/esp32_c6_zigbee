@@ -1,0 +1,60 @@
+{
+  "id": "20260903-local-agent-chat-bridge-routing-audit-v43",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-09-02T23:03:33.420952+00:00",
+  "command_timeout": 120,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\npython3 - <<'PY'\nimport json, pathlib, re, datetime\nhome=pathlib.Path.home()\nroots=[home/'Library/Application Support/Google/Chrome',home/'Library/Application Support/Chromium',home/'Library/Application Support/BraveSoftware/Brave-Browser']\nmatches=[]\nfor root in roots:\n  if not root.exists(): continue\n  for profile in root.iterdir():\n    if not profile.is_dir(): continue\n    for prefname in ('Preferences','Secure Preferences'):\n      pref=profile/prefname\n      if not pref.exists(): continue\n      try: data=json.loads(pref.read_text())\n      except Exception: continue\n      for ext_id,ext in (((data.get('extensions') or {}).get('settings') or {})).items():\n        raw=json.dumps(ext)\n        path=str(ext.get('path') or '')\n        name=str((ext.get('manifest') or {}).get('name') or '')\n        if 'chat_bridge' in raw.lower() or 'local-agent' in path.lower() or 'Local Agent Chat Bridge' in name:\n          key=(str(profile),ext_id)\n          if key not in [(str(p),e) for p,e in matches]:\n            matches.append((profile,ext_id))\n          print('EXTENSION='+json.dumps({'profile':profile.name,'id':ext_id,'pref':prefname,'path':path,'name':name,'version':(ext.get('manifest') or {}).get('version')},sort_keys=True))\nprint('MATCH_COUNT='+str(len(matches)))\ndef iso_score(v):\n  vals=[]\n  for c in (v.get('conversations') or {}).values():\n    for k in ('lastControlAt','lastRunAt','nextRunAt'):\n      s=c.get(k)\n      if isinstance(s,str) and s: vals.append(s)\n  return max(vals) if vals else ''\nfor profile,ext_id in matches:\n  storage=profile/'Local Extension Settings'/ext_id\n  print(f'STORAGE profile={profile.name} id={ext_id} exists={storage.exists()}')\n  states=[]\n  if storage.exists():\n    dec=json.JSONDecoder()\n    for f in storage.iterdir():\n      if not f.is_file(): continue\n      try: text=f.read_bytes().decode('latin1')\n      except Exception: continue\n      starts=[m.start() for m in re.finditer(r'\\{\\\"conversations\\\":',text)]\n      for pos in starts:\n        try:\n          obj,end=dec.raw_decode(text[pos:])\n        except Exception:\n          continue\n        if isinstance(obj,dict) and obj.get('schemaVersion')==2 and isinstance(obj.get('conversations'),dict):\n          states.append((iso_score(obj),f.name,obj))\n  uniq={}\n  for score,f,obj in states:\n    sig=json.dumps(obj,sort_keys=True,separators=(',',':'))\n    uniq[sig]=(score,f,obj)\n  ordered=sorted(uniq.values(),key=lambda x:x[0])\n  print('PARSED_STATE_COUNT='+str(len(ordered)))\n  for idx,(score,f,obj) in enumerate(ordered[-5:],1):\n    compact=[]\n    for cid,c in (obj.get('conversations') or {}).items():\n      compact.append({k:c.get(k) for k in ('id','url','label','repositoryId','enabled','bootstrapPending','preferredTabId','lastStatus','lastControlAt','lastRunAt','nextRunAt')})\n    print('STATE[%d]='%idx+json.dumps({'score':score,'file':f,'conversations':compact},sort_keys=True))\nPY",
+      "exit_code": 0,
+      "output": "EXTENSION={\"id\": \"blnjodhbjlpgalgbblldbmbfbafapmoo\", \"name\": \"\", \"path\": \"/Users/michal/local-agent/chat_bridge\", \"pref\": \"Secure Preferences\", \"profile\": \"Default\", \"version\": null}\nMATCH_COUNT=1\nSTORAGE profile=Default id=blnjodhbjlpgalgbblldbmbfbafapmoo exists=True\nPARSED_STATE_COUNT=1050\nSTATE[1]={\"conversations\": [{\"bootstrapPending\": false, \"enabled\": true, \"id\": \"chat-06879967\", \"label\": \"ChatGPT - C6_zigbee\", \"lastControlAt\": \"2026-09-02T22:49:39.375Z\", \"lastRunAt\": \"2026-09-02T22:56:17.713Z\", \"lastStatus\": \"content_script_unavailable\", \"nextRunAt\": \"2026-09-02T22:57:17.717Z\", \"preferredTabId\": 68026700, \"repositoryId\": \"\", \"url\": \"https://chatgpt.com/c/6a98a1f3-df18-83eb-8f87-4a9b62542424\"}, {\"bootstrapPending\": false, \"enabled\": true, \"id\": \"chat-4b44bbb6\", \"label\": \"ML - Kontynuacja projektu Growbox\", \"lastControlAt\": \"2026-09-02T22:52:11.360Z\", \"lastRunAt\": \"2026-09-02T22:51:12.507Z\", \"lastStatus\": \"next_600s_by_assistant\", \"nextRunAt\": \"2026-09-02T23:02:11.363Z\", \"preferredTabId\": 68026529, \"repositoryId\": \"\", \"url\": \"https://chatgpt.com/c/6a9886fd-5d58-83ed-b64b-32534aa5cea0\"}], \"file\": \"000003.log\", \"score\": \"2026-09-02T23:02:11.363Z\"}\nSTATE[2]={\"conversations\": [{\"bootstrapPending\": false, \"enabled\": true, \"id\": \"chat-06879967\", \"label\": \"ChatGPT - C6_zigbee\", \"lastControlAt\": \"2026-09-02T22:49:39.375Z\", \"lastRunAt\": \"2026-09-02T22:57:18.617Z\", \"lastStatus\": \"content_script_unavailable\", \"nextRunAt\": \"2026-09-02T22:57:17.717Z\", \"preferredTabId\": 68026700, \"repositoryId\": \"\", \"url\": \"https://chatgpt.com/c/6a98a1f3-df18-83eb-8f87-4a9b62542424\"}, {\"bootstrapPending\": false, \"enabled\": true, \"id\": \"chat-4b44bbb6\", \"label\": \"ML - Kontynuacja projektu Growbox\", \"lastControlAt\": \"2026-09-02T22:52:11.360Z\", \"lastRunAt\": \"2026-09-02T22:51:12.507Z\", \"lastStatus\": \"next_600s_by_assistant\", \"nextRunAt\": \"2026-09-02T23:02:11.363Z\", \"preferredTabId\": 68026529, \"repositoryId\": \"\", \"url\": \"https://chatgpt.com/c/6a9886fd-5d58-83ed-b64b-32534aa5cea0\"}], \"file\": \"000003.log\", \"score\": \"2026-09-02T23:02:11.363Z\"}\nSTATE[3]={\"conversations\": [{\"bootstrapPending\": false, \"enabled\": true, \"id\": \"chat-06879967\", \"label\": \"ChatGPT - C6_zigbee\", \"lastControlAt\": \"2026-09-02T22:49:39.375Z\", \"lastRunAt\": \"2026-09-02T22:57:18.617Z\", \"lastStatus\": \"content_script_unavailable\", \"nextRunAt\": \"2026-09-02T22:58:18.621Z\", \"preferredTabId\": 68026700, \"repositoryId\": \"\", \"url\": \"https://chatgpt.com/c/6a98a1f3-df18-83eb-8f87-4a9b62542424\"}, {\"bootstrapPending\": false, \"enabled\": true, \"id\": \"chat-4b44bbb6\", \"label\": \"ML - Kontynuacja projektu Growbox\", \"lastControlAt\": \"2026-09-02T22:52:11.360Z\", \"lastRunAt\": \"2026-09-02T22:51:12.507Z\", \"lastStatus\": \"next_600s_by_assistant\", \"nextRunAt\": \"2026-09-02T23:02:11.363Z\", \"preferredTabId\": 68026529, \"repositoryId\": \"\", \"url\": \"https://chatgpt.com/c/6a9886fd-5d58-83ed-b64b-32534aa5cea0\"}], \"file\": \"000003.log\", \"score\": \"2026-09-02T23:02:11.363Z\"}\nSTATE[4]={\"conversations\": [{\"bootstrapPending\": false, \"enabled\": true, \"id\": \"chat-06879967\", \"label\": \"ChatGPT - C6_zigbee\", \"lastControlAt\": \"2026-09-02T22:49:39.375Z\", \"lastRunAt\": \"2026-09-02T22:57:18.617Z\", \"lastStatus\": \"content_script_unavailable\", \"nextRunAt\": \"2026-09-02T22:58:18.621Z\", \"preferredTabId\": 68026700, \"repositoryId\": \"\", \"url\": \"https://chatgpt.com/c/6a98a1f3-df18-83eb-8f87-4a9b62542424\"}, {\"bootstrapPending\": false, \"enabled\": true, \"id\": \"chat-4b44bbb6\", \"label\": \"ML - Kontynuacja projektu Growbox\", \"lastControlAt\": \"2026-09-02T22:52:11.360Z\", \"lastRunAt\": \"2026-09-02T22:51:12.507Z\", \"lastStatus\": \"next_600s_by_assistant\", \"nextRunAt\": \"2026-09-02T23:02:11.363Z\", \"preferredTabId\": 68026529, \"repositoryId\": \"\", \"url\": \"https://chatgpt.com/c/6a9886fd-5d58-83ed-b64b-32534aa5cea0\"}], \"file\": \"000003.log\", \"score\": \"2026-09-02T23:02:11.363Z\"}\nSTATE[5]={\"conversations\": [{\"bootstrapPending\": false, \"enabled\": true, \"id\": \"chat-06879967\", \"label\": \"ChatGPT - C6_zigbee\", \"lastControlAt\": \"2026-09-02T22:49:39.375Z\", \"lastRunAt\": \"2026-09-02T22:57:18.617Z\", \"lastStatus\": \"content_script_unavailable\", \"nextRunAt\": null, \"preferredTabId\": 68026700, \"repositoryId\": \"\", \"url\": \"https://chatgpt.com/c/6a98a1f3-df18-83eb-8f87-4a9b62542424\"}, {\"bootstrapPending\": false, \"enabled\": true, \"id\": \"chat-4b44bbb6\", \"label\": \"ML - Kontynuacja projektu Growbox\", \"lastControlAt\": \"2026-09-02T22:52:11.360Z\", \"lastRunAt\": \"2026-09-02T22:51:12.507Z\", \"lastStatus\": \"next_600s_by_assistant\", \"nextRunAt\": \"2026-09-02T23:02:11.363Z\", \"preferredTabId\": 68026529, \"repositoryId\": \"\", \"url\": \"https://chatgpt.com/c/6a9886fd-5d58-83ed-b64b-32534aa5cea0\"}], \"file\": \"000003.log\", \"score\": \"2026-09-02T23:02:11.363Z\"}\n",
+      "elapsed_seconds": 1.077,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 512,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 6.84,
+      "output_policy": "stream",
+      "captured_output_chars": 4651,
+      "output_truncated": false,
+      "current_rss_mb": 6.84,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 1.077
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.207
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.195
+  },
+  "finished_at": "2026-09-02T23:03:37.223266+00:00",
+  "task_digest": "8ded7480695d64ac85ffaeca09ee1c031d4c6c9641a2383b51949ccf89a5f0db",
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "attempt_id": "4de2f0815ea48d99d105bedc",
+  "daemon_version": "4.13.1"
+}
