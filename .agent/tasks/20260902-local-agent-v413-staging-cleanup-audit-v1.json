@@ -1,0 +1,14 @@
+{
+  "id": "20260902-local-agent-v413-staging-cleanup-audit-v1",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": ["machine"],
+  "memory_limit_mb": 256,
+  "command_timeout": 180,
+  "idle_timeout": 90,
+  "task_timeout": 300,
+  "commands": [
+    "set -euo pipefail; EXPECTED=53e270120a0bc61b2af422c6faa4fcd6789f43c3; cd \"$HOME/local-agent\"; test \"$(git branch --show-current)\" = main; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git fetch --quiet origin main --tags; test \"$(git rev-parse origin/main)\" = \"$EXPECTED\"; test \"$(git rev-list -n1 v4.13.0)\" = \"$EXPECTED\"; echo '=== STAGING_BRANCH ==='; git show-ref --verify refs/heads/v4.13.0-staging || true; echo '=== STAGING_REMOTE ==='; git ls-remote --heads origin refs/heads/v4.13.0-staging || true; echo '=== WORKTREES ==='; git worktree list --porcelain; echo LOCAL_AGENT_V413_STAGING_CLEANUP_AUDIT=PASS"
+  ]
+}
