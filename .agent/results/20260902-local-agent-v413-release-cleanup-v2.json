@@ -1,0 +1,60 @@
+{
+  "id": "20260902-local-agent-v413-release-cleanup-v2",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-09-02T17:34:18.783565+00:00",
+  "command_timeout": 300,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail; EXPECTED_C6=3171ef1a3874e13693686b7b31b431f84b771a1c; RELEASE=53e270120a0bc61b2af422c6faa4fcd6789f43c3; git fetch --quiet origin main; test \"$(git rev-parse origin/main)\" = \"$EXPECTED_C6\"; test \"$(git rev-parse HEAD)\" = \"$EXPECTED_C6\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; cd \"$HOME/local-agent\"; test \"$(git branch --show-current)\" = main; test \"$(git rev-parse HEAD)\" = \"$RELEASE\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git fetch --quiet --prune origin main --tags; test \"$(git rev-parse origin/main)\" = \"$RELEASE\"; test \"$(git rev-list -n1 v4.13.0)\" = \"$RELEASE\"; STAGING_WT=$(git worktree list --porcelain | awk 'BEGIN{p=\"\"} /^worktree /{p=substr($0,10)} /^branch refs\\/heads\\/v4\\.13\\.0-staging$/{print p}'); if [ -n \"$STAGING_WT\" ]; then test \"$(git -C \"$STAGING_WT\" rev-parse HEAD)\" = \"$RELEASE\"; test -z \"$(git -C \"$STAGING_WT\" status --porcelain --untracked-files=normal)\"; git worktree remove \"$STAGING_WT\"; fi; if git show-ref --verify --quiet refs/heads/v4.13.0-staging; then test \"$(git rev-parse refs/heads/v4.13.0-staging)\" = \"$RELEASE\"; git branch -d v4.13.0-staging; fi; ! git ls-remote --exit-code --heads origin refs/heads/v4.13.0-staging >/dev/null 2>&1; git fetch --quiet --prune origin; ! git show-ref --verify --quiet refs/heads/v4.13.0-staging; ! git show-ref --verify --quiet refs/remotes/origin/v4.13.0-staging; test \"$(git rev-parse HEAD)\" = \"$RELEASE\"; test \"$(git rev-list -n1 v4.13.0)\" = \"$RELEASE\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; echo LOCAL_AGENT_V413_RELEASE_CLEANUP=PASS",
+      "exit_code": 0,
+      "output": "LOCAL_AGENT_V413_RELEASE_CLEANUP=PASS\n",
+      "elapsed_seconds": 3.66,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 256,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 17.56,
+      "output_policy": "stream",
+      "captured_output_chars": 38,
+      "output_truncated": false,
+      "current_rss_mb": 17.56,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 3.66
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.222
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.165
+  },
+  "finished_at": "2026-09-02T17:34:26.091125+00:00",
+  "task_digest": "29cc3a71a931b5753e15142a16bd87cba7237e3397c234f0a905c0f47a5b365d",
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "memory_limit_mb": 256,
+  "attempt_id": "83d7be76b0aa4949e665f4fd",
+  "daemon_version": "4.13.0"
+}
