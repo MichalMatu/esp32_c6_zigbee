@@ -1,0 +1,60 @@
+{
+  "id": "20260902-local-agent-v413-focused-validation-v3",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-09-02T16:05:26.604232+00:00",
+  "command_timeout": 900,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail; STAGE=e4a307410ed6724e5734f513d85a396c8d948699; PROD=20f3ab645d4be384a6f20073330f2744694b7c4b; cd \"$HOME/local-agent\"; test \"$(git rev-parse HEAD)\" = \"$PROD\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git fetch --quiet origin v4.13.0-staging; test \"$(git rev-parse origin/v4.13.0-staging)\" = \"$STAGE\"; WT=/tmp/local-agent-v413-validation; git worktree prune; rm -rf \"$WT\"; git worktree add --force --quiet --detach \"$WT\" \"$STAGE\"; cd \"$WT\"; echo \"VALIDATING=$(git rev-parse HEAD)\"; env -u LOCAL_AGENT_LEASE_FDS -u LOCAL_AGENT_LEASE_KEYS_DIGEST python3 -m py_compile agentd.py agent_config.py agent_core.py agent_runtime.py agent_process.py agent_repository.py agent_repo_worker.py agent_multirepo.py agent_parallel.py agent_parallel_worker.py agent_repo_admin.py agent_storage.py agentctl.py agent_version.py; env -u LOCAL_AGENT_LEASE_FDS -u LOCAL_AGENT_LEASE_KEYS_DIGEST python3 -m unittest -q tests.test_agent_parallel_worker tests.test_task_resources tests.test_agent_parallel tests.test_parallel_process tests.test_multirepo_integration tests.test_parallel_integration tests.test_parallel_resource_wait; cd \"$HOME/local-agent\"; git worktree remove --force \"$WT\"; echo FOCUSED_VALIDATION=PASS",
+      "exit_code": 0,
+      "output": "VALIDATING=e4a307410ed6724e5734f513d85a396c8d948699\n----------------------------------------------------------------------\nRan 35 tests in 132.325s\n\nOK\nFOCUSED_VALIDATION=PASS\n",
+      "elapsed_seconds": 135.257,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 768,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 57.91,
+      "output_policy": "stream",
+      "captured_output_chars": 176,
+      "output_truncated": false,
+      "current_rss_mb": 20.34,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 135.257
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.223
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.964
+  },
+  "finished_at": "2026-09-02T16:07:45.564353+00:00",
+  "task_digest": "3f237181e16ae115df81034aa27914ff2d0262b50d2e4d580f51f27132aca887",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 768,
+  "attempt_id": "854c2b1f45a2ef1f796988c4",
+  "daemon_version": "4.12.2"
+}
