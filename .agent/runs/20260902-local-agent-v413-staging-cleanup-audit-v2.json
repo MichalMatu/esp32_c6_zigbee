@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-local-agent-v413-staging-cleanup-audit-v2",
+  "task_digest": "de5c3bcba47d5516f125197c6f74a32076dafb64e670f91bc198b1689ed4087c",
+  "idle_timeout": 90,
+  "task_timeout": 300,
+  "memory_limit_mb": 256,
+  "started_at": "2026-09-02T18:17:03.900288+00:00",
+  "attempt_id": "2ad274a3fdd84503b9c5bb03",
+  "daemon_version": "4.13.0",
+  "daemon_pid": 20917,
+  "updated_at": "2026-09-02T18:17:03.900436+00:00",
+  "pid": 20917
+}
