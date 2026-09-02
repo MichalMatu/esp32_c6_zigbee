@@ -1,0 +1,14 @@
+{
+  "id": "20260902-local-agent-v4131-control-pyc-cleanup-v35",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": ["machine"],
+  "memory_limit_mb": 512,
+  "command_timeout": 120,
+  "idle_timeout": 60,
+  "task_timeout": 300,
+  "commands": [
+    "set -euo pipefail\nLA=\"$HOME/local-agent\"\nCTRL=\"$HOME/agent-workspace/repos/litegraph/control\"\nREL=.agent/patches/__pycache__/v4113_onboard_c6_repo.cpython-313.pyc\nSHA=838fb36ec204c8f9e13057096a0b95f58126df0f\ntest \"$(git -C \"$LA\" branch --show-current)\" = main\ntest \"$(git -C \"$LA\" rev-parse HEAD)\" = \"$SHA\"\ntest -z \"$(git -C \"$LA\" status --porcelain --untracked-files=all)\"\nSTATUS=$(git -C \"$CTRL\" status --porcelain --untracked-files=all)\nprintf 'CONTROL_STATUS_BEFORE=%s\\n' \"$STATUS\"\ntest \"$STATUS\" = \"?? $REL\"\ntest -f \"$CTRL/$REL\"\nrm -- \"$CTRL/$REL\"\nrmdir \"$CTRL/.agent/patches/__pycache__\" 2>/dev/null || true\ntest -z \"$(git -C \"$CTRL\" status --porcelain --untracked-files=all)\"\nprintf 'CONTROL_STATUS_AFTER=clean\\n'"
+  ]
+}
