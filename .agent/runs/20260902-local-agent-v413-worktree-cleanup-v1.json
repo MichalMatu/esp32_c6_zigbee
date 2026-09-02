@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-local-agent-v413-worktree-cleanup-v1",
+  "task_digest": "6205fd74d0737c83cb134c569e8a4cf70b382564564070043d9dd5f6bb83b79e",
+  "idle_timeout": 90,
+  "task_timeout": 420,
+  "memory_limit_mb": 256,
+  "started_at": "2026-09-02T18:36:58.117981+00:00",
+  "attempt_id": "b4aea51c4e7fb4f12b24c563",
+  "daemon_version": "4.13.0",
+  "daemon_pid": 28262,
+  "updated_at": "2026-09-02T18:36:58.118126+00:00",
+  "pid": 28262
+}
