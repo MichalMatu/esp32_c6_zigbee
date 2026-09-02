@@ -1,0 +1,14 @@
+{
+  "id": "20260903-local-agent-chat-bridge-routing-audit-v42",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": ["machine"],
+  "memory_limit_mb": 512,
+  "command_timeout": 120,
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "commands": [
+    "set -euo pipefail\npython3 - <<'PY'\nimport json, pathlib, re\nhome=pathlib.Path.home()\nroots=[home/'Library/Application Support/Google/Chrome', home/'Library/Application Support/Chromium', home/'Library/Application Support/BraveSoftware/Brave-Browser']\nprint('=== EXTENSION_CONFIG_SEARCH ===')\nmatches=[]\nfor root in roots:\n    if not root.exists(): continue\n    for profile in sorted([p for p in root.iterdir() if p.is_dir()]):\n        for prefname in ('Preferences','Secure Preferences'):\n            pref=profile/prefname\n            if not pref.exists(): continue\n            try: data=json.loads(pref.read_text())\n            except Exception: continue\n            settings=((data.get('extensions') or {}).get('settings') or {})\n            for ext_id,ext in settings.items():\n                path=str(ext.get('path') or '')\n                manifest=ext.get('manifest') or {}\n                name=str(manifest.get('name') or '')\n                raw=json.dumps(ext,ensure_ascii=True)\n                if 'local-agent' in path.lower() or 'chat_bridge' in path.lower() or 'Local Agent Chat Bridge' in name or 'chat_bridge' in raw.lower():\n                    key=(str(profile),ext_id)\n                    rec={'root':str(root),'profile':profile.name,'pref':prefname,'extension_id':ext_id,'path':path,'name':name,'version':manifest.get('version'),'state':ext.get('state'),'location':ext.get('location')}\n                    print(json.dumps(rec,sort_keys=True))\n                    if key not in [(str(p),e) for p,e,_ in matches]: matches.append((profile,ext_id,rec))\nprint('=== STORAGE ===')\nif not matches: print('NO_EXTENSION_CONFIG_MATCH')\nfor profile,ext_id,rec in matches:\n    storage=profile/'Local Extension Settings'/ext_id\n    print(f'STORAGE profile={profile.name} id={ext_id} exists={storage.exists()} path={storage}')\n    if not storage.exists(): continue\n    candidates=[]\n    for f in sorted(storage.iterdir()):\n        if not f.is_file(): continue\n        try: blob=f.read_bytes()\n        except Exception: continue\n        for run in re.findall(rb'[\\x20-\\x7e]{12,}',blob):\n            txt=run.decode('utf-8','replace')\n            if any(k in txt for k in ('bridgeState','repositoryId','conversations','growbox-ml-controller','esp32-c6-zigbee','C6_zigbee','Stage27C','chat-')):\n                if txt not in candidates: candidates.append(txt)\n    print(f'MATCHING_STRINGS={len(candidates)}')\n    for i,txt in enumerate(candidates[:120],1): print(f'STR[{i}]={txt[:20000]}')\nPY"
+  ]
+}
