@@ -1,0 +1,14 @@
+{
+  "id": "20260902-local-agent-v413-staging-cleanup-inspect-v3",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": ["machine"],
+  "memory_limit_mb": 256,
+  "command_timeout": 120,
+  "idle_timeout": 60,
+  "task_timeout": 300,
+  "commands": [
+    "set -euo pipefail; C6_EXPECTED=3171ef1a3874e13693686b7b31b431f84b771a1c; CANDIDATE=53e270120a0bc61b2af422c6faa4fcd6789f43c3; test \"$(git rev-parse HEAD)\" = \"$C6_EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; cd \"$HOME/local-agent\"; test \"$(git branch --show-current)\" = main; test \"$(git rev-parse HEAD)\" = \"$CANDIDATE\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; test \"$(git ls-remote origin refs/heads/main | awk '{print $1}')\" = \"$CANDIDATE\"; test \"$(git ls-remote origin 'refs/tags/v4.13.0^{}' | awk '{print $1}')\" = \"$CANDIDATE\"; if git ls-remote --exit-code --heads origin refs/heads/v4.13.0-staging >/dev/null 2>&1; then echo REMOTE_STAGING_PRESENT=1; else echo REMOTE_STAGING_PRESENT=0; fi; echo '=== LOCAL_STAGING_REF ==='; git show-ref --verify refs/heads/v4.13.0-staging || true; echo '=== WORKTREES ==='; git worktree list --porcelain; echo '=== V413_TEMP_STATUS ==='; for P in $(git worktree list --porcelain | awk '$1==\"worktree\"{print $2}' | grep '/local-agent-v413-' || true); do echo PATH=$P; echo HEAD=$(git -C \"$P\" rev-parse HEAD); if [ -z \"$(git -C \"$P\" status --porcelain --untracked-files=normal)\" ]; then echo CLEAN=1; else echo CLEAN=0; git -C \"$P\" status --porcelain --untracked-files=normal; fi; done; echo LOCAL_AGENT_V413_CLEANUP_INSPECT_V3=PASS"
+  ]
+}
