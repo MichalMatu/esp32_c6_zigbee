@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-local-agent-v413-cleanup-staging-v1",
+  "task_digest": "b2b6299c49e9ea8f75103a513e01a513cb21110182c91c73e0022492df1a33c9",
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "memory_limit_mb": 256,
+  "started_at": "2026-09-02T18:25:55.426903+00:00",
+  "attempt_id": "77c19783ec1953e41dc0deb0",
+  "daemon_version": "4.13.0",
+  "daemon_pid": 24369,
+  "updated_at": "2026-09-02T18:25:55.427098+00:00",
+  "pid": 24369
+}
