@@ -48,6 +48,31 @@ All fixed-capacity structures must fail visibly rather than allocate without bou
 
 `gateway_inputs`, `gateway_zcl_value`, `gateway_reporting_policy`, and `gateway_device_state` have strict C11 host tests compiled with `-Wall -Wextra -Werror -pedantic`. GitHub CI also builds the complete firmware with the pinned ESP-IDF/ESP Zigbee versions. Hardware/RF behavior remains a separate validation gate after source/CI validation.
 
+## Future hardware-offload direction
+
+This section is a non-binding long-term direction, not a current migration plan. The ESP32-S3 currently remains a standalone, working application controller and must not be weakened or made dependent on unfinished C6 features. Any responsibility moved to the C6 should be introduced incrementally, with the existing S3 behavior retained until the replacement path is independently verified.
+
+The preferred long-term split is to evolve the ESP32-C6 into a deterministic hardware and field-I/O processor while the ESP32-S3 remains the application processor. The C6 should concentrate hardware-facing work that does not compete with its Zigbee radio: Zigbee coordination, local I2C sensors, additional wired sensor buses and GPIO, ADC, 1-Wire, SPI peripherals, UART/RS485/Modbus, counters, PWM/relay/output drivers, and other bounded local I/O adapters. These adapters should normalize their data into the same protocol-neutral input/event contract already used by Zigbee and SCD4x.
+
+Where useful, the C6 may also own lightweight preprocessing close to the hardware: calibration, validation, debouncing, filtering, deadbands, rate limiting, availability/freshness tracking, and simple fail-safe output behavior when the S3 link is unavailable. Application semantics, automation graphs, UI policy, user configuration, and high-level control decisions should remain on the S3 unless a later design explicitly proves a better boundary.
+
+Radio responsibilities should stay intentionally separated. The C6 should remain dedicated to Zigbee/IEEE 802.15.4 plus wired I/O; Wi-Fi and BLE scanning should stay on the ESP32-S3. Do not add a second 2.4 GHz workload to the C6 merely because the silicon supports it if doing so can reduce Zigbee coordinator reliability.
+
+A small persistent store-and-forward buffer on the C6 may be considered later so short S3 outages do not lose normalized measurements. Prefer a bounded ring buffer and simple failure isolation over a full filesystem. FRAM or another simple persistent memory may be a better fit than placing a full microSD/FAT data logger inside the Zigbee coordinator process. Full history/archive ownership should remain on the S3 unless later measurements show a clear reason to move it.
+
+Possible future C6 expansion areas, subject to separate design and hardware validation, therefore include:
+
+- additional I2C sensors and reusable local-bus adapters;
+- 1-Wire sensors such as DS18B20;
+- GPIO digital inputs, pulse counters, and local actuator outputs;
+- ADC and external ADC adapters;
+- UART and RS485/Modbus field devices;
+- bounded preprocessing and freshness/availability policy;
+- local fail-safe output behavior;
+- a small persistent measurement backlog for GatewayLink outages.
+
+This direction should be revisited before implementation. Pin allocation, memory budget, task/queue ownership, failure isolation, electrical interfaces, and the exact S3/C6 responsibility boundary still need deliberate design. The goal is not to maximize C6 utilization; it is to reduce S3 hardware workload without making the Zigbee coordinator less reliable or coupling the currently standalone S3 to unfinished infrastructure.
+
 ## Growth rule
 
 Prefer extending the pure policy/state modules when adding supported clusters or device lifecycle behavior. Keep SDK-specific request/callback lifetime management in the gateway integration layer unless a future extraction creates a smaller coherent discovery API rather than merely moving functions between files.
