@@ -1,0 +1,14 @@
+{
+  "id": "20260902-local-agent-v413-post-release-smoke-v1",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 256,
+  "command_timeout": 120,
+  "idle_timeout": 60,
+  "task_timeout": 300,
+  "commands": [
+    "set -euo pipefail; EXPECTED=3171ef1a3874e13693686b7b31b431f84b771a1c; git fetch --quiet origin main; test \"$(git rev-parse origin/main)\" = \"$EXPECTED\"; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; echo LOCAL_AGENT_V413_POST_RELEASE_SMOKE=PASS"
+  ]
+}
