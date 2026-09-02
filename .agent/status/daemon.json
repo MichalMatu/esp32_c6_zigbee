@@ -2,8 +2,8 @@
   "version": 1,
   "daemon_version": "4.12.2",
   "state": "idle",
-  "pid": 63315,
-  "updated_at": "2026-09-02T16:08:00.626341+00:00",
+  "pid": 66278,
+  "updated_at": "2026-09-02T16:12:05.208584+00:00",
   "self_revision": "20f3ab645d4be384a6f20073330f2744694b7c4b",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -22,8 +22,8 @@
   "control_branch": "agent-control",
   "default_branch": "main",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 63315,
+  "worker_pid": 66278,
   "supervisor_pid": 71830,
-  "last_task_id": "20260902-local-agent-v413-focused-validation-v3",
+  "last_task_id": "20260902-local-agent-v413-full-unittest-v1",
   "execution_variant": "parallel"
 }
