@@ -24,6 +24,12 @@ The ESP32-C6 firmware is intentionally split into a small SDK-facing shell and h
 - `gateway_device_state.c/.h` owns the bounded IEEE-first device/endpoint registry, generation-safe references, short-address replacement, and reclaim rules. It has no ESP Zigbee or FreeRTOS dependency.
 - `zigbee_gateway.c/.h` is the SDK integration/orchestration boundary: stack lifecycle, app/ZCL signal dispatch, discovery jobs, bounded async callback contexts, binding/reporting submission, and permit-join control.
 
+## Zigbee join lifecycle boundary
+
+`DEVICE_UPDATE` is lifecycle/security evidence, not a blanket discovery trigger. In particular, `EZB_ZDO_UPDDEV_UNSECURE_JOIN` occurs before Trust Center authorization has completed and must not start Active Endpoint discovery. Normal device announce and supported rejoin paths start discovery. Active Endpoint discovery is claimed per current short address so duplicate lifecycle signals cannot launch overlapping commissioning for the same route; a route change or leave resets that claim according to the bounded device-state lifecycle.
+
+`DEVICE_AUTHORIZED` is logged separately so hardware tests can distinguish successful authorization from early unsecure-join updates. This rule prevents discovery/bind/reporting traffic from racing the security handshake on sleepy end devices while retaining IEEE-first identity and generation-safe route replacement.
+
 ## Invariants
 
 IEEE identity is authoritative; 16-bit Zigbee short addresses are mutable routes. Async work must use generation-safe device references so a recycled slot or reused short address cannot be mistaken for the old device.

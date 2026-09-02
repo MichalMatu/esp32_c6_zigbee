@@ -4,6 +4,10 @@ Native ESP-IDF firmware for an ESP32-C6 coordinator. It is pinned to **ESP-IDF v
 
 This is SDK 2.x firmware: it uses the `esp_zigbee_*` and `ezb_*` APIs and one `ezb_af_create_gateway_endpoint()` gateway endpoint. It does not add a pretend client-cluster data model, nor does it use a ZBOSS/v1 compatibility API, Wi-Fi, BLE, Matter, Thread, MQTT, or an external RCP. An SCD4x-family sensor is supported as an independent local I2C input adapter.
 
+## Verified stable baseline
+
+The hardware-verified SONOFF SNZB-02D baseline is frozen at tag `c6-sonoff-stable-2026-09-02`, pointing to firmware commit `0d64fb03164d3bcb9f5cddd639977b4027bc581f`. The controlled pairing test completed with successful authorization, no `LEAVE_RESET` and no APS security failures; a following 20-minute read-only soak received repeated temperature/humidity reports with zero rejoin, leave, queue-drop, panic or watchdog events. See [docs/VERIFIED_BASELINE.md](docs/VERIFIED_BASELINE.md) for the exact root cause, fix and evidence.
+
 ## Architecture
 
 The firmware keeps ESP Zigbee SDK integration separate from a protocol-neutral input contract, normalized events, transport, value decoding, reporting policy, device state, and console handling. Zigbee is one input adapter; local I2C sensors can use the same `gateway_input_id_t` + normalized measurement boundary. The pure input/value/policy/state modules have strict host tests in addition to the full ESP-IDF firmware build. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for module responsibilities and invariants.
