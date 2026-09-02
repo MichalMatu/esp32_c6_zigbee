@@ -1,0 +1,14 @@
+{
+  "id": "20260902-local-agent-v413-staging-cleanup-inspect-v1",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": ["machine"],
+  "memory_limit_mb": 256,
+  "command_timeout": 120,
+  "idle_timeout": 60,
+  "task_timeout": 300,
+  "commands": [
+    "set -euo pipefail; C6_EXPECTED=3171ef1a3874e13693686b7b31b431f84b771a1c; CANDIDATE=53e270120a0bc61b2af422c6faa4fcd6789f43c3; test \"$(git rev-parse HEAD)\" = \"$C6_EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; cd \"$HOME/local-agent\"; test \"$(git branch --show-current)\" = main; test \"$(git rev-parse HEAD)\" = \"$CANDIDATE\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git fetch --quiet origin main v4.13.0-staging --tags; test \"$(git rev-parse origin/main)\" = \"$CANDIDATE\"; test \"$(git rev-parse origin/v4.13.0-staging)\" = \"$CANDIDATE\"; test \"$(git rev-parse v4.13.0^{})\" = \"$CANDIDATE\"; echo '=== WORKTREES ==='; git worktree list --porcelain; echo '=== LOCAL STAGING REF ==='; git show-ref --verify refs/heads/v4.13.0-staging || true; echo '=== REMOTE STAGING REF ==='; git ls-remote --heads origin refs/heads/v4.13.0-staging; echo LOCAL_AGENT_V413_STAGING_CLEANUP_INSPECT=PASS"
+  ]
+}
