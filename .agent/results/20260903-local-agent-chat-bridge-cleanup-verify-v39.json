@@ -1,0 +1,60 @@
+{
+  "id": "20260903-local-agent-chat-bridge-cleanup-verify-v39",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": true,
+  "started_at": "2026-09-02T22:51:57.856922+00:00",
+  "command_timeout": 180,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\nLA=\"$HOME/local-agent\"\nWT=\"/private/tmp/local-agent-chat-bridge-next-preview-v37\"\nBR=\"v4.13.2-staging\"\nEXPECTED=\"334a6c373b179061dd8cb544743b26fae34c4e50\"\ntest \"$(git -C \"$LA\" branch --show-current)\" = main\ntest \"$(git -C \"$LA\" rev-parse HEAD)\" = \"$EXPECTED\"\ntest -z \"$(git -C \"$LA\" status --porcelain --untracked-files=all)\"\nVERSION=$(python3 -c 'import json,pathlib; print(json.loads((pathlib.Path.home()/\"local-agent/chat_bridge/manifest.json\").read_text())[\"version\"])')\ntest \"$VERSION\" = \"0.3.1\"\nif [ -d \"$WT\" ]; then git -C \"$LA\" worktree remove \"$WT\"; fi\nif git -C \"$LA\" show-ref --verify --quiet \"refs/heads/$BR\"; then git -C \"$LA\" branch -d \"$BR\"; fi\nif git -C \"$LA\" ls-remote --exit-code --heads origin \"$BR\" >/dev/null 2>&1; then git -C \"$LA\" push origin --delete \"$BR\"; fi\necho \"PRODUCTION_HEAD=$(git -C \"$LA\" rev-parse HEAD)\"\necho \"PRODUCTION_DIRTY=$(git -C \"$LA\" status --porcelain --untracked-files=all | wc -l | tr -d ' ')\"\necho \"CHAT_BRIDGE_VERSION=$VERSION\"\nif git -C \"$LA\" ls-remote --exit-code --heads origin \"$BR\" >/dev/null 2>&1; then echo STAGING_REMOTE_PRESENT=1; exit 1; else echo STAGING_REMOTE_PRESENT=0; fi",
+      "exit_code": 0,
+      "output": "Deleted branch v4.13.2-staging (was 334a6c3).\nTo https://github.com/MichalMatu/local-agent.git\n - [deleted]         v4.13.2-staging\nPRODUCTION_HEAD=334a6c373b179061dd8cb544743b26fae34c4e50\nPRODUCTION_DIRTY=0\nCHAT_BRIDGE_VERSION=0.3.1\nSTAGING_REMOTE_PRESENT=0\n",
+      "elapsed_seconds": 3.66,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 512,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 20.52,
+      "output_policy": "stream",
+      "captured_output_chars": 259,
+      "output_truncated": false,
+      "current_rss_mb": 20.52,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 3.66
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.175
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.188
+  },
+  "finished_at": "2026-09-02T22:52:04.421534+00:00",
+  "task_digest": "acbd5b859cb5dfeb999d3873135d6f582fcabe71a6bb235c3c1e963d9ed698e9",
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "memory_limit_mb": 512,
+  "attempt_id": "11fdb0f4fbfd34ddb83f3455",
+  "daemon_version": "4.13.1"
+}
