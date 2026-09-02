@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-local-agent-v413-release-cleanup-v1",
+  "task_digest": "3da13ccf64da18eb80c8d1d61b155b9b07b942fdb78e133b3ab04e87117ecc1b",
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "memory_limit_mb": 256,
+  "started_at": "2026-09-02T17:31:20.272046+00:00",
+  "attempt_id": "32585b3a47756902fb7e5127",
+  "daemon_version": "4.13.0",
+  "daemon_pid": 6178,
+  "updated_at": "2026-09-02T17:31:20.272230+00:00",
+  "pid": 6178
+}
