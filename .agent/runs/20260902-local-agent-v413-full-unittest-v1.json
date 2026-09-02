@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-local-agent-v413-full-unittest-v1",
+  "task_digest": "5038e443e9fd5a539e93aff080057700e7c3f9bd06c64bb3fdf29c653debbe13",
+  "idle_timeout": 300,
+  "task_timeout": 3600,
+  "memory_limit_mb": 1024,
+  "started_at": "2026-09-02T16:08:30.508982+00:00",
+  "attempt_id": "f76b5b4b4198e833302a5e5a",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 66278,
+  "updated_at": "2026-09-02T16:08:30.509102+00:00",
+  "pid": 66278
+}
