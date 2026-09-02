@@ -1,0 +1,61 @@
+{
+  "id": "20260902-local-agent-v413-focused-validation-v1",
+  "status": "failed",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-09-02T16:01:13.565146+00:00",
+  "command_timeout": 900,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail; STAGE=e4a307410ed6724e5734f513d85a396c8d948699; PROD=20f3ab645d4be384a6f20073330f2744694b7c4b; cd \"$HOME/local-agent\"; test \"$(git rev-parse HEAD)\" = \"$PROD\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git fetch --quiet origin v4.13.0-staging; test \"$(git rev-parse origin/v4.13.0-staging)\" = \"$STAGE\"; WT=/tmp/local-agent-v413-validation; if git worktree list --porcelain | grep -Fqx \"worktree $WT\"; then git worktree remove --force \"$WT\"; fi; rm -rf \"$WT\"; git worktree add --quiet --detach \"$WT\" \"$STAGE\"; cd \"$WT\"; echo \"VALIDATING=$(git rev-parse HEAD)\"; python3 -m py_compile agentd.py agent_config.py agent_core.py agent_runtime.py agent_process.py agent_repository.py agent_repo_worker.py agent_multirepo.py agent_parallel.py agent_parallel_worker.py agent_repo_admin.py agent_storage.py agentctl.py agent_version.py; python3 -m unittest -q tests.test_agent_parallel_worker tests.test_task_resources tests.test_agent_parallel tests.test_parallel_process tests.test_multirepo_integration tests.test_parallel_integration tests.test_parallel_resource_wait; cd \"$HOME/local-agent\"; git worktree remove --force \"$WT\"; echo FOCUSED_VALIDATION=PASS",
+      "exit_code": 1,
+      "output": "VALIDATING=e4a307410ed6724e5734f513d85a396c8d948699\n======================================================================\nERROR: test_global_control_requires_every_repository_lease (tests.test_agent_parallel.ParallelSupervisorTests.test_global_control_requires_every_repository_lease)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/local-agent-v413-validation/tests/test_agent_parallel.py\", line 206, in test_global_control_requires_every_repository_lease\n    with serial_worker.repository_execution_lease(repositories[1]):\n         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py\", line 141, in __enter__\n    return next(self.gen)\n  File \"/private/tmp/local-agent-v413-validation/agent_repo_worker.py\", line 80, in repository_execution_lease\n    if _validate_inherited_repository_leases(repository):\n       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^\n  File \"/private/tmp/local-agent-v413-validation/agent_repo_worker.py\", line 59, in _validate_inherited_repository_leases\n    raise RuntimeError(\"inherited repository lease identity mismatch\")\nRuntimeError: inherited repository lease identity mismatch\n\n======================================================================\nFAIL: test_named_resource_lock_survives_worker_exit_via_descendant_fd (tests.test_parallel_process.ParallelResourceProcessTests.test_named_resource_lock_survives_worker_exit_via_descendant_fd)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/local-agent-v413-validation/tests/test_parallel_process.py\", line 156, in test_named_resource_lock_survives_worker_exit_via_descendant_fd\n    self.assertEqual(holder.stdout.readline().strip(), \"READY\")\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'Traceback (most recent call last):' != 'READY'\n- Traceback (most recent call last):\n+ READY\n\n\n======================================================================\nFAIL: test_supervisor_processes_two_repositories_across_serial_cycles (tests.test_multirepo_integration.MultiRepositoryIntegrationTests.test_supervisor_processes_two_repositories_across_serial_cycles)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/local-agent-v413-validation/tests/test_multirepo_integration.py\", line 236, in test_supervisor_processes_two_repositories_across_serial_cycles\n    self.assertEqual(result.returncode, 0, result.stdout)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 2 != 0 : [2026-09-02T16:01:26.144188+00:00] [multi-repo] supervisor 4.12.2 starting; global execution concurrency=1 control_repository=project-a; adaptive_polling=hot:2s/30s warm:5s/120s idle:15s\n[2026-09-02T16:01:26.144456+00:00] [multi-repo] initial supervisor control service degraded: RuntimeError: closed execution lease descriptor: 4\n[2026-09-02T16:01:26.154463+00:00] [multi-repo] registry/scheduler cycle failed: RuntimeError: closed execution lease descriptor: 4\n\n\n======================================================================\nFAIL: test_two_repository_workers_with_same_task_id_are_isolated (tests.test_multirepo_integration.MultiRepositoryIntegrationTests.test_two_repository_workers_with_same_task_id_are_isolated)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/local-agent-v413-validation/tests/test_multirepo_integration.py\", line 202, in test_two_repository_workers_with_same_task_id_are_isolated\n    self.assertEqual(result.returncode, 10, result.stdout)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 1 != 10 : Traceback (most recent call last):\n  File \"/private/tmp/local-agent-v413-validation/agent_process.py\", line 132, in inherited_lease_fds\n    os.fstat(fd)\n    ~~~~~~~~^^^^\nOSError: [Errno 9] Bad file descriptor\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/private/tmp/local-agent-v413-validation/agent_repo_worker.py\", line 396, in <module>\n    raise SystemExit(main())\n                     ~~~~^^\n  File \"/private/tmp/local-agent-v413-validation/agent_repo_worker.py\", line 384, in main\n    with repository_execution_lease(repository):\n         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py\", line 141, in __enter__\n    return next(self.gen)\n  File \"/private/tmp/local-agent-v413-validation/agent_repo_worker.py\", line 80, in repository_execution_lease\n    if _validate_inherited_repository_leases(repository):\n       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^\n  File \"/private/tmp/local-agent-v413-validation/agent_repo_worker.py\", line 53, in _validate_inherited_repository_leases\n    fds = inherited_lease_fds(os.environ)\n  File \"/private/tmp/local-agent-v413-validation/agent_process.py\", line 134, in inherited_lease_fds\n    raise RuntimeError(f\"closed execution lease descriptor: {fd}\") from exc\nRuntimeError: closed execution lease descriptor: 4\n\n\n======================================================================\nFAIL: test_two_parallel_safe_repositories_reach_shared_barrier (tests.test_parallel_integration.ParallelIntegrationTests.test_two_parallel_safe_repositories_reach_shared_barrier)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/local-agent-v413-validation/tests/test_parallel_integration.py\", line 96, in test_two_parallel_safe_repositories_reach_shared_barrier\n    self.assertEqual(result.returncode, 0, result.stdout)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 2 != 0 : [2026-09-02T16:01:39.449567+00:00] [parallel] parallel supervisor 4.12.2 starting max_workers=2 safe_fallback=agent_multirepo.py control_repository=parallel-a\n[2026-09-02T16:01:42.067705+00:00] self-update skipped: checkout is not on main\n[2026-09-02T16:01:42.258578+00:00] [parallel] scheduler cycle failed: RuntimeError: closed execution lease descriptor: 4\n\n\n======================================================================\nFAIL: test_waiting_resource_is_visible_and_task_runs_after_release (tests.test_parallel_resource_wait.ParallelResourceWaitIntegrationTests.test_waiting_resource_is_visible_and_task_runs_after_release)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/tmp/local-agent-v413-validation/tests/test_parallel_resource_wait.py\", line 130, in test_waiting_resource_is_visible_and_task_runs_after_release\n    waiting = wait_for_status(repository_status, \"waiting_resource\")\n  File \"/private/tmp/local-agent-v413-validation/tests/test_parallel_resource_wait.py\", line 52, in wait_for_status\n    raise AssertionError(f\"status {state!r} not observed; last={last!r}\")\nAssertionError: status 'waiting_resource' not observed; last={}\n\n----------------------------------------------------------------------\nRan 35 tests in 37.062s\n\nFAILED (failures=5, errors=1)\n",
+      "elapsed_seconds": 40.312,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 768,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 59.3,
+      "output_policy": "stream",
+      "captured_output_chars": 7359,
+      "output_truncated": false,
+      "current_rss_mb": 32.34,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "failed",
+      "elapsed_seconds": 40.312
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.209
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.65
+  },
+  "failure_reason": "command_failed",
+  "finished_at": "2026-09-02T16:01:57.520608+00:00",
+  "task_digest": "3629a96afa3d3b03757eace6d5814986e0ea22e817a555cb2af5ae149dcffbf1",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 768,
+  "attempt_id": "6e3193cbde3c765cc28fec1a",
+  "daemon_version": "4.12.2"
+}
