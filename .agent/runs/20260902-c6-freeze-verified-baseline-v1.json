@@ -1,0 +1,9 @@
+{
+  "event": "invalid_task_rejected",
+  "status": "failed",
+  "failure_reason": "invalid_task_file",
+  "updated_at": "2026-09-02T00:46:15.279833+00:00",
+  "task_id": "20260902-c6-freeze-verified-baseline-v1",
+  "daemon_version": "4.12.2",
+  "pid": 46425
+}
