@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-emergency-stop-local-agent-v1",
+  "task_digest": "46282069c0b63006e73e71f3f791f66860eb9c025fca92dde69c7b5e88c6e880",
+  "idle_timeout": 60,
+  "task_timeout": 120,
+  "memory_limit_mb": 256,
+  "started_at": "2026-09-02T23:57:54.587729+00:00",
+  "attempt_id": "04946c5c4313963f26eb47ec",
+  "daemon_version": "4.13.1",
+  "daemon_pid": 99278,
+  "updated_at": "2026-09-02T23:57:54.587898+00:00",
+  "pid": 99278
+}
