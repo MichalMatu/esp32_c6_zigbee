@@ -1,10 +1,10 @@
 {
   "version": 1,
   "daemon_version": "4.13.1",
-  "state": "idle",
-  "pid": 50714,
-  "updated_at": "2026-09-02T22:39:48.887711+00:00",
-  "self_revision": "838fb36ec204c8f9e13057096a0b95f58126df0f",
+  "state": "running",
+  "pid": 55992,
+  "updated_at": "2026-09-02T22:45:21.170303+00:00",
+  "self_revision": "334a6c373b179061dd8cb544743b26fae34c4e50",
   "poll_seconds": 15,
   "self_update_seconds": 60,
   "command_timeout_default": 900,
@@ -14,7 +14,7 @@
   "task_timeout_default": 1800,
   "task_timeout_max": 21600,
   "memory_limit_mb_default": 4096,
-  "current_task_id": null,
+  "current_task_id": "20260903-local-agent-chat-bridge-production-verify-v38",
   "current_attempt_id": null,
   "current_task_digest": null,
   "repository_id": "esp32-c6-zigbee",
@@ -22,8 +22,10 @@
   "control_branch": "agent-control",
   "default_branch": "main",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 50714,
+  "worker_pid": 55992,
   "supervisor_pid": 71830,
-  "last_task_id": "20260903-local-agent-chat-bridge-next-preview-v37",
+  "active_resources": [
+    "machine"
+  ],
   "execution_variant": "parallel"
 }
