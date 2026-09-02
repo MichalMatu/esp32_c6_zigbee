@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-local-agent-v413-post-release-smoke-v1",
+  "task_digest": "46b3a05d9b54bcbc03783fab51ac3575883fe5d8c96237570c0f8b52ba349217",
+  "idle_timeout": 60,
+  "task_timeout": 300,
+  "memory_limit_mb": 256,
+  "started_at": "2026-09-02T17:15:30.432386+00:00",
+  "attempt_id": "479c18d474b2f52decdd570b",
+  "daemon_version": "4.13.0",
+  "daemon_pid": 1135,
+  "updated_at": "2026-09-02T17:15:30.432520+00:00",
+  "pid": 1135
+}
