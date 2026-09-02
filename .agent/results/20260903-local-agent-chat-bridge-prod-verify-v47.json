@@ -1,0 +1,60 @@
+{
+  "id": "20260903-local-agent-chat-bridge-prod-verify-v47",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-09-02T23:24:26.228736+00:00",
+  "command_timeout": 120,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\nLA=\"$HOME/local-agent\"\necho \"HEAD=$(git -C \"$LA\" rev-parse HEAD)\"\necho \"BRANCH=$(git -C \"$LA\" branch --show-current)\"\necho \"DIRTY=$(git -C \"$LA\" status --porcelain --untracked-files=all | wc -l | tr -d ' ')\"\ngit -C \"$LA\" fetch --quiet origin main\necho \"ORIGIN_MAIN=$(git -C \"$LA\" rev-parse origin/main)\"\npython3 - <<'PY'\nimport json, pathlib\np=pathlib.Path.home()/\"local-agent/chat_bridge/manifest.json\"\nprint('CHAT_BRIDGE_VERSION='+json.loads(p.read_text())['version'])\nPY\necho \"SUPERVISOR=$(ps -p 71830 -o command=)\"\nCTRL=\"$HOME/agent-workspace/control/.agent/daemon/control.json\"\nif [ -f \"$CTRL\" ]; then echo 'LOCAL_CONTROL_BEGIN'; cat \"$CTRL\"; echo 'LOCAL_CONTROL_END'; else echo LOCAL_CONTROL_MISSING; fi\nACK=\"$HOME/agent-workspace/control/.agent/daemon/acks/chatgpt-local-agent-chat-bridge-wake-only-self-update-20260903-0121.json\"\nif [ -f \"$ACK\" ]; then echo 'LOCAL_ACK_BEGIN'; cat \"$ACK\"; echo 'LOCAL_ACK_END'; else echo LOCAL_ACK_MISSING; fi",
+      "exit_code": 0,
+      "output": "HEAD=f1709acd7080ecba191d7a266f332977417f685f\nBRANCH=main\nDIRTY=0\nORIGIN_MAIN=f1709acd7080ecba191d7a266f332977417f685f\nCHAT_BRIDGE_VERSION=0.3.2\nSUPERVISOR=/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/Resources/Python.app/Contents/MacOS/Python /Users/michal/local-agent/agent_parallel.py --registry /Users/michal/Library/Application Support/local-agent/repositories.json --max-workers 2\nLOCAL_CONTROL_MISSING\nLOCAL_ACK_MISSING\n",
+      "elapsed_seconds": 1.664,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 512,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 3.84,
+      "output_policy": "stream",
+      "captured_output_chars": 466,
+      "output_truncated": false,
+      "current_rss_mb": 3.84,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 1.664
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.174
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.135
+  },
+  "finished_at": "2026-09-02T23:24:30.811900+00:00",
+  "task_digest": "f6f18f7deec6ee7268cf4ec6f19537388a27770552dc4998d241c5f040bd6a5f",
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "attempt_id": "56b2d5072b9278b33be82806",
+  "daemon_version": "4.13.1"
+}
