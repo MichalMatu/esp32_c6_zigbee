@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-local-agent-v413-canonical-release-v2",
+  "task_digest": "40fc899ad3010c306a09e44569fd2ae9eca04a7c3815db922f07c99fcb5c4ed0",
+  "idle_timeout": 300,
+  "task_timeout": 3600,
+  "memory_limit_mb": 1536,
+  "started_at": "2026-09-02T16:47:52.432755+00:00",
+  "attempt_id": "d4e34a064aba751d9212a0b1",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 85544,
+  "updated_at": "2026-09-02T16:47:52.432994+00:00",
+  "pid": 85544
+}
