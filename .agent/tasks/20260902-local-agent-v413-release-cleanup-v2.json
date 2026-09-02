@@ -1,0 +1,14 @@
+{
+  "id": "20260902-local-agent-v413-release-cleanup-v2",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": ["machine"],
+  "memory_limit_mb": 256,
+  "command_timeout": 300,
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "commands": [
+    "set -euo pipefail; EXPECTED_C6=3171ef1a3874e13693686b7b31b431f84b771a1c; RELEASE=53e270120a0bc61b2af422c6faa4fcd6789f43c3; git fetch --quiet origin main; test \"$(git rev-parse origin/main)\" = \"$EXPECTED_C6\"; test \"$(git rev-parse HEAD)\" = \"$EXPECTED_C6\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; cd \"$HOME/local-agent\"; test \"$(git branch --show-current)\" = main; test \"$(git rev-parse HEAD)\" = \"$RELEASE\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git fetch --quiet --prune origin main --tags; test \"$(git rev-parse origin/main)\" = \"$RELEASE\"; test \"$(git rev-list -n1 v4.13.0)\" = \"$RELEASE\"; STAGING_WT=$(git worktree list --porcelain | awk 'BEGIN{p=\"\"} /^worktree /{p=substr($0,10)} /^branch refs\\/heads\\/v4\\.13\\.0-staging$/{print p}'); if [ -n \"$STAGING_WT\" ]; then test \"$(git -C \"$STAGING_WT\" rev-parse HEAD)\" = \"$RELEASE\"; test -z \"$(git -C \"$STAGING_WT\" status --porcelain --untracked-files=normal)\"; git worktree remove \"$STAGING_WT\"; fi; if git show-ref --verify --quiet refs/heads/v4.13.0-staging; then test \"$(git rev-parse refs/heads/v4.13.0-staging)\" = \"$RELEASE\"; git branch -d v4.13.0-staging; fi; ! git ls-remote --exit-code --heads origin refs/heads/v4.13.0-staging >/dev/null 2>&1; git fetch --quiet --prune origin; ! git show-ref --verify --quiet refs/heads/v4.13.0-staging; ! git show-ref --verify --quiet refs/remotes/origin/v4.13.0-staging; test \"$(git rev-parse HEAD)\" = \"$RELEASE\"; test \"$(git rev-list -n1 v4.13.0)\" = \"$RELEASE\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; echo LOCAL_AGENT_V413_RELEASE_CLEANUP=PASS"
+  ]
+}
