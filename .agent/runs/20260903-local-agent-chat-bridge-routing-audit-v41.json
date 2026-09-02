@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-local-agent-chat-bridge-routing-audit-v41",
+  "task_digest": "6744fc0228d1de228bed846495be9d43559dd53b07fc66e4c815587c8bd94b5b",
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "started_at": "2026-09-02T23:01:13.032602+00:00",
+  "attempt_id": "3b2e6aa8e98e77d559564be5",
+  "daemon_version": "4.13.1",
+  "daemon_pid": 69130,
+  "updated_at": "2026-09-02T23:01:13.032716+00:00",
+  "pid": 69130
+}
