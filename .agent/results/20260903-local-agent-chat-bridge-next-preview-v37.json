@@ -1,0 +1,60 @@
+{
+  "id": "20260903-local-agent-chat-bridge-next-preview-v37",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": true,
+  "started_at": "2026-09-02T22:39:32.013597+00:00",
+  "command_timeout": 300,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\nLA=\"$HOME/local-agent\"\nCTRL=\"$HOME/agent-workspace/repos/esp32-c6-zigbee/control\"\nWT=\"/private/tmp/local-agent-chat-bridge-next-preview-v37\"\nBR=\"v4.13.2-staging\"\nEXPECTED=\"838fb36ec204c8f9e13057096a0b95f58126df0f\"\ntest \"$(git -C \"$LA\" branch --show-current)\" = main\ntest \"$(git -C \"$LA\" rev-parse HEAD)\" = \"$EXPECTED\"\ntest -z \"$(git -C \"$LA\" status --porcelain --untracked-files=all)\"\ngit -C \"$LA\" fetch --quiet origin main\ntest \"$(git -C \"$LA\" rev-parse origin/main)\" = \"$EXPECTED\"\ntest ! -e \"$WT\"\ngit -C \"$LA\" worktree add -b \"$BR\" \"$WT\" origin/main\npython3 \"$CTRL/.agent/patches/v37_chat_bridge_next_preview.py\" \"$WT\"\ncd \"$WT\"\ngit diff --check\nnode --check chat_bridge/service_worker.js\nnode --check chat_bridge/service_worker.test.js\nnode --check chat_bridge/popup.js\nnode chat_bridge/control_protocol.test.js\nnode chat_bridge/bridge_state.test.js\nnode chat_bridge/service_worker.test.js\npython3 -m json.tool chat_bridge/manifest.json >/dev/null\ngit add chat_bridge/service_worker.js chat_bridge/service_worker.test.js chat_bridge/popup.js chat_bridge/manifest.json\ngit commit -m \"Improve Chat Bridge wake schedule visibility\"\ngit push -u origin \"$BR\"\necho \"CANDIDATE=$(git rev-parse HEAD)\"\necho \"PRODUCTION_HEAD=$(git -C \"$LA\" rev-parse HEAD)\"\necho \"PRODUCTION_DIRTY=$(git -C \"$LA\" status --porcelain --untracked-files=all | wc -l | tr -d ' ')\"",
+      "exit_code": 0,
+      "output": "Preparing worktree (new branch 'v4.13.2-staging')\nbranch 'v4.13.2-staging' set up to track 'origin/main'.\nHEAD is now at 838fb36 Extract shared supervisor policy and control\nChat Bridge control protocol tests passed.\nChat Bridge state tests passed.\nChat Bridge service worker tests passed.\n[v4.13.2-staging 334a6c3] Improve Chat Bridge wake schedule visibility\n 4 files changed, 105 insertions(+), 15 deletions(-)\nremote: \nremote: Create a pull request for 'v4.13.2-staging' on GitHub by visiting:        \nremote:      https://github.com/MichalMatu/local-agent/pull/new/v4.13.2-staging        \nremote: \nTo https://github.com/MichalMatu/local-agent.git\n * [new branch]      v4.13.2-staging -> v4.13.2-staging\nbranch 'v4.13.2-staging' set up to track 'origin/v4.13.2-staging'.\nCANDIDATE=334a6c373b179061dd8cb544743b26fae34c4e50\nPRODUCTION_HEAD=838fb36ec204c8f9e13057096a0b95f58126df0f\nPRODUCTION_DIRTY=0\n",
+      "elapsed_seconds": 5.49,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 1024,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 22.92,
+      "output_policy": "stream",
+      "captured_output_chars": 902,
+      "output_truncated": false,
+      "current_rss_mb": 22.92,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 5.49
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.171
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.175
+  },
+  "finished_at": "2026-09-02T22:39:40.327402+00:00",
+  "task_digest": "d09c7a6170b8313d70602e0bca15c07525aeb134bb66f1d3250a1368c51a13d3",
+  "idle_timeout": 120,
+  "task_timeout": 900,
+  "memory_limit_mb": 1024,
+  "attempt_id": "afc8aaea615d1ee06694e187",
+  "daemon_version": "4.13.1"
+}
