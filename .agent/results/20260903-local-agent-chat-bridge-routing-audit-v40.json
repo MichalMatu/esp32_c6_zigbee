@@ -1,0 +1,60 @@
+{
+  "id": "20260903-local-agent-chat-bridge-routing-audit-v40",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-09-02T22:59:16.445145+00:00",
+  "command_timeout": 120,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\npython3 - <<'PY'\nimport json, pathlib, re, subprocess\nhome = pathlib.Path.home()\nregistry = home / 'Library/Application Support/local-agent/repositories.json'\nprint('=== REGISTRY ===')\nraw = json.loads(registry.read_text())\nfor item in raw.get('repositories', []):\n    print(json.dumps({k:item.get(k) for k in ('repository_id','repository','work_path','control_path','control_branch','default_branch','enabled')}, sort_keys=True))\nprint('=== SUPERVISOR ===')\ntry:\n    out = subprocess.check_output(['ps','-p','71830','-o','command='], text=True).strip()\n    print(out)\nexcept Exception as exc:\n    print('SUPERVISOR_READ_ERROR=' + repr(exc))\nprint('=== CHAT_BRIDGE_STORAGE ===')\nchrome_root = home / 'Library/Application Support/Google/Chrome'\nprofiles = []\nif chrome_root.exists():\n    for p in chrome_root.iterdir():\n        if p.is_dir() and (p.name == 'Default' or p.name.startswith('Profile ')):\n            profiles.append(p)\nfound = 0\nfor profile in sorted(profiles):\n    ext_root = profile / 'Extensions'\n    if not ext_root.exists():\n        continue\n    for ext_dir in ext_root.iterdir():\n        if not ext_dir.is_dir():\n            continue\n        manifests = sorted(ext_dir.glob('*/manifest.json'))\n        for manifest in reversed(manifests):\n            try:\n                data = json.loads(manifest.read_text())\n            except Exception:\n                continue\n            if data.get('name') != 'Local Agent Chat Bridge':\n                continue\n            found += 1\n            ext_id = ext_dir.name\n            print(f'PROFILE={profile.name} EXTENSION_ID={ext_id} VERSION={data.get(\"version\")}')\n            storage = profile / 'Local Extension Settings' / ext_id\n            if not storage.exists():\n                print('STORAGE=missing')\n                continue\n            hits = []\n            for f in sorted(storage.iterdir()):\n                if not f.is_file():\n                    continue\n                try:\n                    blob = f.read_bytes()\n                except Exception:\n                    continue\n                for run in re.findall(rb'[\\x20-\\x7e]{24,}', blob):\n                    if b'bridgeState' in run or b'repositoryId' in run or b'conversations' in run:\n                        text = run.decode('utf-8', errors='replace')\n                        if text not in hits:\n                            hits.append(text)\n            if not hits:\n                print('BRIDGE_STATE_PRINTABLE_HITS=0')\n            else:\n                print(f'BRIDGE_STATE_PRINTABLE_HITS={len(hits)}')\n                for idx, text in enumerate(hits[:20], 1):\n                    print(f'HIT[{idx}]={text[:12000]}')\n            break\nif not found:\n    print('CHAT_BRIDGE_EXTENSION_NOT_FOUND')\nPY",
+      "exit_code": 0,
+      "output": "=== REGISTRY ===\n{\"control_branch\": null, \"control_path\": null, \"default_branch\": null, \"enabled\": null, \"repository\": \"MichalMatu/esp32s3_LiteGraph\", \"repository_id\": null, \"work_path\": null}\n{\"control_branch\": null, \"control_path\": null, \"default_branch\": \"main\", \"enabled\": null, \"repository\": \"MichalMatu/growbox-ml-controller\", \"repository_id\": null, \"work_path\": null}\n{\"control_branch\": null, \"control_path\": null, \"default_branch\": null, \"enabled\": null, \"repository\": \"MichalMatu/MatrixHub\", \"repository_id\": null, \"work_path\": null}\n{\"control_branch\": \"agent-control\", \"control_path\": null, \"default_branch\": \"main\", \"enabled\": null, \"repository\": \"MichalMatu/esp32_c6_zigbee\", \"repository_id\": null, \"work_path\": null}\n=== SUPERVISOR ===\n/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/Resources/Python.app/Contents/MacOS/Python /Users/michal/local-agent/agent_parallel.py --registry /Users/michal/Library/Application Support/local-agent/repositories.json --max-workers 2\n=== CHAT_BRIDGE_STORAGE ===\nCHAT_BRIDGE_EXTENSION_NOT_FOUND\n",
+      "elapsed_seconds": 0.825,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 512,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 1.88,
+      "output_policy": "stream",
+      "captured_output_chars": 1079,
+      "output_truncated": false,
+      "current_rss_mb": 1.88,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 0.825
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.201
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.168
+  },
+  "finished_at": "2026-09-02T22:59:20.344767+00:00",
+  "task_digest": "bdfdb826518a9812632bf30e2b318387c41ddda9d2e5a00338de4cfadfce9c74",
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "attempt_id": "b2e773871bd9fc8314db67f9",
+  "daemon_version": "4.13.1"
+}
