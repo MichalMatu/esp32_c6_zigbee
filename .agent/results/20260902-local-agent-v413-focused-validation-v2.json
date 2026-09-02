@@ -1,0 +1,61 @@
+{
+  "id": "20260902-local-agent-v413-focused-validation-v2",
+  "status": "failed",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-09-02T16:03:20.874284+00:00",
+  "command_timeout": 900,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail; STAGE=e4a307410ed6724e5734f513d85a396c8d948699; PROD=20f3ab645d4be384a6f20073330f2744694b7c4b; cd \"$HOME/local-agent\"; test \"$(git rev-parse HEAD)\" = \"$PROD\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git fetch --quiet origin v4.13.0-staging; test \"$(git rev-parse origin/v4.13.0-staging)\" = \"$STAGE\"; WT=/tmp/local-agent-v413-validation; if git worktree list --porcelain | grep -Fqx \"worktree $WT\"; then git worktree remove --force \"$WT\"; fi; rm -rf \"$WT\"; git worktree add --quiet --detach \"$WT\" \"$STAGE\"; cd \"$WT\"; echo \"VALIDATING=$(git rev-parse HEAD)\"; env -u LOCAL_AGENT_LEASE_FDS -u LOCAL_AGENT_LEASE_KEYS_DIGEST python3 -m py_compile agentd.py agent_config.py agent_core.py agent_runtime.py agent_process.py agent_repository.py agent_repo_worker.py agent_multirepo.py agent_parallel.py agent_parallel_worker.py agent_repo_admin.py agent_storage.py agentctl.py agent_version.py; env -u LOCAL_AGENT_LEASE_FDS -u LOCAL_AGENT_LEASE_KEYS_DIGEST python3 -m unittest -q tests.test_agent_parallel_worker tests.test_task_resources tests.test_agent_parallel tests.test_parallel_process tests.test_multirepo_integration tests.test_parallel_integration tests.test_parallel_resource_wait; cd \"$HOME/local-agent\"; git worktree remove --force \"$WT\"; echo FOCUSED_VALIDATION=PASS",
+      "exit_code": 128,
+      "output": "fatal: '/tmp/local-agent-v413-validation' is a missing but already registered worktree;\nuse 'add -f' to override, or 'prune' or 'remove' to clear\n",
+      "elapsed_seconds": 1.703,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 768,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 3.44,
+      "output_policy": "stream",
+      "captured_output_chars": 146,
+      "output_truncated": false,
+      "current_rss_mb": 3.44,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "failed",
+      "elapsed_seconds": 1.703
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.685
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.192
+  },
+  "failure_reason": "command_failed",
+  "finished_at": "2026-09-02T16:03:26.161972+00:00",
+  "task_digest": "39a93aebd078eef9a2c2c1346c1e853a57b6ad8ffbad0200a6381bf059d3218b",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 768,
+  "attempt_id": "653406b4b743b1930bbf3ca2",
+  "daemon_version": "4.12.2"
+}
