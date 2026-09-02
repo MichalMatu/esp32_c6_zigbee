@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-c6-overnight-hardening-audit-v2",
+  "task_digest": "0a5dfa2439adffb3ffbd25b22d02a1e0c6e49344b30c0f5835422ea88857e7d6",
+  "idle_timeout": 180,
+  "task_timeout": 1800,
+  "memory_limit_mb": 512,
+  "started_at": "2026-09-02T01:51:50.670643+00:00",
+  "attempt_id": "7609edb4b5932785abc838b5",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 89402,
+  "updated_at": "2026-09-02T01:51:50.670923+00:00",
+  "pid": 89402
+}
