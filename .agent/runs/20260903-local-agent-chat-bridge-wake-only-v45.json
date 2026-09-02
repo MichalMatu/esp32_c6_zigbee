@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-local-agent-chat-bridge-wake-only-v45",
+  "task_digest": "ae7d254a0f881d5facb12ae00a15b9d929a8228db26550bc3681c1c4b1870c5b",
+  "idle_timeout": 180,
+  "task_timeout": 1500,
+  "memory_limit_mb": 1024,
+  "started_at": "2026-09-02T23:15:19.922314+00:00",
+  "attempt_id": "756115f0185c5b447308ebc2",
+  "daemon_version": "4.13.1",
+  "daemon_pid": 76209,
+  "updated_at": "2026-09-02T23:15:19.922435+00:00",
+  "pid": 76209
+}
