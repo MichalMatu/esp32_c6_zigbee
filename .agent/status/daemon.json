@@ -1,9 +1,9 @@
 {
   "version": 1,
   "daemon_version": "4.13.1",
-  "state": "running",
+  "state": "idle",
   "pid": 69691,
-  "updated_at": "2026-09-02T23:01:55.421762+00:00",
+  "updated_at": "2026-09-02T23:02:13.822834+00:00",
   "self_revision": "334a6c373b179061dd8cb544743b26fae34c4e50",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -14,7 +14,7 @@
   "task_timeout_default": 1800,
   "task_timeout_max": 21600,
   "memory_limit_mb_default": 4096,
-  "current_task_id": "20260903-local-agent-chat-bridge-routing-audit-v42",
+  "current_task_id": null,
   "current_attempt_id": null,
   "current_task_digest": null,
   "repository_id": "esp32-c6-zigbee",
@@ -24,8 +24,6 @@
   "execution_model": "multi_repository_worker",
   "worker_pid": 69691,
   "supervisor_pid": 71830,
-  "active_resources": [
-    "machine"
-  ],
+  "last_task_id": "20260903-local-agent-chat-bridge-routing-audit-v42",
   "execution_variant": "parallel"
 }
