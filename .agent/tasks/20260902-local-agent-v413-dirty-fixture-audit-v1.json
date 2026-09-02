@@ -1,0 +1,14 @@
+{
+  "id": "20260902-local-agent-v413-dirty-fixture-audit-v1",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": ["machine"],
+  "memory_limit_mb": 256,
+  "command_timeout": 180,
+  "idle_timeout": 90,
+  "task_timeout": 420,
+  "commands": [
+    "set -euo pipefail; C6_EXPECTED=3171ef1a3874e13693686b7b31b431f84b771a1c; RELEASE=53e270120a0bc61b2af422c6faa4fcd6789f43c3; WT=/private/tmp/local-agent-v413-fixture; LA=\"$HOME/local-agent\"; test \"$(git rev-parse HEAD)\" = \"$C6_EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; test \"$(git -C \"$LA\" branch --show-current)\" = main; test \"$(git -C \"$LA\" rev-parse HEAD)\" = \"$RELEASE\"; test -d \"$WT\"; test \"$(git -C \"$WT\" rev-parse HEAD)\" = 486ec14351750e70b19b435a6d7a962249c6da3d; echo '=== STATUS ==='; git -C \"$WT\" status --porcelain --untracked-files=normal; echo '=== RELEASE_BLOB_EQUIVALENCE ==='; for F in tests/test_agent_runtime.py tests/test_agentd.py tests/test_runtime_task_contract_module.py; do W=$(git hash-object \"$WT/$F\"); R=$(git -C \"$LA\" rev-parse \"$RELEASE:$F\"); H=$(git -C \"$WT\" rev-parse \"HEAD:$F\"); printf '%s WORKTREE=%s RELEASE=%s HEAD=%s MATCH_RELEASE=%s MATCH_HEAD=%s\\n' \"$F\" \"$W\" \"$R\" \"$H\" \"$([ \"$W\" = \"$R\" ] && echo 1 || echo 0)\" \"$([ \"$W\" = \"$H\" ] && echo 1 || echo 0)\"; done; echo '=== DIFF_STAT ==='; git -C \"$WT\" diff --stat -- tests/test_agent_runtime.py tests/test_agentd.py tests/test_runtime_task_contract_module.py; echo LOCAL_AGENT_V413_DIRTY_FIXTURE_AUDIT=PASS"
+  ]
+}
