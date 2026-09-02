@@ -1,0 +1,60 @@
+{
+  "id": "20260903-local-agent-chat-bridge-routing-audit-v41",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-09-02T23:01:13.032664+00:00",
+  "command_timeout": 120,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\npython3 - <<'PY'\nimport json, pathlib, re, subprocess\nhome=pathlib.Path.home()\nprint('=== REGISTRY_RAW_RELEVANT ===')\nreg=json.loads((home/'Library/Application Support/local-agent/repositories.json').read_text())\nfor item in reg.get('repositories',[]):\n    print(json.dumps({k:item.get(k) for k in ('id','repository','control_dir','work_dir','checkpoints_dir','control_branch','default_branch','enabled','legacy_workspace')}, sort_keys=True))\nprint('=== CHROME_EXTENSION_MATCHES ===')\nchrome=home/'Library/Application Support/Google/Chrome'\nprofiles=[p for p in chrome.iterdir() if p.is_dir() and (p.name=='Default' or p.name.startswith('Profile '))] if chrome.exists() else []\nmatches=[]\nfor profile in sorted(profiles):\n    pref=profile/'Preferences'\n    if not pref.exists(): continue\n    try: data=json.loads(pref.read_text())\n    except Exception as e:\n        print(f'PREF_READ_ERROR profile={profile.name} err={e!r}'); continue\n    settings=((data.get('extensions') or {}).get('settings') or {})\n    for ext_id, ext in settings.items():\n        path=str(ext.get('path') or '')\n        manifest=ext.get('manifest') or {}\n        name=str(manifest.get('name') or '')\n        if 'local-agent/chat_bridge' in path or 'Local Agent Chat Bridge' in name or path.endswith('/chat_bridge'):\n            rec={'profile':profile.name,'extension_id':ext_id,'path':path,'name':name,'version':manifest.get('version'),'state':ext.get('state'),'location':ext.get('location')}\n            matches.append((profile,ext_id,rec))\n            print(json.dumps(rec,sort_keys=True))\nprint('=== BRIDGE_STORAGE_STRINGS ===')\nif not matches:\n    print('NO_MATCHING_UNPACKED_EXTENSION')\nfor profile,ext_id,rec in matches:\n    storage=profile/'Local Extension Settings'/ext_id\n    print(f'STORAGE profile={profile.name} id={ext_id} path={storage} exists={storage.exists()}')\n    if not storage.exists(): continue\n    chunks=[]\n    for f in sorted(storage.iterdir()):\n        if not f.is_file(): continue\n        try: blob=f.read_bytes()\n        except Exception: continue\n        for run in re.findall(rb'[\\x20-\\x7e]{16,}',blob):\n            txt=run.decode('utf-8','replace')\n            if any(key in txt for key in ('bridgeState','repositoryId','chat-','growbox-ml-controller','esp32-c6-zigbee','C6_zigbee','Stage27C')):\n                if txt not in chunks: chunks.append(txt)\n    print(f'MATCHING_STRINGS={len(chunks)}')\n    for i,txt in enumerate(chunks[:80],1):\n        print(f'STR[{i}]={txt[:16000]}')\nPY",
+      "exit_code": 0,
+      "output": "=== REGISTRY_RAW_RELEVANT ===\n{\"checkpoints_dir\": null, \"control_branch\": null, \"control_dir\": null, \"default_branch\": null, \"enabled\": null, \"id\": \"litegraph\", \"legacy_workspace\": null, \"repository\": \"MichalMatu/esp32s3_LiteGraph\", \"work_dir\": null}\n{\"checkpoints_dir\": null, \"control_branch\": null, \"control_dir\": null, \"default_branch\": \"main\", \"enabled\": null, \"id\": \"growbox-ml-controller\", \"legacy_workspace\": null, \"repository\": \"MichalMatu/growbox-ml-controller\", \"work_dir\": null}\n{\"checkpoints_dir\": null, \"control_branch\": null, \"control_dir\": null, \"default_branch\": null, \"enabled\": null, \"id\": \"matrixhub\", \"legacy_workspace\": null, \"repository\": \"MichalMatu/MatrixHub\", \"work_dir\": null}\n{\"checkpoints_dir\": null, \"control_branch\": \"agent-control\", \"control_dir\": null, \"default_branch\": \"main\", \"enabled\": null, \"id\": \"esp32-c6-zigbee\", \"legacy_workspace\": null, \"repository\": \"MichalMatu/esp32_c6_zigbee\", \"work_dir\": null}\n=== CHROME_EXTENSION_MATCHES ===\n=== BRIDGE_STORAGE_STRINGS ===\nNO_MATCHING_UNPACKED_EXTENSION\n",
+      "elapsed_seconds": 0.742,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 512,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 3.11,
+      "output_policy": "stream",
+      "captured_output_chars": 1036,
+      "output_truncated": false,
+      "current_rss_mb": 3.11,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 0.742
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.179
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.195
+  },
+  "finished_at": "2026-09-02T23:01:16.561434+00:00",
+  "task_digest": "6744fc0228d1de228bed846495be9d43559dd53b07fc66e4c815587c8bd94b5b",
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "attempt_id": "3b2e6aa8e98e77d559564be5",
+  "daemon_version": "4.13.1"
+}
