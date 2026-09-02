@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-c6-sonoff-postfix-soak-v1",
+  "task_digest": "10042c53ac2446ccf81491d39eb262e9217f68533a9cca52a3a51b633bd58a68",
+  "idle_timeout": 1400,
+  "task_timeout": 1800,
+  "memory_limit_mb": 1024,
+  "started_at": "2026-09-02T00:21:07.715210+00:00",
+  "attempt_id": "190495b5714ba38fa65cd28f",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 37721,
+  "updated_at": "2026-09-02T00:21:07.715408+00:00",
+  "pid": 37721
+}
