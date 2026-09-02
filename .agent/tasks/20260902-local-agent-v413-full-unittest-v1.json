@@ -1,0 +1,14 @@
+{
+  "id": "20260902-local-agent-v413-full-unittest-v1",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 1024,
+  "command_timeout": 1800,
+  "idle_timeout": 300,
+  "task_timeout": 3600,
+  "commands": [
+    "set -euo pipefail; STAGE=486ec14351750e70b19b435a6d7a962249c6da3d; PROD=20f3ab645d4be384a6f20073330f2744694b7c4b; cd \"$HOME/local-agent\"; test \"$(git rev-parse HEAD)\" = \"$PROD\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git fetch --quiet origin v4.13.0-staging; test \"$(git rev-parse origin/v4.13.0-staging)\" = \"$STAGE\"; WT=/tmp/local-agent-v413-full; git worktree prune; rm -rf \"$WT\"; git worktree add --force --quiet --detach \"$WT\" \"$STAGE\"; cd \"$WT\"; echo \"VALIDATING=$(git rev-parse HEAD)\"; env -u LOCAL_AGENT_LEASE_FDS -u LOCAL_AGENT_LEASE_KEYS_DIGEST python3 -m unittest discover -q; rc=$?; cd \"$HOME/local-agent\"; git worktree remove --force \"$WT\"; exit $rc"
+  ]
+}
