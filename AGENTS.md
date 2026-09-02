@@ -49,21 +49,15 @@ The canonical executor/planner contract lives in `MichalMatu/local-agent`, espec
 
 ## Resource classification
 
-Resource classification is conservative.
+Every task must declare `resources` explicitly. Missing, malformed, duplicated, oversized, or non-canonical declarations are terminal task-contract errors; there is no compatibility fallback to `machine`.
 
-Omit `resources` for:
+Use `resources: []` for repository-local software work that does not own an exclusive external device or host-global state. This includes host tests, static analysis, documentation checks, and normal ESP-IDF builds when they do not touch hardware. `memory_limit_mb` is an independent per-task RSS watchdog and does not change resource classification.
 
-- `idf.py build` or other full ESP-IDF/xtensa/riscv toolchain work unless a narrower safe contract has been explicitly established;
-- USB/serial access;
-- flash, erase-flash, monitor, OpenOCD/JTAG, or hardware interaction;
-- Zigbee RF/hardware tests;
-- any uncertain machine-wide tooling.
+Use a narrow named resource for concrete shared hardware or external state. ESP32-C6 USB/serial, flash, monitor, OpenOCD/JTAG, and Zigbee RF/hardware tests should use a stable resource such as `board:zigbee-c6`. Tasks sharing that resource serialize; unrelated named resources may overlap.
 
-Omitting `resources` means full `machine` exclusivity.
+Use `resources: ["machine"]` only for operations that genuinely require the whole host, such as global Local Agent maintenance or host-global toolchain mutation. A build or hardware task is not machine-exclusive merely because it is heavy.
 
-Use `resources: []` only for clearly software-only lightweight work that is safe to overlap, such as documentation checks or isolated static/source inspection, with an enabled `memory_limit_mb <= 1024` (normally 256-512 MiB for lightweight checks).
-
-One task executes at a time for this repository, while unrelated registered repositories may overlap when Local Agent resource admission permits it. Production normally uses `max_workers=2`; read the shared supervisor status when the exact live worker cap matters rather than relying on a repository-worker snapshot or this sentence.
+Resource contention is a wait state: the immutable task remains pending and is retried. One task still executes at a time for this repository, while unrelated registered repositories may overlap when their declared external resources do not conflict. Production normally uses `max_workers=2`; read shared supervisor status when the exact live worker cap matters.
 
 ## Build and hardware rules
 
