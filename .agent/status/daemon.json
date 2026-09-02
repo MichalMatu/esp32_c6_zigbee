@@ -2,8 +2,8 @@
   "version": 1,
   "daemon_version": "4.13.1",
   "state": "idle",
-  "pid": 27386,
-  "updated_at": "2026-09-02T21:58:55.106049+00:00",
+  "pid": 30255,
+  "updated_at": "2026-09-02T22:03:56.452780+00:00",
   "self_revision": "838fb36ec204c8f9e13057096a0b95f58126df0f",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -22,8 +22,7 @@
   "control_branch": "agent-control",
   "default_branch": "main",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 27386,
+  "worker_pid": 30255,
   "supervisor_pid": 71830,
-  "last_task_id": "20260902-local-agent-v4131-control-pyc-cleanup-v35",
   "execution_variant": "parallel"
 }
