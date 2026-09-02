@@ -1,0 +1,9 @@
+{
+  "id": "20260903-local-agent-chat-bridge-wake-only-v44",
+  "status": "failed",
+  "failure_reason": "invalid_task_file",
+  "started_at": null,
+  "finished_at": "2026-09-02T23:12:15.338050+00:00",
+  "daemon_version": "4.13.1",
+  "error": "JSONDecodeError: Expecting ',' delimiter: line 12 column 7658 (char 7931)"
+}
