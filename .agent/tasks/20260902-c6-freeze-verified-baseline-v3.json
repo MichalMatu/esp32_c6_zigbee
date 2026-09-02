@@ -1,0 +1,13 @@
+{
+  "id": "20260902-c6-freeze-verified-baseline-v3",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": true,
+  "memory_limit_mb": 4096,
+  "command_timeout": 1800,
+  "idle_timeout": 600,
+  "task_timeout": 3600,
+  "commands": [
+    "set -euo pipefail; git fetch --quiet origin agent-control; git show origin/agent-control:.agent/scripts/freeze_verified_baseline_v3.sh > /tmp/freeze_verified_baseline_v3.sh; chmod +x /tmp/freeze_verified_baseline_v3.sh; /tmp/freeze_verified_baseline_v3.sh"
+  ]
+}
