@@ -2,8 +2,8 @@
   "version": 1,
   "daemon_version": "4.12.2",
   "state": "idle",
-  "pid": 37721,
-  "updated_at": "2026-09-02T00:41:25.883308+00:00",
+  "pid": 48785,
+  "updated_at": "2026-09-02T00:51:13.313033+00:00",
   "self_revision": "20f3ab645d4be384a6f20073330f2744694b7c4b",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -22,8 +22,8 @@
   "control_branch": "agent-control",
   "default_branch": "main",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 37721,
+  "worker_pid": 48785,
   "supervisor_pid": 71830,
-  "last_task_id": "20260902-c6-sonoff-postfix-soak-v1",
+  "last_task_id": "20260902-c6-freeze-verified-baseline-v2",
   "execution_variant": "parallel"
 }
