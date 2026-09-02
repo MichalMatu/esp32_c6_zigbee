@@ -1,0 +1,14 @@
+{
+  "id": "20260903-local-agent-chat-bridge-wake-only-v46",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": true,
+  "resources": ["machine"],
+  "memory_limit_mb": 1024,
+  "command_timeout": 900,
+  "idle_timeout": 180,
+  "task_timeout": 1500,
+  "commands": [
+    "set -euo pipefail\nLA=\"$HOME/local-agent\"\nWT=\"/private/tmp/local-agent-chat-bridge-wake-only-v45\"\nBR=\"chat-bridge-wake-only-v45\"\nBASE=\"334a6c373b179061dd8cb544743b26fae34c4e50\"\ntest -d \"$WT/.git\" || test -f \"$WT/.git\"\ntest \"$(git -C \"$WT\" branch --show-current)\" = \"$BR\"\ntest \"$(git -C \"$WT\" rev-parse HEAD)\" = \"$BASE\"\ntest -n \"$(git -C \"$WT\" status --porcelain --untracked-files=all)\"\ncd \"$WT\"\nif grep -R -n -E 'repositoryId|repository id|routing hint' chat_bridge --include='*.js' --exclude='*.test.js'; then echo 'Unexpected repository routing residue in runtime code' >&2; exit 1; fi\nnode --check chat_bridge/control_protocol.js\nnode --check chat_bridge/bridge_state.js\nnode --check chat_bridge/control_protocol.test.js\nnode --check chat_bridge/bridge_state.test.js\nnode --check chat_bridge/service_worker.js\nnode --check chat_bridge/service_worker.test.js\nnode --check chat_bridge/content.js\nnode --check chat_bridge/popup.js\nnode chat_bridge/control_protocol.test.js\nnode chat_bridge/bridge_state.test.js\nnode chat_bridge/service_worker.test.js\npython3 -m json.tool chat_bridge/manifest.json >/dev/null\npython3 -m json.tool chat_bridge/runtime.example.json >/dev/null\ngit diff --check\ngit add chat_bridge\ngit commit -m 'Simplify Chat Bridge to wake-only transport' >/dev/null\nCANDIDATE=$(git rev-parse HEAD)\ngit push --quiet -u origin \"$BR\"\necho \"CANDIDATE_SHA=$CANDIDATE\"\necho \"WAKE_ONLY_BRIDGE_TESTS=PASS\""
+  ]
+}
