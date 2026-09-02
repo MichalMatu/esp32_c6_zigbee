@@ -1,0 +1,9 @@
+{
+  "event": "invalid_task_rejected",
+  "status": "failed",
+  "failure_reason": "invalid_task_file",
+  "updated_at": "2026-09-02T01:43:29.496460+00:00",
+  "task_id": "20260902-c6-overnight-hardening-audit-v1",
+  "daemon_version": "4.12.2",
+  "pid": 81382
+}
