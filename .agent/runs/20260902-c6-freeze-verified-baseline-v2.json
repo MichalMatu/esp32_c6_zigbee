@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-c6-freeze-verified-baseline-v2",
+  "task_digest": "6ee5e3a80aeb2b2f535b2ec8b3afd7673d61acee44d8e2b9c54da7f4ce79a6f7",
+  "idle_timeout": 600,
+  "task_timeout": 3600,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-02T00:50:57.603209+00:00",
+  "attempt_id": "91eb6d57fd2a8f78f5f683e8",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 48785,
+  "updated_at": "2026-09-02T00:50:57.603322+00:00",
+  "pid": 48785
+}
