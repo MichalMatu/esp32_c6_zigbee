@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-local-agent-v413-final-hygiene-v1",
+  "task_digest": "dc9083f03e64715b13560392e546e77abceccfca48656c1f7192989d1f321158",
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "memory_limit_mb": 256,
+  "started_at": "2026-09-02T18:43:10.270373+00:00",
+  "attempt_id": "0205a77a751b6e532dde7a34",
+  "daemon_version": "4.13.0",
+  "daemon_pid": 30630,
+  "updated_at": "2026-09-02T18:43:10.270604+00:00",
+  "pid": 30630
+}
