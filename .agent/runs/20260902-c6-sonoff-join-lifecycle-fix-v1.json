@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-c6-sonoff-join-lifecycle-fix-v1",
+  "task_digest": "523aac58d6b1a9af93fa4e7c9c72d799b851f434588b8e7c05b65686205dc2e4",
+  "idle_timeout": 300,
+  "task_timeout": 2400,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-02T00:03:17.184622+00:00",
+  "attempt_id": "cbc71de4704a461862316e9a",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 25085,
+  "updated_at": "2026-09-02T00:03:17.184842+00:00",
+  "pid": 25085
+}
