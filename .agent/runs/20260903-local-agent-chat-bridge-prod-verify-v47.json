@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-local-agent-chat-bridge-prod-verify-v47",
+  "task_digest": "f6f18f7deec6ee7268cf4ec6f19537388a27770552dc4998d241c5f040bd6a5f",
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "started_at": "2026-09-02T23:24:26.228164+00:00",
+  "attempt_id": "56b2d5072b9278b33be82806",
+  "daemon_version": "4.13.1",
+  "daemon_pid": 83059,
+  "updated_at": "2026-09-02T23:24:26.228849+00:00",
+  "pid": 83059
+}
