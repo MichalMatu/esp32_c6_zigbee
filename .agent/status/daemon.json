@@ -2,8 +2,8 @@
   "version": 1,
   "daemon_version": "4.13.0",
   "state": "idle",
-  "pid": 30630,
-  "updated_at": "2026-09-02T18:43:29.026440+00:00",
+  "pid": 11356,
+  "updated_at": "2026-09-02T21:34:03.221888+00:00",
   "self_revision": "53e270120a0bc61b2af422c6faa4fcd6789f43c3",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -22,8 +22,7 @@
   "control_branch": "agent-control",
   "default_branch": "main",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 30630,
+  "worker_pid": 11356,
   "supervisor_pid": 71830,
-  "last_task_id": "20260902-local-agent-v413-final-hygiene-v1",
   "execution_variant": "parallel"
 }
