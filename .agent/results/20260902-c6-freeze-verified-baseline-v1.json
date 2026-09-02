@@ -1,0 +1,9 @@
+{
+  "id": "20260902-c6-freeze-verified-baseline-v1",
+  "status": "failed",
+  "failure_reason": "invalid_task_file",
+  "started_at": null,
+  "finished_at": "2026-09-02T00:46:11.685503+00:00",
+  "daemon_version": "4.12.2",
+  "error": "JSONDecodeError: Invalid control character at: line 13 column 4177 (char 7998)"
+}
