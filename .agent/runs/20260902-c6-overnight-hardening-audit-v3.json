@@ -1,16 +1,16 @@
 {
   "event": "command_started",
   "phase": "commands",
-  "index": 6,
+  "index": 8,
   "total": 13,
-  "command": "set -euo pipefail; CFLAGS='-std=c11 -Wall -Wextra -Werror -pedantic -fsanitize=address,undefined -fno-omit-frame-pointer -O1 -g'; export ASAN_OPTIONS='detect_leaks=0:abort_on_error=1'; export UBSAN_OPTIONS='halt_on_error=1'; cc $CFLAGS -Imain tests/host/test_gateway_link_protocol.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_protocol; /tmp/test_gateway_link_protocol; echo 'ASAN_UBSAN gateway_link_protocol PASS'",
-  "pid": 96637,
+  "command": "set -euo pipefail; CFLAGS='-std=c11 -Wall -Wextra -Werror -pedantic -fsanitize=address,undefined -fno-omit-frame-pointer -O1 -g'; export ASAN_OPTIONS='detect_leaks=0:abort_on_error=1'; export UBSAN_OPTIONS='halt_on_error=1'; cc $CFLAGS -Imain tests/host/test_gateway_link_stream.c main/gateway_link_stream.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_stream; /tmp/test_gateway_link_stream; echo 'ASAN_UBSAN gateway_link_stream PASS'",
+  "pid": 96710,
   "timeout": 900,
   "idle_timeout": 180,
   "memory_limit_mb": 512,
-  "started_at": "2026-09-02T02:23:59.852397+00:00",
-  "stage_name": "command-6",
-  "stage_index": 6,
+  "started_at": "2026-09-02T02:24:05.045759+00:00",
+  "stage_name": "command-8",
+  "stage_index": 8,
   "stage_total": 13,
   "stage_phase": "commands",
   "task_id": "20260902-c6-overnight-hardening-audit-v3",
@@ -18,5 +18,5 @@
   "task_digest": "d0008d11d202d4770da22beb370e1d6eb3d895c963c283b45dfed4af568bb4d7",
   "daemon_version": "4.12.2",
   "daemon_pid": 96454,
-  "updated_at": "2026-09-02T02:23:59.921796+00:00"
+  "updated_at": "2026-09-02T02:24:05.368178+00:00"
 }
