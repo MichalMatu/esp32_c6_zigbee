@@ -83,6 +83,7 @@ static device_slot_t *allocate_device(uint16_t short_addr)
             s_devices[i].generation = generation;
             s_devices[i].device.short_addr = short_addr;
             s_devices[i].previous_short_addr = GATEWAY_INVALID_SHORT_ADDR;
+            s_devices[i].discovery_short_addr = GATEWAY_INVALID_SHORT_ADDR;
             return &s_devices[i];
         }
     }
@@ -120,6 +121,31 @@ device_slot_t *gateway_device_upsert(
         slot->device.ieee_valid = true;
     }
     return slot;
+}
+
+bool gateway_device_claim_discovery(device_slot_t *slot)
+{
+    if (slot == NULL || slot->state != SLOT_ACTIVE ||
+        slot->device.short_addr == GATEWAY_INVALID_SHORT_ADDR ||
+        slot->discovery_short_addr == slot->device.short_addr) {
+        return false;
+    }
+    slot->discovery_short_addr = slot->device.short_addr;
+    return true;
+}
+
+void gateway_device_release_discovery(device_slot_t *slot, uint16_t short_addr)
+{
+    if (slot != NULL && slot->discovery_short_addr == short_addr) {
+        slot->discovery_short_addr = GATEWAY_INVALID_SHORT_ADDR;
+    }
+}
+
+void gateway_device_reset_discovery(device_slot_t *slot)
+{
+    if (slot != NULL) {
+        slot->discovery_short_addr = GATEWAY_INVALID_SHORT_ADDR;
+    }
 }
 
 endpoint_state_t *gateway_device_endpoint_state(

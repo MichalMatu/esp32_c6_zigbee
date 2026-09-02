@@ -32,6 +32,7 @@ typedef struct {
     uint32_t generation;
     gateway_device_id_t device;
     uint16_t previous_short_addr;
+    uint16_t discovery_short_addr;
     uint8_t pending_jobs;
     uint8_t pending_requests;
     endpoint_state_t endpoints[GATEWAY_MAX_ENDPOINTS_PER_DEVICE];
@@ -52,5 +53,8 @@ device_slot_t *gateway_device_from_ref(
 void gateway_device_maybe_reclaim(device_slot_t *slot);
 device_slot_t *gateway_device_upsert(
     uint16_t short_addr, const uint8_t ieee[8]);
+bool gateway_device_claim_discovery(device_slot_t *slot);
+void gateway_device_release_discovery(device_slot_t *slot, uint16_t short_addr);
+void gateway_device_reset_discovery(device_slot_t *slot);
 endpoint_state_t *gateway_device_endpoint_state(
     device_slot_t *slot, uint8_t endpoint, bool create);

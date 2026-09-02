@@ -140,6 +140,19 @@ static bool queue_job(
     uint8_t retries
 );
 
+static bool schedule_active_discovery(device_slot_t *slot)
+{
+    if (!gateway_device_claim_discovery(slot)) {
+        return false;
+    }
+    const uint16_t short_addr = slot->device.short_addr;
+    if (queue_job(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U, 0U)) {
+        return true;
+    }
+    gateway_device_release_discovery(slot, short_addr);
+    return false;
+}
+
 static device_slot_t *recover_report_source(const ezb_zcl_cmd_hdr_t *header)
 {
     if (header == NULL || header->src_addr.addr_mode != EZB_ADDR_MODE_SHORT) {
@@ -154,8 +167,8 @@ static device_slot_t *recover_report_source(const ezb_zcl_cmd_hdr_t *header)
     ezb_extaddr_t ieee;
     slot = ezb_address_extended_by_short(short_addr, &ieee) == EZB_ERR_NONE ?
         gateway_device_upsert(short_addr, ieee.u8) : gateway_device_upsert(short_addr, NULL);
-    if (slot != NULL &&
-        !queue_job(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U, 0U)) {
+    if (slot != NULL && slot->discovery_short_addr != slot->device.short_addr &&
+        !schedule_active_discovery(slot)) {
         gateway_event_warning(&slot->device, "report recovery discovery queue full");
     }
     return slot;
@@ -309,6 +322,9 @@ static void retry_or_fail(discovery_job_t job, const char *message)
         return;
     }
     clear_pending(slot, &job);
+    if (job.kind == DISCOVERY_ACTIVE_ENDPOINTS) {
+        gateway_device_release_discovery(slot, job.route_short_addr);
+    }
     gateway_event_warning(&slot->device, message);
     gateway_device_maybe_reclaim(slot);
 }
@@ -943,9 +959,42 @@ static void announce_and_discover(
         event.data.rejoin.new_short_addr = slot->device.short_addr;
     }
     gateway_event_publish(&event);
-    if (!queue_job(DISCOVERY_ACTIVE_ENDPOINTS, slot, 0U, 0U, 0U)) {
+    if (slot->discovery_short_addr != slot->device.short_addr &&
+        !schedule_active_discovery(slot)) {
         gateway_event_warning(&slot->device, "active endpoint queue full");
     }
+}
+
+static void publish_device_update(const ezb_zdo_signal_device_update_params_t *p)
+{
+    if (p == NULL) {
+        return;
+    }
+    device_slot_t *slot = gateway_device_upsert(p->short_addr, p->device_addr.u8);
+    if (slot == NULL) {
+        gateway_event_warning(NULL, "device registry capacity exhausted");
+        return;
+    }
+    gateway_event_t event = gateway_event_make(GATEWAY_EVENT_DEVICE_UPDATE, &slot->device);
+    event.data.device_update.status = p->status;
+    event.data.device_update.tc_action = p->tc_action;
+    gateway_event_publish(&event);
+}
+
+static void publish_device_authorized(const ezb_zdo_signal_device_authorized_params_t *p)
+{
+    if (p == NULL) {
+        return;
+    }
+    device_slot_t *slot = gateway_device_upsert(p->short_addr, p->device_addr.u8);
+    if (slot == NULL) {
+        gateway_event_warning(NULL, "device registry capacity exhausted");
+        return;
+    }
+    gateway_event_t event = gateway_event_make(GATEWAY_EVENT_DEVICE_AUTHORIZED, &slot->device);
+    event.data.authorization.type = p->type;
+    event.data.authorization.status = p->status;
+    gateway_event_publish(&event);
 }
 
 static gateway_device_id_t leave_device_id(
@@ -1012,6 +1061,7 @@ static void device_left(
     if (kind == GATEWAY_EVENT_DEVICE_LEAVE_RESET ||
         kind == GATEWAY_EVENT_DEVICE_LEAVE_REJOIN) {
         publish_slot_inputs_unavailable(slot);
+        gateway_device_reset_discovery(slot);
     }
     if (kind == GATEWAY_EVENT_DEVICE_LEAVE_RESET) {
         slot->state = SLOT_LEAVING;
@@ -1065,10 +1115,10 @@ static bool app_signal_handler(const ezb_app_signal_t *signal)
                 GATEWAY_EVENT_DEVICE_REJOIN, p->short_addr, &p->device_addr
             );
         } else if (p != NULL) {
-            announce_and_discover(
-                GATEWAY_EVENT_DEVICE_UPDATE, p->short_addr, &p->device_addr
-            );
+            publish_device_update(p);
         }
+    } else if (type == EZB_ZDO_SIGNAL_DEVICE_AUTHORIZED) {
+        publish_device_authorized(params);
     } else if (type == EZB_ZDO_SIGNAL_LEAVE_INDICATION) {
         const ezb_zdo_signal_leave_indication_params_t *p = params;
         if (p != NULL) {

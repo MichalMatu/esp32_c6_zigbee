@@ -14,6 +14,15 @@ int main(void)
     assert(a->device.short_addr == 0x1234U);
     assert(gateway_device_find_by_ieee(IEEE_A, false) == a);
     assert(gateway_device_find_by_short(0x1234U, false) == a);
+    assert(a->discovery_short_addr == GATEWAY_INVALID_SHORT_ADDR);
+    assert(gateway_device_claim_discovery(a));
+    assert(a->discovery_short_addr == 0x1234U);
+    assert(!gateway_device_claim_discovery(a));
+    gateway_device_release_discovery(a, 0x9999U);
+    assert(a->discovery_short_addr == 0x1234U);
+    gateway_device_release_discovery(a, 0x1234U);
+    assert(a->discovery_short_addr == GATEWAY_INVALID_SHORT_ADDR);
+    assert(gateway_device_claim_discovery(a));
 
     const device_ref_t first_ref = gateway_device_ref_for(a);
     assert(gateway_device_from_ref(first_ref, false) == a);
@@ -23,6 +32,10 @@ int main(void)
     assert(a->previous_short_addr == 0x1234U);
     assert(a->device.short_addr == 0x2345U);
     assert(gateway_device_find_by_short(0x1234U, false) == NULL);
+    assert(gateway_device_claim_discovery(a));
+    assert(a->discovery_short_addr == 0x2345U);
+    gateway_device_reset_discovery(a);
+    assert(a->discovery_short_addr == GATEWAY_INVALID_SHORT_ADDR);
 
     a->pending_requests = 1U;
     device_slot_t *b = gateway_device_upsert(0x2345U, IEEE_B);

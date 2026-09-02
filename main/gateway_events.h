@@ -27,6 +27,7 @@ typedef enum {
     GATEWAY_EVENT_DEVICE_LEAVE_REJOIN,
     GATEWAY_EVENT_DEVICE_LEAVE_UNKNOWN,
     GATEWAY_EVENT_DEVICE_UPDATE,
+    GATEWAY_EVENT_DEVICE_AUTHORIZED,
     GATEWAY_EVENT_DEVICE_UNAVAILABLE,
     GATEWAY_EVENT_DEVICE_CHECK_IN,
     GATEWAY_EVENT_BINDING,
@@ -69,6 +70,14 @@ typedef struct {
             uint8_t leave_type;
             bool record_retained;
         } leave;
+        struct {
+            uint8_t status;
+            uint8_t tc_action;
+        } device_update;
+        struct {
+            uint8_t type;
+            uint8_t status;
+        } authorization;
         struct {
             uint16_t profile_id;
             uint16_t device_id;

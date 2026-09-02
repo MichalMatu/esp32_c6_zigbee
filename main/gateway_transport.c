@@ -112,7 +112,14 @@ static void log_event(const gateway_event_t *event)
                  ieee, event->device.short_addr, event->data.leave.leave_type,
                  event->data.leave.record_retained ? "true" : "false");
         break;
-    case GATEWAY_EVENT_DEVICE_UPDATE: ESP_LOGI(TAG, "ZIGBEE_DEVICE_UPDATE %s", device); break;
+    case GATEWAY_EVENT_DEVICE_UPDATE:
+        ESP_LOGI(TAG, "ZIGBEE_DEVICE_UPDATE %s status=0x%02x tc_action=0x%02x",
+                 device, event->data.device_update.status, event->data.device_update.tc_action);
+        break;
+    case GATEWAY_EVENT_DEVICE_AUTHORIZED:
+        ESP_LOGI(TAG, "ZIGBEE_DEVICE_AUTHORIZED %s type=0x%02x status=0x%02x",
+                 device, event->data.authorization.type, event->data.authorization.status);
+        break;
     case GATEWAY_EVENT_DEVICE_UNAVAILABLE: ESP_LOGW(TAG, "ZIGBEE_DEVICE_UNAVAILABLE %s (not an authoritative offline state)", device); break;
     case GATEWAY_EVENT_DEVICE_CHECK_IN: ESP_LOGI(TAG, "ZIGBEE_DEVICE_CHECK_IN %s; fast poll requested", device); break;
     case GATEWAY_EVENT_BINDING:
