@@ -1,0 +1,34 @@
+{
+  "id": "20260902-c6-overnight-hardening-audit-v1",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 512,
+  "command_timeout": 900,
+  "idle_timeout": 180,
+  "task_timeout": 1200,
+  "commands": [
+    "set -euo pipefail; EXPECTED=6d3fdbf30fc02ce26d4a668ecedca1c723f28c04; git fetch --quiet origin main; test \"$(git rev-parse origin/main)\" = \"$EXPECTED\"; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; printf '%s\\n' '=== C6 OVERNIGHT HARDENING AUDIT V1 ===' \"HEAD=$(git rev-parse HEAD)\"; printf '%s\\n' 'Scope: host-only, no USB, no flash, no S3, no radio, no full ESP-IDF build.'; printf '%s\\n' 'Goal: identify concrete software reliability gaps suitable for small test-driven follow-up tasks while preserving the verified Zigbee baseline.'; printf '%s\\n' '=== COMPILERS ==='; cc --version | head -n 2 || true; python3 --version; printf '%s\\n' '=== STRICT HOST TESTS WITH ASAN+UBSAN ==='; CFLAGS='-std=c11 -Wall -Wextra -Werror -pedantic -fsanitize=address,undefined -fno-omit-frame-pointer -O1 -g'; run_test(){ name=\"$1\"; shift; printf 'TEST %s ... ' \"$name\"; cc $CFLAGS -Imain \"$@\" -lm -o \"/tmp/$name\"; ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 UBSAN_OPTIONS=halt_on_error=1 \"/tmp/$name\"; printf '%s\\n' PASS; }; run_test test_gateway_zcl_value -DGATEWAY_ZCL_HOST_TEST tests/host/test_gateway_zcl_value.c main/gateway_zcl_value.c; run_test test_gateway_device_state tests/host/test_gateway_device_state.c main/gateway_device_state.c; run_test test_gateway_inputs tests/host/test_gateway_inputs.c main/gateway_inputs.c; run_test test_gateway_zigbee_input -DGATEWAY_ZCL_HOST_TEST tests/host/test_gateway_zigbee_input.c main/gateway_zigbee_input.c main/gateway_zcl_value.c main/gateway_inputs.c; run_test test_gateway_link_protocol tests/host/test_gateway_link_protocol.c main/gateway_link_protocol.c; run_test test_gateway_link_event_adapter tests/host/test_gateway_link_event_adapter.c main/gateway_link_event_adapter.c main/gateway_link_protocol.c; run_test test_gateway_link_stream tests/host/test_gateway_link_stream.c main/gateway_link_stream.c main/gateway_link_protocol.c; run_test test_gateway_link_snapshot_cache tests/host/test_gateway_link_snapshot_cache.c main/gateway_link_snapshot_cache.c; run_test test_gateway_link_control tests/host/test_gateway_link_control.c main/gateway_link_control.c main/gateway_link_protocol.c; run_test test_gateway_link_e2e tests/host/test_gateway_link_e2e.c main/gateway_link_protocol.c main/gateway_link_stream.c main/gateway_link_control.c main/gateway_link_snapshot_cache.c main/gateway_inputs.c; run_test test_gateway_reporting_policy tests/host/test_gateway_reporting_policy.c main/gateway_reporting_policy.c; printf '%s\\n' '=== BOUNDARY / MEMORY HOTSPOTS ==='; git grep -nE 'memcpy|memmove|strcpy|strncpy|snprintf|malloc|calloc|realloc|free|xQueue|xTaskCreate|StaticQueue|\[[A-Z_0-9]+\]' -- 'main/*.c' 'main/*.h' | head -n 400 || true; printf '%s\\n' '=== TASKS / QUEUES / TIMEOUTS ==='; git grep -nE 'STACK|PRIORITY|QUEUE|TIMEOUT|pdMS_TO_TICKS|portMAX_DELAY' -- 'main/*.c' 'main/*.h' | head -n 400 || true; printf '%s\\n' '=== ERROR / DROP / RECOVERY PATHS ==='; git grep -nE 'drop|overflow|full|error|warning|retry|recovery|reset|unavailable|unsupported|malformed|CRC|generation' -- 'main/*.c' 'main/*.h' | head -n 500 || true; printf '%s\\n' '=== TEST COVERAGE INVENTORY ==='; for f in main/gateway_*.c; do b=$(basename \"$f\" .c); if test -f \"tests/host/test_${b}.c\"; then printf 'TESTED   %s\\n' \"$f\"; else printf 'NO_HOST  %s\\n' \"$f\"; fi; done; printf '%s\\n' '=== LARGE FUNCTIONS / FILES ==='; python3 - <<'PY'
+from pathlib import Path
+import re
+for p in sorted(Path('main').glob('*.c')):
+    lines=p.read_text(errors='replace').splitlines()
+    if len(lines)>=250:
+        print(f'FILE {len(lines):4d} {p}')
+    starts=[]
+    pat=re.compile(r'^(?:static\s+)?(?:[A-Za-z_][\w\s\*]*?)\s+([A-Za-z_]\w*)\s*\(')
+    for i,line in enumerate(lines,1):
+        s=line.strip()
+        if s.startswith(('if ','if(', 'for ','for(', 'while ','while(', 'switch ','return ')) or s.endswith(';'):
+            continue
+        m=pat.match(s)
+        if m: starts.append((i,m.group(1)))
+    for n,(start,name) in enumerate(starts):
+        end=(starts[n+1][0]-1) if n+1<len(starts) else len(lines)
+        if end-start+1>=80:
+            print(f'FUNC {end-start+1:4d} {p}:{start} {name}')
+PY
+printf '%s\\n' '=== TODO / FIXME / HACK ==='; git grep -nE 'TODO|FIXME|HACK|XXX' -- . ':!dependencies.lock' || true; printf '%s\\n' '=== DIFF CHECK ==='; git diff --check; test -z \"$(git status --porcelain --untracked-files=normal)\"; printf '%s\\n' 'OVERNIGHT_AUDIT_V1=PASS NEXT=ANALYZE_FINDINGS_FOR_TEST_DRIVEN_HARDENING'"
+  ]
+}
