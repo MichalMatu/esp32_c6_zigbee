@@ -1,0 +1,58 @@
+{
+  "id": "20260903-emergency-stop-local-agent-v1",
+  "status": "failed",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-09-02T23:57:54.587822+00:00",
+  "command_timeout": 60,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail; LABEL=com.michal.local-agent; DOMAIN=gui/$(id -u); echo EMERGENCY_STOP_LOCAL_AGENT; launchctl print \"$DOMAIN/$LABEL\" >/tmp/local-agent-launchd-before.txt 2>&1 || true; launchctl bootout \"$DOMAIN/$LABEL\"; sleep 2; if launchctl print \"$DOMAIN/$LABEL\" >/tmp/local-agent-launchd-after.txt 2>&1; then echo LOCAL_AGENT_STILL_LOADED; cat /tmp/local-agent-launchd-after.txt; exit 1; else echo LOCAL_AGENT_UNLOADED; fi",
+      "exit_code": 125,
+      "output": "",
+      "elapsed_seconds": 0.0,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limited": false,
+      "not_started": true,
+      "budget_exhausted": true,
+      "budget_remaining_seconds": 117.297,
+      "required_budget_seconds": 120.0,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "not_started",
+      "elapsed_seconds": 0.0
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.123
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.186
+  },
+  "failure_reason": "task_budget_exhausted",
+  "finished_at": "2026-09-02T23:57:57.600782+00:00",
+  "task_digest": "46282069c0b63006e73e71f3f791f66860eb9c025fca92dde69c7b5e88c6e880",
+  "idle_timeout": 60,
+  "task_timeout": 120,
+  "memory_limit_mb": 256,
+  "attempt_id": "04946c5c4313963f26eb47ec",
+  "daemon_version": "4.13.1"
+}
