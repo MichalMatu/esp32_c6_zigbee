@@ -1,0 +1,14 @@
+{
+  "id": "20260902-local-agent-v413-cleanup-staging-v1",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": ["machine"],
+  "memory_limit_mb": 256,
+  "command_timeout": 300,
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "commands": [
+    "set -euo pipefail; CANDIDATE=53e270120a0bc61b2af422c6faa4fcd6789f43c3; cd \"$HOME/local-agent\"; test \"$(git branch --show-current)\" = main; test \"$(git rev-parse HEAD)\" = \"$CANDIDATE\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git fetch --quiet origin main v4.13.0-staging --tags; test \"$(git rev-parse origin/main)\" = \"$CANDIDATE\"; test \"$(git rev-parse origin/v4.13.0-staging)\" = \"$CANDIDATE\"; test \"$(git rev-parse 'v4.13.0^{}')\" = \"$CANDIDATE\"; python3 - <<'PY'\nimport subprocess\nfrom pathlib import Path\nout = subprocess.check_output(['git','worktree','list','--porcelain'], text=True)\nblocks = [b for b in out.strip().split('\\n\\n') if b.strip()]\nfor block in blocks:\n    lines = block.splitlines()\n    wt = next((line.split(' ',1)[1] for line in lines if line.startswith('worktree ')), None)\n    branch = next((line.split(' ',1)[1] for line in lines if line.startswith('branch ')), None)\n    if branch == 'refs/heads/v4.13.0-staging':\n        if not wt:\n            raise SystemExit('staging worktree missing path')\n        p = Path(wt).resolve()\n        if p == Path.home().joinpath('local-agent').resolve():\n            raise SystemExit('refusing to remove production worktree')\n        subprocess.run(['git','worktree','remove','--force',str(p)], check=True)\nPY\n    git worktree prune; if git show-ref --verify --quiet refs/heads/v4.13.0-staging; then git branch -D v4.13.0-staging; fi; git push origin --delete v4.13.0-staging; if git ls-remote --exit-code --heads origin refs/heads/v4.13.0-staging >/dev/null 2>&1; then echo 'staging branch still exists' >&2; exit 4; fi; test \"$(git rev-parse HEAD)\" = \"$CANDIDATE\"; test \"$(git rev-parse 'v4.13.0^{}')\" = \"$CANDIDATE\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; echo LOCAL_AGENT_V413_STAGING_CLEANUP=PASS"
+  ]
+}
