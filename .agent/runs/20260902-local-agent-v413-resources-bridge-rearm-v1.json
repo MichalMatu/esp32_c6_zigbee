@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-local-agent-v413-resources-bridge-rearm-v1",
+  "task_digest": "e3f2c4188e717d1c3f90da33414f2dd668284a845856e7a070045ab738175b22",
+  "idle_timeout": 300,
+  "task_timeout": 3600,
+  "memory_limit_mb": 1024,
+  "started_at": "2026-09-02T16:29:20.348347+00:00",
+  "attempt_id": "a7be8bf90c8aea5ebadc0dd3",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 76046,
+  "updated_at": "2026-09-02T16:29:20.348499+00:00",
+  "pid": 76046
+}
