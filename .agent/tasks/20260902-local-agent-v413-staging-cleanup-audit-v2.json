@@ -1,0 +1,14 @@
+{
+  "id": "20260902-local-agent-v413-staging-cleanup-audit-v2",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": ["machine"],
+  "memory_limit_mb": 256,
+  "command_timeout": 180,
+  "idle_timeout": 90,
+  "task_timeout": 300,
+  "commands": [
+    "set -euo pipefail; EXPECTED_C6=3171ef1a3874e13693686b7b31b431f84b771a1c; RELEASE=53e270120a0bc61b2af422c6faa4fcd6789f43c3; git fetch --quiet origin main; test \"$(git rev-parse origin/main)\" = \"$EXPECTED_C6\"; test \"$(git rev-parse HEAD)\" = \"$EXPECTED_C6\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; cd \"$HOME/local-agent\"; test \"$(git branch --show-current)\" = main; test \"$(git rev-parse HEAD)\" = \"$RELEASE\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; git fetch --quiet --prune origin main --tags; test \"$(git rev-parse origin/main)\" = \"$RELEASE\"; test \"$(git rev-parse 'v4.13.0^{}')\" = \"$RELEASE\"; ! git show-ref --verify --quiet refs/heads/v4.13.0-staging; ! git ls-remote --exit-code --heads origin refs/heads/v4.13.0-staging >/dev/null 2>&1; echo '=== WORKTREES ==='; git worktree list --porcelain; for wt in $(git worktree list --porcelain | awk '/^worktree \/private\/tmp\/local-agent-v413-/{print substr($0,10)}'); do echo \"=== AUDIT $wt ===\"; echo \"HEAD=$(git -C \"$wt\" rev-parse HEAD)\"; echo \"BRANCH=$(git -C \"$wt\" branch --show-current)\"; echo '--STATUS--'; git -C \"$wt\" status --short --untracked-files=all; echo '--DIFF-NAMES--'; git -C \"$wt\" diff --name-status; echo '--DIFF-STAT--'; git -C \"$wt\" diff --stat; done; echo LOCAL_AGENT_V413_STAGING_CLEANUP_AUDIT_V2=PASS"
+  ]
+}
