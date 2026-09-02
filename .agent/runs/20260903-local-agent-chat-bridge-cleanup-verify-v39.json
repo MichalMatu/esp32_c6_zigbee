@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-local-agent-chat-bridge-cleanup-verify-v39",
+  "task_digest": "acbd5b859cb5dfeb999d3873135d6f582fcabe71a6bb235c3c1e963d9ed698e9",
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "memory_limit_mb": 512,
+  "started_at": "2026-09-02T22:51:57.856802+00:00",
+  "attempt_id": "11fdb0f4fbfd34ddb83f3455",
+  "daemon_version": "4.13.1",
+  "daemon_pid": 63546,
+  "updated_at": "2026-09-02T22:51:57.857003+00:00",
+  "pid": 63546
+}
