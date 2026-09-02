@@ -1,9 +1,9 @@
 {
   "version": 1,
   "daemon_version": "4.13.0",
-  "state": "idle",
-  "pid": 22881,
-  "updated_at": "2026-09-02T18:22:01.396902+00:00",
+  "state": "running",
+  "pid": 24369,
+  "updated_at": "2026-09-02T18:25:50.661024+00:00",
   "self_revision": "53e270120a0bc61b2af422c6faa4fcd6789f43c3",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -14,7 +14,7 @@
   "task_timeout_default": 1800,
   "task_timeout_max": 21600,
   "memory_limit_mb_default": 4096,
-  "current_task_id": null,
+  "current_task_id": "20260902-local-agent-v413-cleanup-staging-v1",
   "current_attempt_id": null,
   "current_task_digest": null,
   "repository_id": "esp32-c6-zigbee",
@@ -22,8 +22,10 @@
   "control_branch": "agent-control",
   "default_branch": "main",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 22881,
+  "worker_pid": 24369,
   "supervisor_pid": 71830,
-  "last_task_id": "20260902-local-agent-v413-cleanup-v2",
+  "active_resources": [
+    "machine"
+  ],
   "execution_variant": "parallel"
 }
