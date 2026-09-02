@@ -1,0 +1,19 @@
+{
+  "id": "20260902-c6-gatewaylink-stream-boundaries-v1",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": true,
+  "resources": [],
+  "memory_limit_mb": 512,
+  "command_timeout": 900,
+  "idle_timeout": 180,
+  "task_timeout": 1800,
+  "commands": [
+    "set -euo pipefail; EXPECTED=6d3fdbf30fc02ce26d4a668ecedca1c723f28c04; git fetch --quiet origin main agent-control; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; test \"$(git rev-parse origin/main)\" = \"$EXPECTED\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; echo '=== GATEWAYLINK STREAM BOUNDARY HARDENING ==='; echo \"HEAD=$(git rev-parse HEAD)\"; echo 'SCOPE=HOST_ONLY TEST_FIRST NO_USB NO_FLASH NO_S3 NO_RADIO NO_FULL_IDF_BUILD'",
+    "set -euo pipefail; git show origin/agent-control:.agent/scripts/c6_gatewaylink_stream_boundaries_v1.py > /tmp/c6_gatewaylink_stream_boundaries_v1.py; python3 /tmp/c6_gatewaylink_stream_boundaries_v1.py --output /tmp/test_gateway_link_stream_hardened.c; CFLAGS='-std=c11 -Wall -Wextra -Werror -pedantic -fsanitize=address,undefined -fno-omit-frame-pointer -O1 -g'; export ASAN_OPTIONS='detect_leaks=0:abort_on_error=1'; export UBSAN_OPTIONS='halt_on_error=1'; cc $CFLAGS -Imain /tmp/test_gateway_link_stream_hardened.c main/gateway_link_stream.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_stream_hardened; /tmp/test_gateway_link_stream_hardened; echo 'CANDIDATE_BOUNDARY_TESTS=PASS'",
+    "set -euo pipefail; CFLAGS='-std=c11 -Wall -Wextra -Werror -pedantic -fsanitize=address,undefined -fno-omit-frame-pointer -O1 -g'; export ASAN_OPTIONS='detect_leaks=0:abort_on_error=1'; export UBSAN_OPTIONS='halt_on_error=1'; cc $CFLAGS -Imain tests/host/test_gateway_link_protocol.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_protocol; /tmp/test_gateway_link_protocol; cc $CFLAGS -Imain tests/host/test_gateway_link_e2e.c main/gateway_link_protocol.c main/gateway_link_stream.c main/gateway_link_control.c main/gateway_link_snapshot_cache.c main/gateway_inputs.c -lm -o /tmp/test_gateway_link_e2e; /tmp/test_gateway_link_e2e; echo 'EXISTING_GATEWAYLINK_ASAN_UBSAN=PASS'",
+    "set -euo pipefail; python3 /tmp/c6_gatewaylink_stream_boundaries_v1.py --in-place; test \"$(git diff --name-only)\" = 'tests/host/test_gateway_link_stream.c'; git diff --check; cc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_stream.c main/gateway_link_stream.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_stream; /tmp/test_gateway_link_stream; CFLAGS='-std=c11 -Wall -Wextra -Werror -pedantic -fsanitize=address,undefined -fno-omit-frame-pointer -O1 -g'; export ASAN_OPTIONS='detect_leaks=0:abort_on_error=1'; export UBSAN_OPTIONS='halt_on_error=1'; cc $CFLAGS -Imain tests/host/test_gateway_link_stream.c main/gateway_link_stream.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_stream_san; /tmp/test_gateway_link_stream_san; git diff --check; echo 'IN_PLACE_BOUNDARY_TESTS=PASS'",
+    "set -euo pipefail; git add tests/host/test_gateway_link_stream.c; git commit -m 'Harden GatewayLink stream boundary tests'; git push origin HEAD:main; echo \"PUBLISHED_MAIN=$(git rev-parse HEAD)\"",
+    "set -euo pipefail; git fetch --quiet origin main; test \"$(git rev-parse HEAD)\" = \"$(git rev-parse origin/main)\"; test -z \"$(git status --porcelain --untracked-files=normal)\"; echo 'GATEWAYLINK_STREAM_BOUNDARIES_V1=PASS NEXT=ANALYZE_NEXT_HARDENING_GAP'"
+  ]
+}
