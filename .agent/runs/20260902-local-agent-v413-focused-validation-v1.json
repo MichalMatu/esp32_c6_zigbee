@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-local-agent-v413-focused-validation-v1",
+  "task_digest": "3629a96afa3d3b03757eace6d5814986e0ea22e817a555cb2af5ae149dcffbf1",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 768,
+  "started_at": "2026-09-02T16:01:13.564973+00:00",
+  "attempt_id": "6e3193cbde3c765cc28fec1a",
+  "daemon_version": "4.12.2",
+  "daemon_pid": 61100,
+  "updated_at": "2026-09-02T16:01:13.565263+00:00",
+  "pid": 61100
+}
