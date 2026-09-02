@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260902-local-agent-v413-dirty-fixture-audit-v1",
+  "task_digest": "4879d0b2c0e7749002b65054fe05b4d44e26f9502163a12b60ba4673d73f6f0a",
+  "idle_timeout": 90,
+  "task_timeout": 420,
+  "memory_limit_mb": 256,
+  "started_at": "2026-09-02T18:39:29.756238+00:00",
+  "attempt_id": "284f4f65301cbaa27060f509",
+  "daemon_version": "4.13.0",
+  "daemon_pid": 29307,
+  "updated_at": "2026-09-02T18:39:29.756487+00:00",
+  "pid": 29307
+}
