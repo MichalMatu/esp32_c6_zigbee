@@ -1,9 +1,0 @@
-{
-  "id": "20260902-c6-overnight-hardening-audit-v1",
-  "status": "failed",
-  "failure_reason": "invalid_task_file",
-  "started_at": null,
-  "finished_at": "2026-09-02T01:43:25.834648+00:00",
-  "daemon_version": "4.12.2",
-  "error": "JSONDecodeError: Invalid \\escape: line 12 column 2715 (char 2973)"
-}

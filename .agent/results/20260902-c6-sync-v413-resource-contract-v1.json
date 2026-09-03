@@ -1,9 +1,0 @@
-{
-  "id": "20260902-c6-sync-v413-resource-contract-v1",
-  "status": "failed",
-  "failure_reason": "invalid_task_file",
-  "started_at": null,
-  "finished_at": "2026-09-02T16:54:09.304654+00:00",
-  "daemon_version": "4.12.2",
-  "error": "JSONDecodeError: Invalid control character at: line 12 column 2001 (char 2260)"
-}

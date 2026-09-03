@@ -1,9 +1,0 @@
-{
-  "event": "invalid_task_rejected",
-  "status": "failed",
-  "failure_reason": "invalid_task_file",
-  "updated_at": "2026-09-02T16:54:13.199686+00:00",
-  "task_id": "20260902-c6-sync-v413-resource-contract-v1",
-  "daemon_version": "4.12.2",
-  "pid": 90965
-}

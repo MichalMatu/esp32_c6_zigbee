@@ -1,9 +1,0 @@
-{
-  "event": "invalid_task_rejected",
-  "status": "failed",
-  "failure_reason": "invalid_task_file",
-  "updated_at": "2026-09-02T23:12:19.105877+00:00",
-  "task_id": "20260903-local-agent-chat-bridge-wake-only-v44",
-  "daemon_version": "4.13.1",
-  "pid": 74831
-}
