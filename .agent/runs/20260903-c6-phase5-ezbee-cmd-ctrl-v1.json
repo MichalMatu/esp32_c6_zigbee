@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-phase5-ezbee-cmd-ctrl-v1",
+  "task_digest": "3a40e70670169cf0df09082c0be80453c4888ec06bd300baaccae6becb9f2213",
+  "idle_timeout": 180,
+  "task_timeout": 900,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T19:21:42.899720+00:00",
+  "attempt_id": "61845da2ca112f3ac45bc745",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 15936,
+  "updated_at": "2026-09-03T19:21:42.899855+00:00",
+  "pid": 15936
+}
