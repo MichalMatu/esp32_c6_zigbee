@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-uart-soak-validate-v2",
+  "task_digest": "900d171ed20ff22f42214c57790a7ea7b88a9d6a496996a32eec4fa139284ce6",
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T14:12:57.836191+00:00",
+  "attempt_id": "6aaa7801c6c01d92d43a41c6",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 46761,
+  "updated_at": "2026-09-03T14:12:57.838288+00:00",
+  "pid": 46761
+}
