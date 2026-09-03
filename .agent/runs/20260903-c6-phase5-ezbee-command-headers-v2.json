@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-phase5-ezbee-command-headers-v2",
+  "task_digest": "b7be803a671bd9f9e254e38e3f8110b890aca7a37b1da0d7854992514773b1dd",
+  "idle_timeout": 180,
+  "task_timeout": 1200,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T19:20:01.040949+00:00",
+  "attempt_id": "60c459d47173c9d1e44f9ad8",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 14035,
+  "updated_at": "2026-09-03T19:20:01.041105+00:00",
+  "pid": 14035
+}
