@@ -1,0 +1,15 @@
+{
+  "id": "20260903-c6-emulator-api-detail-v3",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 4096,
+  "command_timeout": 900,
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "commands": [
+    "set -euo pipefail\ngit fetch origin\ngit checkout integration/c6-s3-i2c-20260903\ngit reset --hard origin/integration/c6-s3-i2c-20260903\n[ \"$(git rev-parse HEAD)\" = \"a5ad4d5cf5d9faf8c12de571ea088a4b6e2893e3\" ]\npython3 - <<'PY'\nfrom pathlib import Path\nroots=[Path('managed_components/espressif__esp-zigbee-lib/include')]\nneedles=['typedef struct esp_zigbee_config','esp_zigbee_config_t','report_attr_cmd_req','report_attr_cmd']\nfor root in roots:\n    for p in root.rglob('*.h'):\n        try: s=p.read_text()\n        except: continue\n        if any(n in s for n in needles):\n            lines=s.splitlines()\n            for i,line in enumerate(lines):\n                if any(n in line for n in needles):\n                    lo=max(0,i-18); hi=min(len(lines),i+45)\n                    print(f'=== {p}:{i+1} ===')\n                    print('\\n'.join(lines[lo:hi]))\nPY"
+  ]
+}
