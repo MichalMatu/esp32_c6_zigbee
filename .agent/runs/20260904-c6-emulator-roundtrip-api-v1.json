@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-emulator-roundtrip-api-v1",
+  "task_digest": "cc630d201e597df6529ce5c550c28815b6db1e19bc4316425416503c26982096",
+  "idle_timeout": 180,
+  "task_timeout": 1200,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T22:06:34.890871+00:00",
+  "attempt_id": "5ccf26805d414e02e8411b3c",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 90665,
+  "updated_at": "2026-09-03T22:06:34.891072+00:00",
+  "pid": 90665
+}
