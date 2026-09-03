@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-freeze-gatewaylink-baseline-v1",
+  "task_digest": "cf158c3f59c4def7f56d8d69786d8164c6278601571e986693862fe2b4c241b0",
+  "idle_timeout": 180,
+  "task_timeout": 1200,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T14:20:15.550401+00:00",
+  "attempt_id": "1d4d9bdaf88c7c5900024a75",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 53193,
+  "updated_at": "2026-09-03T14:20:15.550588+00:00",
+  "pid": 53193
+}
