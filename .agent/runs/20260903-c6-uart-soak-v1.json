@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-uart-soak-v1",
+  "task_digest": "28a3bca216df642c19c7329214e56b341e6e1e2d698d95bc26f347826fe7edca",
+  "idle_timeout": 600,
+  "task_timeout": 21000,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T07:07:29.807754+00:00",
+  "attempt_id": "c453153c352da224f9407640",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 35283,
+  "updated_at": "2026-09-03T07:07:29.807957+00:00",
+  "pid": 35283
+}
