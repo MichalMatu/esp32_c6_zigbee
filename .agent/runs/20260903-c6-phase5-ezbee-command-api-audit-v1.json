@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-phase5-ezbee-command-api-audit-v1",
+  "task_digest": "347b20d0e2c91f13dbe81bf8ccbf94f82afc2db713198d9140ad8424400466d6",
+  "idle_timeout": 180,
+  "task_timeout": 1200,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T19:17:59.910881+00:00",
+  "attempt_id": "e3433c2851852f05cb599527",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 12064,
+  "updated_at": "2026-09-03T19:17:59.911010+00:00",
+  "pid": 12064
+}
