@@ -1,9 +1,9 @@
 {
   "version": 1,
   "daemon_version": "4.15.0",
-  "state": "idle",
-  "pid": 34991,
-  "updated_at": "2026-09-03T21:16:39.390916+00:00",
+  "state": "waiting_resource",
+  "pid": 38494,
+  "updated_at": "2026-09-03T21:21:38.393362+00:00",
   "self_revision": "3742045cc6492c49e2f94bdcc910ec92436edc38",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -23,7 +23,13 @@
   "default_branch": "main",
   "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 34991,
+  "worker_pid": 38494,
   "supervisor_pid": 59663,
+  "pending_task_id": "20260903-c6-emulator-profiles-api-v3",
+  "blocked_resources": [
+    "machine"
+  ],
+  "waiting_since": "2026-09-03T21:21:38.391936+00:00",
+  "retrying": true,
   "execution_variant": "parallel"
 }
