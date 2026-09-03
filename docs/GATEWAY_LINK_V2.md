@@ -39,6 +39,6 @@ Manufacturer and model are bounded to 23 data bytes each plus local NUL terminat
 
 Message numbers remain: HELLO/ACK `0x01/0x02`, PING/PONG `0x03/0x04`, snapshot `0x05..0x07`, INPUT_DESCRIPTOR `0x10`, MEASUREMENT `0x11`, SET_MEASUREMENT_POLICY `0x20`, CONFIG_RESULT `0x21`, PERMIT_JOIN `0x22`.
 
-HELLO advertises the `snapshot`, `permit-join` and `capability-profile` feature bits. `measurement-policy` remains unadvertised until the next phase connects the request to real Zigbee Configure Reporting state.
+HELLO advertises `snapshot`, `measurement-policy`, `permit-join` and `capability-profile`. For supported Zigbee inputs, `SET_MEASUREMENT_POLICY` is translated into a standard Configure Reporting request. The C6 returns `CONFIG_RESULT` only after the device response, or an explicit normalized error/unsupported result if the request cannot be applied. Interval quantization or reportable-change quantization is returned as `CLAMPED` after a successful device response.
 
-MEASUREMENT, SET_MEASUREMENT_POLICY, CONFIG_RESULT and PERMIT_JOIN payload semantics remain otherwise unchanged from v1. A peer must negotiate protocol version 2; the active branch intentionally does not decode v1 frames.
+MEASUREMENT, SET_MEASUREMENT_POLICY, CONFIG_RESULT and PERMIT_JOIN payload encodings remain otherwise unchanged from v1. Supported measurement-policy targets are currently temperature, relative humidity and battery percentage, matching the standard reporting policy table. Requests are routed by authoritative Zigbee IEEE input identity plus endpoint; the GatewayLink RX task never uses a mutable short address as application identity. A peer must negotiate protocol version 2; the active branch intentionally does not decode v1 frames.

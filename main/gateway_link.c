@@ -243,12 +243,25 @@ static void handle_control_frame(const gateway_link_frame_t *frame)
         }
         break;
     }
-    case GATEWAY_LINK_CONTROL_MEASUREMENT_POLICY_UNSUPPORTED:
-        if (gateway_link_make_config_result_message(
-                action.request_id, GATEWAY_LINK_CONFIG_UNSUPPORTED, &response)) {
+    case GATEWAY_LINK_CONTROL_MEASUREMENT_POLICY:
+    {
+        const gateway_link_measurement_policy_t *policy = &action.measurement_policy;
+        const zigbee_gateway_policy_submit_result_t result =
+            zigbee_gateway_set_measurement_policy(
+                policy->request_id, &policy->input, policy->kind,
+                policy->min_interval_ms, policy->max_interval_ms,
+                policy->reportable_change);
+        if (result == ZIGBEE_GATEWAY_POLICY_QUEUED) {
+            break;
+        }
+        const gateway_link_config_status_t status =
+            result == ZIGBEE_GATEWAY_POLICY_UNSUPPORTED ?
+                GATEWAY_LINK_CONFIG_UNSUPPORTED : GATEWAY_LINK_CONFIG_ERROR;
+        if (gateway_link_make_config_result_message(policy->request_id, status, &response)) {
             (void)enqueue_message(&response);
         }
         break;
+    }
     case GATEWAY_LINK_CONTROL_INVALID:
         ESP_LOGW(TAG, "invalid GatewayLink control payload type=0x%02x", frame->type);
         break;

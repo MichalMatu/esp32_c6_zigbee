@@ -13,7 +13,7 @@ typedef enum {
     GATEWAY_LINK_CONTROL_PING,
     GATEWAY_LINK_CONTROL_SNAPSHOT_REQUEST,
     GATEWAY_LINK_CONTROL_PERMIT_JOIN,
-    GATEWAY_LINK_CONTROL_MEASUREMENT_POLICY_UNSUPPORTED,
+    GATEWAY_LINK_CONTROL_MEASUREMENT_POLICY,
     GATEWAY_LINK_CONTROL_INVALID,
 } gateway_link_control_kind_t;
 
@@ -23,6 +23,7 @@ typedef struct {
     uint32_t token;
     uint8_t permit_join_seconds;
     gateway_link_hello_t peer_hello;
+    gateway_link_measurement_policy_t measurement_policy;
 } gateway_link_control_action_t;
 
 gateway_link_control_action_t gateway_link_control_parse(

@@ -148,7 +148,8 @@ Implementation progress after the generic-coordinator audit:
 - Phase 1 is complete: IEEE+endpoint is the only normalized Zigbee input identity, Basic manufacturer/model metadata is retained, and input descriptors refresh when model metadata becomes known.
 - Phase 2 is complete: fixed reporting/binding bitmaps were replaced with bounded records keyed by endpoint/cluster/attribute so Configure Reporting state preserves per-attribute status.
 - Phase 3 introduces the normalized capability access profile and GatewayLink v2: readable, reportable, configurable and commandable masks plus manufacturer/model metadata are carried without exposing raw Zigbee semantics to the future S3. There is intentionally no v1 shim on the active branch.
-- The next implementation slice connects `SET_MEASUREMENT_POLICY` to real Zigbee Configure Reporting and returns normalized per-request results, followed by writable On/Off and Level commands.
+- Phase 4 connects `SET_MEASUREMENT_POLICY` to standard Zigbee Configure Reporting through the discovery-task ownership boundary. Supported requests are correlated by `request_id`; APPLIED/CLAMPED/UNSUPPORTED/ERROR is emitted only from real validation/device-response outcomes.
+- The next implementation slice adds normalized writable On/Off first, then Level Control, before building the second-C6 emulator profiles for deterministic round-trip testing.
 
 Execution order:
 

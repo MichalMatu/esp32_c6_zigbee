@@ -139,9 +139,10 @@ static void log_event(const gateway_event_t *event)
     }
     case GATEWAY_EVENT_BASIC: ESP_LOGI(TAG, "basic %s %s=%s", device, event->data.text.key, event->data.text.value); break;
     case GATEWAY_EVENT_REPORTING_CONFIG:
-        ESP_LOGI(TAG, "reporting %s ep=%u cluster=0x%04x attr=0x%04x status=0x%02x",
+        ESP_LOGI(TAG, "reporting %s ep=%u cluster=0x%04x attr=0x%04x status=0x%02x request=%" PRIu32 " result=%u",
                  device, event->endpoint, event->data.reporting.cluster_id,
-                 event->data.reporting.attribute_id, event->data.reporting.status);
+                 event->data.reporting.attribute_id, event->data.reporting.status,
+                 event->data.reporting.request_id, (unsigned)event->data.reporting.result);
         break;
     case GATEWAY_EVENT_INPUT_AVAILABLE:
     case GATEWAY_EVENT_INPUT_UNAVAILABLE:

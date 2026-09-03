@@ -14,8 +14,8 @@ static bool make_hello(uint8_t type, gateway_link_message_t *message)
         .min_version = GATEWAY_LINK_PROTOCOL_VERSION,
         .max_version = GATEWAY_LINK_PROTOCOL_VERSION,
         .max_frame_bytes = GATEWAY_LINK_MAX_FRAME_BYTES,
-        .features = GATEWAY_LINK_FEATURE_SNAPSHOT | GATEWAY_LINK_FEATURE_PERMIT_JOIN |
-            GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE,
+        .features = GATEWAY_LINK_FEATURE_SNAPSHOT | GATEWAY_LINK_FEATURE_MEASUREMENT_POLICY |
+            GATEWAY_LINK_FEATURE_PERMIT_JOIN | GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE,
     };
     return gateway_link_encode_hello_payload(
         &hello,
@@ -85,8 +85,9 @@ gateway_link_control_action_t gateway_link_control_parse(
             action.kind = GATEWAY_LINK_CONTROL_INVALID;
             return action;
         }
-        action.kind = GATEWAY_LINK_CONTROL_MEASUREMENT_POLICY_UNSUPPORTED;
+        action.kind = GATEWAY_LINK_CONTROL_MEASUREMENT_POLICY;
         action.request_id = policy.request_id;
+        action.measurement_policy = policy;
         return action;
     }
 

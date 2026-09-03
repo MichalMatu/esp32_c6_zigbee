@@ -30,6 +30,36 @@ bool gateway_link_message_from_event(
             &message->payload_length) == GATEWAY_LINK_OK;
     }
 
+    if (event->kind == GATEWAY_EVENT_REPORTING_CONFIG &&
+        event->data.reporting.request_id != 0U &&
+        event->data.reporting.result != GATEWAY_EVENT_CONFIG_NONE) {
+        gateway_link_config_status_t status = GATEWAY_LINK_CONFIG_ERROR;
+        switch (event->data.reporting.result) {
+        case GATEWAY_EVENT_CONFIG_APPLIED:
+            status = GATEWAY_LINK_CONFIG_APPLIED;
+            break;
+        case GATEWAY_EVENT_CONFIG_CLAMPED:
+            status = GATEWAY_LINK_CONFIG_CLAMPED;
+            break;
+        case GATEWAY_EVENT_CONFIG_UNSUPPORTED:
+            status = GATEWAY_LINK_CONFIG_UNSUPPORTED;
+            break;
+        case GATEWAY_EVENT_CONFIG_ERROR:
+        case GATEWAY_EVENT_CONFIG_NONE:
+        default:
+            status = GATEWAY_LINK_CONFIG_ERROR;
+            break;
+        }
+        message->type = GATEWAY_LINK_MSG_CONFIG_RESULT;
+        const gateway_link_config_result_t result = {
+            .request_id = event->data.reporting.request_id,
+            .status = status,
+        };
+        return gateway_link_encode_config_result_payload(
+            &result, message->payload, sizeof(message->payload),
+            &message->payload_length) == GATEWAY_LINK_OK;
+    }
+
     if (event->kind == GATEWAY_EVENT_MEASUREMENT) {
         const gateway_link_measurement_t measurement = {
             .input = event->input,

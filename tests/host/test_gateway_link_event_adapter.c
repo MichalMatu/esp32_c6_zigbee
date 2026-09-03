@@ -70,6 +70,25 @@ static void test_measurement_event(void)
     assert(decoded.quality == GATEWAY_LINK_QUALITY_VALID);
 }
 
+static void test_reporting_config_result(void)
+{
+    gateway_event_t event = {0};
+    event.kind = GATEWAY_EVENT_REPORTING_CONFIG;
+    event.data.reporting.request_id = 91U;
+    event.data.reporting.result = GATEWAY_EVENT_CONFIG_CLAMPED;
+    gateway_link_message_t message;
+    assert(gateway_link_message_from_event(&event, &message));
+    assert(message.type == GATEWAY_LINK_MSG_CONFIG_RESULT);
+    gateway_link_config_result_t decoded = {0};
+    assert(gateway_link_decode_config_result_payload(
+        message.payload, message.payload_length, &decoded) == GATEWAY_LINK_OK);
+    assert(decoded.request_id == 91U);
+    assert(decoded.status == GATEWAY_LINK_CONFIG_CLAMPED);
+
+    event.data.reporting.request_id = 0U;
+    assert(!gateway_link_message_from_event(&event, &message));
+}
+
 static void test_protocol_specific_event_is_not_forwarded(void)
 {
     gateway_event_t event = {0};
@@ -85,6 +104,7 @@ int main(void)
 {
     test_input_descriptor_event();
     test_measurement_event();
+    test_reporting_config_result();
     test_protocol_specific_event_is_not_forwarded();
     puts("gateway_link_event_adapter host tests passed");
     return 0;

@@ -12,3 +12,5 @@ gateway_input_capability_profile_t gateway_zigbee_capability_profile_from_cluste
 bool gateway_zigbee_stable_input_id(
     const uint8_t ieee[8], bool ieee_valid, uint8_t endpoint,
     gateway_input_id_t *input);
+bool gateway_zigbee_parse_input_identity(
+    const gateway_input_id_t *input, uint8_t ieee[8], uint8_t *endpoint);

@@ -35,6 +35,8 @@ typedef struct {
     bool configured;
     uint8_t last_status;
     uint32_t requested_at_ms;
+    uint32_t request_id;
+    bool request_clamped;
 } reporting_state_t;
 
 typedef struct {

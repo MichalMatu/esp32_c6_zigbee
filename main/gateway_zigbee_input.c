@@ -1,5 +1,7 @@
 #include "gateway_zigbee_input.h"
 
+#include <string.h>
+
 #include "gateway_reporting_policy.h"
 #include "gateway_zcl_value.h"
 
@@ -28,6 +30,37 @@ gateway_input_capability_profile_t gateway_zigbee_capability_profile_from_cluste
         }
     }
     return profile;
+}
+
+static int hex_nibble(char value)
+{
+    if (value >= '0' && value <= '9') return value - '0';
+    if (value >= 'a' && value <= 'f') return value - 'a' + 10;
+    if (value >= 'A' && value <= 'F') return value - 'A' + 10;
+    return -1;
+}
+
+bool gateway_zigbee_parse_input_identity(
+    const gateway_input_id_t *input, uint8_t ieee[8], uint8_t *endpoint)
+{
+    static const char prefix[] = "zigbee:";
+    if (input == NULL || ieee == NULL || endpoint == NULL ||
+        input->source != GATEWAY_SOURCE_ZIGBEE || input->channel == 0U ||
+        strncmp(input->id, prefix, sizeof(prefix) - 1U) != 0 ||
+        strlen(input->id) != (sizeof(prefix) - 1U + 16U)) {
+        return false;
+    }
+    const char *hex = input->id + sizeof(prefix) - 1U;
+    for (size_t i = 0U; i < 8U; ++i) {
+        const int high = hex_nibble(hex[i * 2U]);
+        const int low = hex_nibble(hex[i * 2U + 1U]);
+        if (high < 0 || low < 0) {
+            return false;
+        }
+        ieee[7U - i] = (uint8_t)((high << 4) | low);
+    }
+    *endpoint = input->channel;
+    return true;
 }
 
 bool gateway_zigbee_stable_input_id(

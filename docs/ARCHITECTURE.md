@@ -83,3 +83,8 @@ Prefer extending the pure policy/state modules when adding supported clusters or
 ## Normalized capability access profile
 
 The application boundary uses `gateway_input_capability_profile_t`, not Zigbee cluster IDs. `readable` identifies normalized state/measurements C6 understands, `reportable` and `configurable` identify values backed by an explicit source policy implementation, and `commandable` identifies normalized writable state. Zigbee Simple Descriptor data remains internal evidence used to construct that profile. GatewayLink v2 transports the profile unchanged over either UART or I2C.
+
+
+## Measurement policy command ownership
+
+GatewayLink RX validates and enqueues source-neutral measurement policy requests but does not mutate the Zigbee registry. The Zigbee discovery task resolves the stable IEEE+endpoint identity, validates the endpoint's configurable capability, checks binding state and owns Configure Reporting submission. A correlated request completes only after the ZCL Configure Reporting response (or an explicit timeout/queue/route failure), which is normalized to `APPLIED`, `CLAMPED`, `UNSUPPORTED` or `ERROR` before crossing GatewayLink.

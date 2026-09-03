@@ -44,6 +44,17 @@ static void test_stable_ieee_identity(void)
     assert(input.source == GATEWAY_SOURCE_ZIGBEE);
     assert(input.channel == 7U);
     assert(strcmp(input.id, "zigbee:00124b00aabbccdd") == 0);
+
+    uint8_t parsed_ieee[8] = {0};
+    uint8_t endpoint = 0U;
+    assert(gateway_zigbee_parse_input_identity(&input, parsed_ieee, &endpoint));
+    assert(memcmp(parsed_ieee, ieee, sizeof(ieee)) == 0);
+    assert(endpoint == 7U);
+
+    input.id[8] = 'x';
+    assert(!gateway_zigbee_parse_input_identity(&input, parsed_ieee, &endpoint));
+    input = gateway_input_make(GATEWAY_SOURCE_LOCAL_I2C, "zigbee:00124b00aabbccdd", 7U);
+    assert(!gateway_zigbee_parse_input_identity(&input, parsed_ieee, &endpoint));
 }
 
 int main(void)

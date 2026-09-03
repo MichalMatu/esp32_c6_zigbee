@@ -48,6 +48,7 @@ typedef enum {
     DISCOVERY_READ_BASIC,
     DISCOVERY_BIND_CLUSTER,
     DISCOVERY_CONFIG_REPORTING,
+    DISCOVERY_EXTERNAL_REPORTING,
 } discovery_kind_t;
 
 typedef struct {
@@ -57,6 +58,12 @@ typedef struct {
     uint8_t endpoint;
     uint16_t cluster_id;
     uint8_t retry_count;
+    bool reporting_spec_valid;
+    gateway_reporting_spec_t reporting_spec;
+    uint32_t config_request_id;
+    bool config_clamped;
+    gateway_input_id_t external_input;
+    gateway_measurement_kind_t external_kind;
 } discovery_job_t;
 
 typedef struct {
@@ -176,6 +183,21 @@ static device_slot_t *recover_report_source(const ezb_zcl_cmd_hdr_t *header)
     return slot;
 }
 
+static bool enqueue_device_job(device_slot_t *slot, discovery_job_t job)
+{
+    if (s_discovery_queue == NULL || slot == NULL || slot->state != SLOT_ACTIVE ||
+        slot->device.short_addr == GATEWAY_INVALID_SHORT_ADDR) {
+        return false;
+    }
+    job.device = gateway_device_ref_for(slot);
+    job.route_short_addr = slot->device.short_addr;
+    if (xQueueSend(s_discovery_queue, &job, 0) != pdPASS) {
+        return false;
+    }
+    ++slot->pending_jobs;
+    return true;
+}
+
 static bool queue_job(
     discovery_kind_t kind,
     device_slot_t *slot,
@@ -183,23 +205,36 @@ static bool queue_job(
     uint16_t cluster,
     uint8_t retries)
 {
-    if (s_discovery_queue == NULL || slot == NULL || slot->state != SLOT_ACTIVE ||
-        slot->device.short_addr == GATEWAY_INVALID_SHORT_ADDR) {
-        return false;
-    }
-    const discovery_job_t job = {
+    return enqueue_device_job(slot, (discovery_job_t){
         .kind = kind,
-        .device = gateway_device_ref_for(slot),
-        .route_short_addr = slot->device.short_addr,
         .endpoint = endpoint,
         .cluster_id = cluster,
         .retry_count = retries,
-    };
-    if (xQueueSend(s_discovery_queue, &job, 0) != pdPASS) {
+    });
+}
+
+static bool queue_reporting_job(
+    device_slot_t *slot,
+    uint8_t endpoint,
+    uint16_t cluster,
+    const gateway_reporting_spec_t *spec,
+    uint32_t request_id,
+    bool clamped,
+    uint8_t retries)
+{
+    if (spec == NULL) {
         return false;
     }
-    ++slot->pending_jobs;
-    return true;
+    return enqueue_device_job(slot, (discovery_job_t){
+        .kind = DISCOVERY_CONFIG_REPORTING,
+        .endpoint = endpoint,
+        .cluster_id = cluster,
+        .retry_count = retries,
+        .reporting_spec_valid = true,
+        .reporting_spec = *spec,
+        .config_request_id = request_id,
+        .config_clamped = clamped,
+    });
 }
 
 static bool schedule_basic(device_slot_t *slot, uint8_t endpoint)
@@ -273,7 +308,7 @@ static bool schedule_reporting(
     if (reporting->requested || reporting->configured) {
         return false;
     }
-    if (!queue_job(DISCOVERY_CONFIG_REPORTING, slot, endpoint, cluster, 0U)) {
+    if (!queue_reporting_job(slot, endpoint, cluster, &spec, 0U, false, 0U)) {
         gateway_event_warning(&slot->device, "reporting queue full");
         return false;
     }
@@ -330,16 +365,55 @@ static void clear_pending(device_slot_t *slot, const discovery_job_t *job)
             binding->requested = false;
         }
     }
-    if (job->kind == DISCOVERY_CONFIG_REPORTING) {
-        gateway_reporting_spec_t spec;
-        if (gateway_reporting_policy_spec(job->cluster_id, &spec)) {
-            reporting_state_t *reporting = gateway_device_reporting_state(
-                slot, job->endpoint, job->cluster_id, spec.attribute_id, false);
-            if (reporting != NULL) {
-                reporting->requested = false;
-            }
+    if (job->kind == DISCOVERY_CONFIG_REPORTING && job->reporting_spec_valid) {
+        reporting_state_t *reporting = gateway_device_reporting_state(
+            slot, job->endpoint, job->cluster_id,
+            job->reporting_spec.attribute_id, false);
+        if (reporting != NULL) {
+            reporting->requested = false;
         }
     }
+}
+
+static void publish_reporting_config_event(
+    const gateway_device_id_t *device,
+    uint8_t endpoint,
+    uint16_t cluster_id,
+    uint16_t attribute_id,
+    uint8_t zcl_status,
+    uint32_t request_id,
+    gateway_event_config_result_t result)
+{
+    gateway_event_t event = gateway_event_make(GATEWAY_EVENT_REPORTING_CONFIG, device);
+    event.endpoint = endpoint;
+    event.data.reporting.cluster_id = cluster_id;
+    event.data.reporting.attribute_id = attribute_id;
+    event.data.reporting.status = zcl_status;
+    event.data.reporting.request_id = request_id;
+    event.data.reporting.result = result;
+    gateway_event_publish(&event);
+}
+
+static void fail_external_reporting_job(
+    device_slot_t *slot, const discovery_job_t *job, uint8_t status)
+{
+    if (job == NULL || job->config_request_id == 0U || !job->reporting_spec_valid) {
+        return;
+    }
+    if (slot != NULL) {
+        reporting_state_t *reporting = gateway_device_reporting_state(
+            slot, job->endpoint, job->cluster_id,
+            job->reporting_spec.attribute_id, false);
+        if (reporting != NULL && reporting->request_id == job->config_request_id) {
+            reporting->requested = false;
+            reporting->request_id = 0U;
+            reporting->request_clamped = false;
+        }
+    }
+    publish_reporting_config_event(
+        slot == NULL ? NULL : &slot->device,
+        job->endpoint, job->cluster_id, job->reporting_spec.attribute_id,
+        status, job->config_request_id, GATEWAY_EVENT_CONFIG_ERROR);
 }
 
 static void retry_or_fail(discovery_job_t job, const char *message)
@@ -350,15 +424,24 @@ static void retry_or_fail(discovery_job_t job, const char *message)
     }
     if (slot->state == SLOT_ACTIVE &&
         job.retry_count < GATEWAY_DISCOVERY_MAX_RETRIES &&
-        queue_job(
-            job.kind,
+        enqueue_device_job(
             slot,
-            job.endpoint,
-            job.cluster_id,
-            (uint8_t)(job.retry_count + 1U))) {
+            (discovery_job_t){
+                .kind = job.kind,
+                .endpoint = job.endpoint,
+                .cluster_id = job.cluster_id,
+                .retry_count = (uint8_t)(job.retry_count + 1U),
+                .reporting_spec_valid = job.reporting_spec_valid,
+                .reporting_spec = job.reporting_spec,
+                .config_request_id = job.config_request_id,
+                .config_clamped = job.config_clamped,
+            })) {
         return;
     }
     clear_pending(slot, &job);
+    if (job.kind == DISCOVERY_CONFIG_REPORTING) {
+        fail_external_reporting_job(slot, &job, GATEWAY_CONFIG_STATUS_UNKNOWN);
+    }
     if (job.kind == DISCOVERY_ACTIVE_ENDPOINTS) {
         gateway_device_release_discovery(slot, job.route_short_addr);
     }
@@ -511,19 +594,27 @@ static void publish_config_response(
         reporting_state_t *reporting = slot == NULL ? NULL :
             gateway_device_reporting_state(
                 slot, header->src_ep, header->cluster_id, item->attr_id, false);
+        uint32_t request_id = 0U;
+        bool request_clamped = false;
         if (reporting != NULL) {
+            request_id = reporting->request_id;
+            request_clamped = reporting->request_clamped;
             reporting->requested = false;
             reporting->last_status = item->status;
-            reporting->configured = item->status == EZB_ZCL_STATUS_SUCCESS;
+            if (item->status == EZB_ZCL_STATUS_SUCCESS) {
+                reporting->configured = true;
+            }
+            reporting->request_id = 0U;
+            reporting->request_clamped = false;
         }
-        gateway_event_t event = gateway_event_make(
-            GATEWAY_EVENT_REPORTING_CONFIG, &device
-        );
-        event.endpoint = header->src_ep;
-        event.data.reporting.cluster_id = header->cluster_id;
-        event.data.reporting.attribute_id = item->attr_id;
-        event.data.reporting.status = item->status;
-        gateway_event_publish(&event);
+        const gateway_event_config_result_t result =
+            item->status == EZB_ZCL_STATUS_SUCCESS ?
+                (request_clamped ? GATEWAY_EVENT_CONFIG_CLAMPED :
+                                   GATEWAY_EVENT_CONFIG_APPLIED) :
+                GATEWAY_EVENT_CONFIG_ERROR;
+        publish_reporting_config_event(
+            &device, header->src_ep, header->cluster_id, item->attr_id,
+            item->status, request_id, result);
     }
 }
 
@@ -568,7 +659,15 @@ static void handle_check_in(ezb_zcl_poll_control_check_in_message_t *message)
         if (reporting->in_use && reporting->requested &&
             (uint32_t)(now_ms - reporting->requested_at_ms) >=
                 GATEWAY_REQUEST_STALE_MS) {
+            if (reporting->request_id != 0U) {
+                publish_reporting_config_event(
+                    &slot->device, reporting->endpoint, reporting->cluster_id,
+                    reporting->attribute_id, GATEWAY_CONFIG_STATUS_UNKNOWN,
+                    reporting->request_id, GATEWAY_EVENT_CONFIG_ERROR);
+            }
             reporting->requested = false;
+            reporting->request_id = 0U;
+            reporting->request_clamped = false;
         }
     }
 
@@ -910,27 +1009,27 @@ static bool submit_binding(device_slot_t *slot, const discovery_job_t *job)
 
 static bool submit_reporting(device_slot_t *slot, const discovery_job_t *job)
 {
-    gateway_reporting_spec_t spec;
-    if (!gateway_reporting_policy_spec(job->cluster_id, &spec)) {
-        return true;
+    if (job == NULL || !job->reporting_spec_valid) {
+        return false;
     }
+    const gateway_reporting_spec_t *spec = &job->reporting_spec;
 
     ezb_zcl_config_report_record_t record = {
         .direction = EZB_ZCL_REPORTING_SEND,
-        .attr_id = spec.attribute_id,
+        .attr_id = spec->attribute_id,
     };
-    record.client.attr_type = spec.attribute_type;
-    record.client.min_interval = spec.min_interval;
-    record.client.max_interval = spec.max_interval;
-    switch (spec.change_kind) {
+    record.client.attr_type = spec->attribute_type;
+    record.client.min_interval = spec->min_interval;
+    record.client.max_interval = spec->max_interval;
+    switch (spec->change_kind) {
     case GATEWAY_REPORTING_CHANGE_S16:
-        record.client.reportable_change.s16 = (int16_t)spec.reportable_change;
+        record.client.reportable_change.s16 = (int16_t)spec->reportable_change;
         break;
     case GATEWAY_REPORTING_CHANGE_U16:
-        record.client.reportable_change.u16 = (uint16_t)spec.reportable_change;
+        record.client.reportable_change.u16 = (uint16_t)spec->reportable_change;
         break;
     case GATEWAY_REPORTING_CHANGE_U8:
-        record.client.reportable_change.u8 = (uint8_t)spec.reportable_change;
+        record.client.reportable_change.u8 = (uint8_t)spec->reportable_change;
         break;
     default:
         return false;
@@ -949,12 +1048,77 @@ static bool submit_reporting(device_slot_t *slot, const discovery_job_t *job)
     return ezb_zcl_config_report_cmd_req(&request) == EZB_ERR_NONE;
 }
 
+static void reject_external_reporting(
+    const discovery_job_t *job, gateway_event_config_result_t result)
+{
+    if (job == NULL || job->config_request_id == 0U) {
+        return;
+    }
+    publish_reporting_config_event(
+        NULL, job->external_input.channel, job->cluster_id,
+        job->reporting_spec.attribute_id, GATEWAY_CONFIG_STATUS_UNKNOWN,
+        job->config_request_id, result);
+}
+
+static void handle_external_reporting(const discovery_job_t *external)
+{
+    uint8_t ieee[8];
+    uint8_t endpoint = 0U;
+    if (external == NULL || !external->reporting_spec_valid ||
+        !gateway_zigbee_parse_input_identity(&external->external_input, ieee, &endpoint)) {
+        reject_external_reporting(external, GATEWAY_EVENT_CONFIG_ERROR);
+        return;
+    }
+    device_slot_t *slot = gateway_device_find_by_ieee(ieee, false);
+    endpoint_state_t *ep_state = slot == NULL ? NULL : endpoint_state(slot, endpoint, false);
+    const gateway_input_capabilities_t capability =
+        gateway_input_capability_for_measurement(external->external_kind);
+    if (slot == NULL || ep_state == NULL) {
+        reject_external_reporting(external, GATEWAY_EVENT_CONFIG_ERROR);
+        return;
+    }
+    if (capability == 0U || (ep_state->input_profile.configurable & capability) == 0U) {
+        reject_external_reporting(external, GATEWAY_EVENT_CONFIG_UNSUPPORTED);
+        return;
+    }
+    if (gateway_reporting_policy_requires_binding(external->cluster_id)) {
+        binding_state_t *binding = gateway_device_binding_state(
+            slot, endpoint, external->cluster_id, false);
+        if (binding == NULL || !binding->configured) {
+            reject_external_reporting(external, GATEWAY_EVENT_CONFIG_ERROR);
+            return;
+        }
+    }
+    reporting_state_t *reporting = gateway_device_reporting_state(
+        slot, endpoint, external->cluster_id,
+        external->reporting_spec.attribute_id, true);
+    if (reporting == NULL || reporting->requested) {
+        reject_external_reporting(external, GATEWAY_EVENT_CONFIG_ERROR);
+        return;
+    }
+    if (!queue_reporting_job(
+            slot, endpoint, external->cluster_id, &external->reporting_spec,
+            external->config_request_id, external->config_clamped, 0U)) {
+        reject_external_reporting(external, GATEWAY_EVENT_CONFIG_ERROR);
+        return;
+    }
+    reporting->requested = true;
+    reporting->requested_at_ms = gateway_uptime_ms();
+    reporting->last_status = GATEWAY_CONFIG_STATUS_UNKNOWN;
+    reporting->request_id = external->config_request_id;
+    reporting->request_clamped = external->config_clamped;
+}
+
 static void discovery_task(void *arg)
 {
     (void)arg;
     discovery_job_t job;
     for (;;) {
         if (xQueueReceive(s_discovery_queue, &job, portMAX_DELAY) != pdPASS) {
+            continue;
+        }
+        if (job.kind == DISCOVERY_EXTERNAL_REPORTING) {
+            handle_external_reporting(&job);
             continue;
         }
         device_slot_t *slot = gateway_device_from_ref(job.device, true);
@@ -967,6 +1131,9 @@ static void discovery_task(void *arg)
         if (slot->state != SLOT_ACTIVE ||
             slot->device.short_addr != job.route_short_addr) {
             clear_pending(slot, &job);
+            if (job.kind == DISCOVERY_CONFIG_REPORTING) {
+                fail_external_reporting_job(slot, &job, GATEWAY_CONFIG_STATUS_UNKNOWN);
+            }
             gateway_event_warning(&slot->device, "discovery cancelled: route superseded");
             gateway_device_maybe_reclaim(slot);
             continue;
@@ -1287,6 +1454,41 @@ esp_err_t zigbee_gateway_start(void)
 {
     return xTaskCreate(zigbee_task, "zigbee_main", 6144, NULL, 5, NULL) == pdPASS ?
         ESP_OK : ESP_ERR_NO_MEM;
+}
+
+zigbee_gateway_policy_submit_result_t zigbee_gateway_set_measurement_policy(
+    uint32_t request_id,
+    const gateway_input_id_t *input,
+    gateway_measurement_kind_t kind,
+    uint32_t min_interval_ms,
+    uint32_t max_interval_ms,
+    double reportable_change)
+{
+    if (request_id == 0U || input == NULL || input->source != GATEWAY_SOURCE_ZIGBEE) {
+        return ZIGBEE_GATEWAY_POLICY_UNSUPPORTED;
+    }
+    gateway_reporting_plan_t plan;
+    const gateway_reporting_plan_result_t plan_result = gateway_reporting_policy_plan(
+        kind, min_interval_ms, max_interval_ms, reportable_change, &plan);
+    if (plan_result == GATEWAY_REPORTING_PLAN_UNSUPPORTED) {
+        return ZIGBEE_GATEWAY_POLICY_UNSUPPORTED;
+    }
+    if (plan_result == GATEWAY_REPORTING_PLAN_INVALID || !stack_is_ready() ||
+        s_discovery_queue == NULL) {
+        return ZIGBEE_GATEWAY_POLICY_ERROR;
+    }
+    const discovery_job_t job = {
+        .kind = DISCOVERY_EXTERNAL_REPORTING,
+        .cluster_id = plan.cluster_id,
+        .reporting_spec_valid = true,
+        .reporting_spec = plan.spec,
+        .config_request_id = request_id,
+        .config_clamped = plan.clamped,
+        .external_input = *input,
+        .external_kind = kind,
+    };
+    return xQueueSend(s_discovery_queue, &job, 0U) == pdPASS ?
+        ZIGBEE_GATEWAY_POLICY_QUEUED : ZIGBEE_GATEWAY_POLICY_ERROR;
 }
 
 esp_err_t zigbee_gateway_set_permit_join(uint8_t seconds)

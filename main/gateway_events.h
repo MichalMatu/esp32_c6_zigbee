@@ -41,6 +41,14 @@ typedef enum {
     GATEWAY_EVENT_WARNING,
 } gateway_event_kind_t;
 
+typedef enum {
+    GATEWAY_EVENT_CONFIG_NONE = 0,
+    GATEWAY_EVENT_CONFIG_APPLIED,
+    GATEWAY_EVENT_CONFIG_CLAMPED,
+    GATEWAY_EVENT_CONFIG_UNSUPPORTED,
+    GATEWAY_EVENT_CONFIG_ERROR,
+} gateway_event_config_result_t;
+
 typedef struct {
     uint16_t cluster_id;
     uint16_t attribute_id;
@@ -98,6 +106,8 @@ typedef struct {
             uint16_t cluster_id;
             uint16_t attribute_id;
             uint8_t status;
+            uint32_t request_id;
+            gateway_event_config_result_t result;
         } reporting;
         struct {
             uint16_t cluster_id;

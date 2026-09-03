@@ -126,7 +126,7 @@ static void test_handshake_fragmentation_and_ping(void)
     assert((c6_hello.features & GATEWAY_LINK_FEATURE_SNAPSHOT) != 0U);
     assert((c6_hello.features & GATEWAY_LINK_FEATURE_PERMIT_JOIN) != 0U);
     assert((c6_hello.features & GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE) != 0U);
-    assert((c6_hello.features & GATEWAY_LINK_FEATURE_MEASUREMENT_POLICY) == 0U);
+    assert((c6_hello.features & GATEWAY_LINK_FEATURE_MEASUREMENT_POLICY) != 0U);
 
     uint16_t token_length = 0U;
     assert(gateway_link_encode_u32_payload(
@@ -278,7 +278,7 @@ static gateway_link_input_descriptor_t descriptor(
     return value;
 }
 
-static void test_snapshot_replay_and_unsupported_controls(void)
+static void test_snapshot_replay_and_policy_control(void)
 {
     gateway_link_snapshot_cache_t cache;
     gateway_link_snapshot_cache_init(&cache);
@@ -390,17 +390,11 @@ static void test_snapshot_replay_and_unsupported_controls(void)
         &policy_length) == GATEWAY_LINK_OK);
     unsupported.payload_length = (uint16_t)policy_length;
     const gateway_link_control_action_t action = gateway_link_control_parse(&unsupported);
-    assert(action.kind == GATEWAY_LINK_CONTROL_MEASUREMENT_POLICY_UNSUPPORTED);
+    assert(action.kind == GATEWAY_LINK_CONTROL_MEASUREMENT_POLICY);
     assert(action.request_id == 123U);
-
-    gateway_link_message_t response;
-    assert(gateway_link_make_config_result_message(
-        action.request_id, GATEWAY_LINK_CONFIG_UNSUPPORTED, &response));
-    gateway_link_config_result_t decoded_result = {0};
-    assert(gateway_link_decode_config_result_payload(
-        response.payload, response.payload_length, &decoded_result) == GATEWAY_LINK_OK);
-    assert(decoded_result.request_id == 123U);
-    assert(decoded_result.status == GATEWAY_LINK_CONFIG_UNSUPPORTED);
+    assert(action.measurement_policy.kind == GATEWAY_MEAS_TEMPERATURE);
+    assert(action.measurement_policy.min_interval_ms == 1000U);
+    assert(action.measurement_policy.max_interval_ms == 5000U);
 
     gateway_link_frame_t unknown = {.type = 0x7fU};
     assert(gateway_link_control_parse(&unknown).kind == GATEWAY_LINK_CONTROL_IGNORE);
@@ -411,7 +405,7 @@ int main(void)
     test_handshake_fragmentation_and_ping();
     test_corruption_overflow_and_resync();
     test_sequence_gap_and_wrap_preserved_on_wire();
-    test_snapshot_replay_and_unsupported_controls();
+    test_snapshot_replay_and_policy_control();
     puts("gateway_link virtual S3 E2E host tests passed");
     return 0;
 }
