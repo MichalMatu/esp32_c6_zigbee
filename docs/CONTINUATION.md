@@ -158,6 +158,100 @@ Do not delete the UART backend. UART remains the known-working fallback/diagnost
 
 A later cleanup may split logical packet encoding from UART-specific COBS stream framing more strictly, but do not perform that refactor merely as a prerequisite for the first physical I2C validation unless evidence shows it is necessary.
 
+## Planned next major milestone — Generic Zigbee Device Interview & Capability Discovery
+
+After physical C6↔S3 transport is proven, the next major C6 feature is **Generic Zigbee Device Interview & Capability Discovery**. The goal is to stop treating supported devices as model-specific special cases wherever standard ZCL metadata is sufficient.
+
+The C6 should generically discover and normalize device capabilities from the Zigbee network:
+
+1. permit join and complete the existing secure join lifecycle;
+2. resolve active endpoints;
+3. read Simple Descriptors for each relevant endpoint;
+4. enumerate input/output clusters;
+5. map known standard clusters/attributes to normalized capabilities such as temperature, humidity, battery, occupancy, on/off, level, and other supported classes;
+6. apply standard bind and Configure Reporting policy where appropriate;
+7. expose discovered capabilities, reporting configuration, measurements, state, and failures through GatewayLink;
+8. use explicit per-device quirks only when standard ZCL behavior is insufficient;
+9. keep manufacturer-specific/Tuya-style datapoint support as a separate explicit extension rather than mixing it into the generic ZCL path.
+
+The intended production data path is:
+
+```text
+Zigbee device
+    ↓
+C6 interview / ZCL decoding / reporting policy
+    ↓
+normalized GatewayLink descriptors + measurements + state
+    ↓
+UART or I2C physical backend
+    ↓
+ESP32-S3
+    ↓
+frontend + automation engine / LiteGraph
+```
+
+The S3/frontend should not need to know the raw Zigbee wire format for normal standard devices. It should receive normalized device identity, capabilities, current values, configuration/reporting state, availability, and control/configuration results. Commands and configuration requests travel in the opposite direction through GatewayLink and are translated by the C6 into Zigbee/ZCL operations.
+
+### Second-C6 Zigbee device emulator / self-check loop
+
+Use a second ESP32-C6 as a programmable Zigbee end-device emulator and test peer. This should become a deterministic regression harness for the coordinator firmware rather than depending only on a collection of real commercial devices.
+
+The emulator should be able to expose selectable standard device profiles and controlled behaviors, initially including representative classes such as:
+
+- temperature sensor;
+- temperature + humidity sensor;
+- battery-powered sleepy sensor;
+- occupancy/contact-style sensor;
+- on/off actuator;
+- dimmable/level-control actuator;
+- multi-endpoint device;
+- device with multiple standard measurement clusters.
+
+Later profiles can deliberately exercise quirks and failure paths, for example:
+
+- delayed or missing descriptor responses;
+- unsupported Configure Reporting values;
+- changed short address after rejoin while preserving IEEE identity;
+- duplicate announce/rejoin lifecycle signals;
+- malformed or unexpected attribute values;
+- reporting bursts and queue pressure;
+- sleepy-device timing;
+- endpoint/cluster combinations that are valid but previously unseen;
+- manufacturer-specific behavior in a separate explicit test profile.
+
+The coordinator-side test loop should verify automatically that:
+
+```text
+emulated device profile
+    ↓ join/interview/bind/reporting
+C6 coordinator
+    ↓ normalized GatewayLink output
+host/S3 test observer
+    ↓ assertions
+expected capabilities + measurements + configuration behavior
+```
+
+For writable/controllable profiles, the loop should also verify the reverse path:
+
+```text
+frontend/automation-style command
+    ↓ GatewayLink
+C6 coordinator
+    ↓ Zigbee/ZCL command or Configure Reporting
+emulated second C6
+    ↓ deterministic response/report
+C6 + GatewayLink
+    ↓ assertion
+```
+
+This emulator is a test harness, not a replacement for physical validation with real devices. Keep at least the existing SONOFF as a real-world regression device, and add selected commercial devices only where they expose behavior the emulator cannot faithfully represent.
+
+### Reporting-policy goal
+
+For standard reportable ZCL attributes, the system should eventually expose configuration such as minimum interval, maximum interval, and reportable change through the S3 frontend/automation layer. The C6 remains responsible for validating/translating that normalized policy into the correct Zigbee Configure Reporting operation and reporting the actual result back to S3.
+
+Do not assume every real device honors requested reporting parameters exactly. The generic path should record success/failure and observed behavior; model-specific exceptions belong in explicit quirk handling rather than hidden fallbacks.
+
 ## Repository-boundary rule for S3 work
 
 This C6 repository has a hard Local Agent binding. A C6-bound Chat Bridge wake must not inspect, modify, queue, cancel, or execute work in the S3 repository.
