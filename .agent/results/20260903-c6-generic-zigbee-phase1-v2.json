@@ -1,9 +1,0 @@
-{
-  "id": "20260903-c6-generic-zigbee-phase1-v2",
-  "status": "failed",
-  "failure_reason": "invalid_task_file",
-  "started_at": null,
-  "finished_at": "2026-09-03T17:36:51.549825+00:00",
-  "daemon_version": "4.15.0",
-  "error": "JSONDecodeError: Invalid control character at: line 13 column 8883 (char 9223)"
-}
