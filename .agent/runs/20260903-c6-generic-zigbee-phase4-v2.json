@@ -1,16 +1,16 @@
 {
   "event": "command_started",
   "phase": "commands",
-  "index": 1,
+  "index": 3,
   "total": 5,
-  "command": "set -euo pipefail\ngit fetch origin\ngit checkout integration/c6-s3-i2c-20260903\ngit reset --hard origin/integration/c6-s3-i2c-20260903\nrm -f sdkconfig.old\n[ -z \"$(git status --short)\" ]\n[ \"$(git rev-parse HEAD)\" = \"5ae935b81344ad5dbc29aaa6f7ff93a0c4187b81\" ]\ngit fetch origin agent-control\ngit show origin/agent-control:.agent/scripts/20260903-c6-generic-zigbee-phase4-v1.py > /tmp/c6-phase4-v1.py\ngit show origin/agent-control:.agent/scripts/20260903-c6-generic-zigbee-phase4-v2-fix.py > /tmp/c6-phase4-v2-fix.py\npython3 /tmp/c6-phase4-v1.py\npython3 /tmp/c6-phase4-v2-fix.py\npython3 tests/host/test_no_embedded_nul.py\n! git grep -n 'MEASUREMENT_POLICY_UNSUPPORTED' -- main tests\ngit diff --check\ngit diff --stat",
-  "pid": 1574,
+  "command": "set -euo pipefail\npython3 tests/host/test_no_embedded_nul.py\ncc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zcl_value.c main/gateway_zcl_value.c -lm -o /tmp/test_gateway_zcl_value && /tmp/test_gateway_zcl_value\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_device_state.c main/gateway_device_state.c -o /tmp/test_gateway_device_state && /tmp/test_gateway_device_state\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_inputs.c main/gateway_inputs.c -o /tmp/test_gateway_inputs && /tmp/test_gateway_inputs\ncc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zigbee_input.c main/gateway_zigbee_input.c main/gateway_zcl_value.c main/gateway_reporting_policy.c main/gateway_inputs.c -lm -o /tmp/test_gateway_zigbee_input && /tmp/test_gateway_zigbee_input\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_protocol.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_protocol && /tmp/test_gateway_link_protocol\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_event_adapter.c main/gateway_link_event_adapter.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_event_adapter && /tmp/test_gateway_link_event_adapter\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_stream.c main/gateway_link_stream.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_stream && /tmp/test_gateway_link_stream\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_snapshot_cache.c main/gateway_link_snapshot_cache.c -o /tmp/test_gateway_link_snapshot_cache && /tmp/test_gateway_link_snapshot_cache\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_control.c main/gateway_link_control.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_control && /tmp/test_gateway_link_control\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_e2e.c main/gateway_link_protocol.c main/gateway_link_stream.c main/gateway_link_control.c main/gateway_link_snapshot_cache.c main/gateway_inputs.c -lm -o /tmp/test_gateway_link_e2e && /tmp/test_gateway_link_e2e\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_reporting_policy.c main/gateway_reporting_policy.c -o /tmp/test_gateway_reporting_policy && /tmp/test_gateway_reporting_policy\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_i2c_mailbox.c main/gateway_i2c_mailbox.c -o /tmp/test_gateway_i2c_mailbox && /tmp/test_gateway_i2c_mailbox",
+  "pid": 1790,
   "timeout": 1800,
   "idle_timeout": 300,
   "memory_limit_mb": 4096,
-  "started_at": "2026-09-03T19:09:57.907516+00:00",
-  "stage_name": "command-1",
-  "stage_index": 1,
+  "started_at": "2026-09-03T19:10:06.425202+00:00",
+  "stage_name": "command-3",
+  "stage_index": 3,
   "stage_total": 5,
   "stage_phase": "commands",
   "task_id": "20260903-c6-generic-zigbee-phase4-v2",
@@ -18,5 +18,5 @@
   "task_digest": "b1edcb351f2640e8600e0487c656f129245291fa9ec5a52d319318fd0d8d80d6",
   "daemon_version": "4.15.0",
   "daemon_pid": 1396,
-  "updated_at": "2026-09-03T19:09:57.908454+00:00"
+  "updated_at": "2026-09-03T19:10:06.485312+00:00"
 }
