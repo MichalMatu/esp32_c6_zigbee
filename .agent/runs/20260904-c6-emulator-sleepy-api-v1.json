@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-emulator-sleepy-api-v1",
+  "task_digest": "7786a6ae21e6e8a38e2bee3ace3a81f8597b8ac92c0e922f9752dd16d6b255ed",
+  "idle_timeout": 180,
+  "task_timeout": 1200,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T22:17:37.131604+00:00",
+  "attempt_id": "2afb6a66ea34e387812500b9",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 4192,
+  "updated_at": "2026-09-03T22:17:37.131778+00:00",
+  "pid": 4192
+}
