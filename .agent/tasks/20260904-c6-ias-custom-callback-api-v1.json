@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-ias-custom-callback-api-v1",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 4096,
+  "command_timeout": 900,
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "commands": [
+    "set -euo pipefail\ngit fetch origin\ngit checkout integration/c6-s3-i2c-20260903\ngit reset --hard origin/integration/c6-s3-i2c-20260903\n[ \"$(git rev-parse HEAD)\" = \"8badcdece00c876e5281afb3ca82a846859fab2c\" ]\npython3 - <<'PY'\nfrom pathlib import Path\nroots=[Path('managed_components/espressif__esp-zigbee-lib/include/ezbee'),Path('tests/zigbee_device_emulator/managed_components/espressif__esp-zigbee-lib/include/ezbee')]\nroot=next((r for r in roots if r.exists()),None)\nif root is None: raise SystemExit('ezbee headers missing')\npatterns=['CUSTOM_CLUSTER','custom cluster','RAW_CMD','raw cmd','CMD_RECV','cmd recv','CMD_RECE','cmd rece','ZONE_STATUS_CHANGE_NOTIFICATION','status_change_notification','zone_status_change','zcl_cmd_hdr','cluster_id']\ncount=0\nfor p in sorted(root.rglob('*.h')):\n    ls=p.read_text(errors='ignore').splitlines()\n    hits=[]\n    for i,l in enumerate(ls):\n        low=l.lower()\n        if any(x.lower() in low for x in patterns): hits.append(i)\n    if not hits: continue\n    if not any(k in str(p).lower() for k in ['zcl_core','zcl_common','zcl_general','ias_zone','cluster']): continue\n    print('===',p,'===')\n    seen=[]\n    for i in hits:\n        lo=max(0,i-5); hi=min(len(ls),i+12)\n        if any(lo>=a and hi<=b for a,b in seen): continue\n        seen.append((lo,hi))\n        print('\\n'.join(f'{j+1}:{ls[j]}' for j in range(lo,hi)))\n        count += 1\n        if count >= 30: raise SystemExit(0)\nPY"
+  ]
+}
