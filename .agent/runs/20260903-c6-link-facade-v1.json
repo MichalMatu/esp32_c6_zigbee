@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-link-facade-v1",
+  "task_digest": "798f4d4280011f7eacb3651aadef9f6b5372f59836c5f6b5bdca70213a549f67",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T05:21:34.824671+00:00",
+  "attempt_id": "d0d3102b79752ddef236a975",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 38435,
+  "updated_at": "2026-09-03T05:21:34.824900+00:00",
+  "pid": 38435
+}
