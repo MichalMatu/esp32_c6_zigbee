@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-link-runtime-extract-v4",
+  "task_digest": "03a42cb6bfd61d53a3a73634440c8e64e50cad34c311fc1ec6e1461aa19231de",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T05:46:21.771601+00:00",
+  "attempt_id": "372e9ff69a5623e507ffcdb8",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 56818,
+  "updated_at": "2026-09-03T05:46:21.771855+00:00",
+  "pid": 56818
+}
