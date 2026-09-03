@@ -143,6 +143,11 @@ Next milestone: **build and validate the C6-only Zigbee laboratory before physic
 
 Do not add or solder the S3 yet. Keep UART as the known-working GatewayLink observation path while the Zigbee side is generalized and tested.
 
+Implementation progress after the generic-coordinator audit:
+
+- Phase 1 hardens the normalized Zigbee boundary so IEEE+endpoint is the only external Zigbee input identity, preserves Basic manufacturer/model metadata in endpoint state, and refreshes the normalized input descriptor when model metadata becomes known.
+- The next implementation slice is the richer standard-ZCL capability/reporting state needed before frontend-driven Configure Reporting and writable commands.
+
 Execution order:
 
 1. audit the current coordinator against the Generic Zigbee Device Interview & Capability Discovery goal below;

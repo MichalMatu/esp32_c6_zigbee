@@ -40,7 +40,7 @@ Zigbee SDK callbacks must remain bounded and non-blocking. They may copy/normali
 
 The event bus is the internal transport boundary. Input adapters normalize measurements before publishing them. GatewayLink is the external MCU boundary and serializes only the normalized contract. Input adapters normalize measurements before publishing them. `gateway_transport` must consume `gateway_input_id_t` plus normalized measurements without branching on Zigbee cluster IDs or local sensor register formats. A later UART/SPI link to another MCU should serialize this normalized input contract; the ESP32-S3 can then own the current input list/state used by LiteGraph.
 
-Stable input identity belongs to the adapter boundary. Zigbee uses IEEE identity plus endpoint as the logical channel; short addresses are only a provisional fallback when IEEE recovery has not completed. The SCD4x adapter uses the sensor 48-bit serial number and channel 0, with `scd4x:0x62` only as a fallback when the serial cannot be read.
+Stable input identity belongs to the adapter boundary. Zigbee uses IEEE identity plus endpoint as the logical channel; short addresses are routing-only and are never emitted as normalized input identities. The SCD4x adapter uses the sensor 48-bit serial number and channel 0, with `scd4x:0x62` only as a fallback when the serial cannot be read.
 
 The ESP32-C6 is an input gateway. Zigbee and local I2C are peer input adapters. The future UART/SPI transport to the ESP32-S3 must serialize input identity, availability/capabilities, and normalized measurements; the ESP32-S3 owns the application-facing current input registry used by LiteGraph. A later link resynchronization message may send a snapshot, but transport must not reinterpret source protocols.
 

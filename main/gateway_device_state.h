@@ -8,6 +8,7 @@
 #define GATEWAY_MAX_DEVICES 16U
 #define GATEWAY_MAX_ENDPOINTS_PER_DEVICE 8U
 #define GATEWAY_INVALID_SHORT_ADDR 0xffffU
+#define GATEWAY_BASIC_TEXT_MAX_BYTES 24U
 
 typedef enum { SLOT_EMPTY, SLOT_ACTIVE, SLOT_REJOIN_PENDING, SLOT_LEAVING } slot_state_t;
 typedef enum { BASIC_NOT_SCHEDULED, BASIC_SCHEDULED, BASIC_COMPLETE } basic_state_t;
@@ -24,6 +25,8 @@ typedef struct {
     uint8_t binding_configured;
     uint32_t binding_requested_at_ms;
     gateway_input_capabilities_t input_capabilities;
+    char manufacturer[GATEWAY_BASIC_TEXT_MAX_BYTES];
+    char model[GATEWAY_BASIC_TEXT_MAX_BYTES];
     bool input_announced;
 } endpoint_state_t;
 
@@ -56,5 +59,7 @@ device_slot_t *gateway_device_upsert(
 bool gateway_device_claim_discovery(device_slot_t *slot);
 void gateway_device_release_discovery(device_slot_t *slot, uint16_t short_addr);
 void gateway_device_reset_discovery(device_slot_t *slot);
+bool gateway_device_endpoint_update_basic(
+    endpoint_state_t *state, const char *manufacturer, const char *model);
 endpoint_state_t *gateway_device_endpoint_state(
     device_slot_t *slot, uint8_t endpoint, bool create);

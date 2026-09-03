@@ -148,6 +148,37 @@ void gateway_device_reset_discovery(device_slot_t *slot)
     }
 }
 
+static bool update_bounded_text(
+    char target[GATEWAY_BASIC_TEXT_MAX_BYTES], const char *value)
+{
+    if (target == NULL || value == NULL) {
+        return false;
+    }
+    char bounded[GATEWAY_BASIC_TEXT_MAX_BYTES] = {0};
+    strncpy(bounded, value, sizeof(bounded) - 1U);
+    if (memcmp(target, bounded, sizeof(bounded)) == 0) {
+        return false;
+    }
+    memcpy(target, bounded, sizeof(bounded));
+    return true;
+}
+
+bool gateway_device_endpoint_update_basic(
+    endpoint_state_t *state, const char *manufacturer, const char *model)
+{
+    if (state == NULL) {
+        return false;
+    }
+    bool changed = false;
+    if (manufacturer != NULL) {
+        changed = update_bounded_text(state->manufacturer, manufacturer) || changed;
+    }
+    if (model != NULL) {
+        changed = update_bounded_text(state->model, model) || changed;
+    }
+    return changed;
+}
+
 endpoint_state_t *gateway_device_endpoint_state(
     device_slot_t *slot, uint8_t endpoint, bool create)
 {

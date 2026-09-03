@@ -30,7 +30,7 @@ gateway_input_id_t gateway_input_make_zigbee(
             ieee[7], ieee[6], ieee[5], ieee[4],
             ieee[3], ieee[2], ieee[1], ieee[0]);
     } else {
-        snprintf(input.id, sizeof(input.id), "zigbee-short:%04x", short_addr);
+        (void)short_addr;
     }
     return input;
 }

@@ -1,10 +1,26 @@
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "gateway_device_state.h"
 
 static const uint8_t IEEE_A[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 static const uint8_t IEEE_B[8] = {8, 7, 6, 5, 4, 3, 2, 1};
+
+static void test_basic_metadata(endpoint_state_t *state)
+{
+    assert(state != NULL);
+    assert(gateway_device_endpoint_update_basic(state, "Acme", "Model A"));
+    assert(strcmp(state->manufacturer, "Acme") == 0);
+    assert(strcmp(state->model, "Model A") == 0);
+    assert(!gateway_device_endpoint_update_basic(state, "Acme", "Model A"));
+    assert(gateway_device_endpoint_update_basic(state, NULL, "Model B"));
+    assert(strcmp(state->manufacturer, "Acme") == 0);
+    assert(strcmp(state->model, "Model B") == 0);
+    assert(gateway_device_endpoint_update_basic(
+        state, "Manufacturer name longer than the bounded field", NULL));
+    assert(strlen(state->manufacturer) == GATEWAY_BASIC_TEXT_MAX_BYTES - 1U);
+}
 
 int main(void)
 {
@@ -63,6 +79,7 @@ int main(void)
         assert(state->endpoint == ep);
         assert(gateway_device_endpoint_state(a2, ep, false) == state);
     }
+    test_basic_metadata(gateway_device_endpoint_state(a2, 1U, false));
     assert(gateway_device_endpoint_state(a2, 99U, true) == NULL);
     assert(gateway_device_endpoint_state(NULL, 1U, true) == NULL);
 

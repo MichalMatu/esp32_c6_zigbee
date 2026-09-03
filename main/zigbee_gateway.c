@@ -139,6 +139,8 @@ static bool queue_job(
     uint16_t cluster,
     uint8_t retries
 );
+static bool publish_generic_input(
+    device_slot_t *slot, endpoint_state_t *state, bool available);
 
 static bool schedule_active_discovery(device_slot_t *slot)
 {
@@ -339,8 +341,9 @@ static void publish_report(const ezb_zcl_cmd_report_attr_message_t *message)
     gateway_device_id_t device =
         slot == NULL ? device_from_header(header) : slot->device;
 
-    const gateway_input_id_t input = gateway_input_make_zigbee(
-        device.ieee, device.ieee_valid, device.short_addr, header->src_ep);
+    gateway_input_id_t input = {0};
+    const bool stable_input = gateway_zigbee_stable_input_id(
+        device.ieee, device.ieee_valid, header->src_ep, &input);
 
     for (ezb_zcl_report_attr_variable_t *item = message->in.variables;
          item != NULL;
@@ -348,7 +351,7 @@ static void publish_report(const ezb_zcl_cmd_report_attr_message_t *message)
         gateway_measurement_kind_t kind;
         gateway_unit_t unit;
         double value;
-        if (gateway_zcl_normalize(
+        if (stable_input && gateway_zcl_normalize(
                 header->cluster_id,
                 item->attr_id,
                 item->attr_type,
@@ -402,7 +405,11 @@ static void publish_basic_read(const ezb_zcl_cmd_read_attr_rsp_message_t *messag
     }
 
     gateway_device_id_t device = device_from_header(header);
+    device_slot_t *slot = gateway_device_find_by_short(device.short_addr, false);
+    endpoint_state_t *state =
+        slot == NULL ? NULL : endpoint_state(slot, header->src_ep, false);
     bool seen = false;
+    bool model_changed = false;
     for (ezb_zcl_read_attr_rsp_variable_t *item = message->in.variables;
          item != NULL;
          item = item->next) {
@@ -431,15 +438,25 @@ static void publish_basic_read(const ezb_zcl_cmd_read_attr_rsp_message_t *messag
         const size_t len = string[0] < GATEWAY_TEXT_MAX_BYTES - 1U ?
             string[0] : GATEWAY_TEXT_MAX_BYTES - 1U;
         memcpy(event.data.text.value, string + 1, len);
-        event.data.text.value[len] = '\0';
+        event.data.text.value[len] = ' ';
+        if (state != NULL) {
+            const bool changed = item->attr_id == ZCL_ATTR_BASIC_MANUFACTURER_NAME ?
+                gateway_device_endpoint_update_basic(
+                    state, event.data.text.value, NULL) :
+                gateway_device_endpoint_update_basic(
+                    state, NULL, event.data.text.value);
+            if (item->attr_id == ZCL_ATTR_BASIC_MODEL_IDENTIFIER && changed) {
+                model_changed = true;
+            }
+        }
         gateway_event_publish(&event);
     }
 
-    device_slot_t *slot = gateway_device_find_by_short(device.short_addr, false);
-    endpoint_state_t *state =
-        slot == NULL ? NULL : endpoint_state(slot, header->src_ep, false);
     if (seen && state != NULL) {
         state->basic_state = BASIC_COMPLETE;
+    }
+    if (model_changed && state != NULL && state->input_announced) {
+        (void)publish_generic_input(slot, state, true);
     }
 }
 
@@ -608,6 +625,9 @@ static bool publish_generic_input(
         &input);
     event.endpoint = state->endpoint;
     event.data.input_desc.capabilities = state->input_capabilities;
+    strncpy(
+        event.data.input_desc.model, state->model,
+        sizeof(event.data.input_desc.model) - 1U);
     if (!gateway_event_publish(&event)) {
         return false;
     }
