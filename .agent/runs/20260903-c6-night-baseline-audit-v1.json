@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-night-baseline-audit-v1",
+  "task_digest": "f3039b8dd6834f2ed185c4a996549cfced61a857d10f3d73ec43be6be29a7afb",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T05:13:11.920611+00:00",
+  "attempt_id": "f3c85419b25f76b76063391b",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 26808,
+  "updated_at": "2026-09-03T05:13:11.920823+00:00",
+  "pid": 26808
+}
