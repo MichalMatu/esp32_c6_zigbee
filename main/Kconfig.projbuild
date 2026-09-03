@@ -1,0 +1,27 @@
+menu "GatewayLink"
+
+choice GATEWAY_LINK_BACKEND
+    prompt "GatewayLink physical backend"
+    default GATEWAY_LINK_BACKEND_UART
+
+config GATEWAY_LINK_BACKEND_UART
+    bool "UART1"
+
+config GATEWAY_LINK_BACKEND_I2C
+    bool "I2C mailbox (C6 master)"
+
+endchoice
+
+config GATEWAY_LINK_I2C_ADDRESS
+    hex "GatewayLink I2C peer address"
+    range 0x08 0x77
+    default 0x42
+    depends on GATEWAY_LINK_BACKEND_I2C
+
+config GATEWAY_LINK_I2C_SPEED_HZ
+    int "GatewayLink I2C bus speed"
+    range 100000 1000000
+    default 400000
+    depends on GATEWAY_LINK_BACKEND_I2C
+
+endmenu

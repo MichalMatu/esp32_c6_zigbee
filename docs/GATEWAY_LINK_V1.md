@@ -6,6 +6,12 @@ GatewayLink is the protocol-neutral MCU-to-MCU link between the ESP32-C6 input g
 
 The default C6 application-link backend uses UART1 at 460800 baud, 8-N-1, no flow control, with C6 TX on GPIO18 and C6 RX on GPIO19. GPIO0/GPIO1 remain the local I2C SCL/SDA pair used by SCD4x. The RX pin has an internal pull-up so an unconnected S3 does not create a floating UART input. The transport-independent GatewayLink runtime owns the bounded TX queue and incremental delimiter-resynchronizing decoder; the UART backend owns only physical driver I/O. The C6 currently implements HELLO/HELLO_ACK, PING/PONG and PERMIT_JOIN control in addition to descriptor/measurement TX. Snapshot is implemented as bounded descriptor replay; measurement-policy application is not advertised until its backing policy layer exists.
 
+## I2C mailbox backend
+
+UART remains the default backend. The alternative I2C backend keeps the C6 as bus master on GPIO0/GPIO1 and uses S3 slave address `0x42` by default. C6-to-S3 writes use opcode `0x01` followed by a little-endian 16-bit frame length and one complete existing GatewayLink encoded frame. C6 polls S3 with opcode `0x02` for a two-byte pending-frame length and fetches one complete pending frame with opcode `0x03`. A zero pending length means no frame is waiting. Lengths above `GATEWAY_LINK_MAX_FRAME_BYTES` are rejected.
+
+The I2C backend deliberately does not probe the S3 during startup. Missing or unpowered S3 peers produce bounded 20 ms transaction failures and a one-second retry backoff; GatewayLink short-write logging is throttled while counters retain every failure. This lets the shared SCD4x bus keep operating when no S3 is connected.
+
 ## Framing
 
 Each on-wire frame is a COBS-encoded binary packet followed by one `0x00` delimiter. `0x00` cannot appear inside the COBS body, so a receiver can recover framing after lost or corrupt bytes by scanning for the next delimiter.

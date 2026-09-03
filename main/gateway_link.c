@@ -10,12 +10,14 @@
 #include "freertos/task.h"
 
 #include "gateway_link_backend.h"
+#include "gateway_i2c_link.h"
 #include "gateway_link_control.h"
 #include "gateway_link_event_adapter.h"
 #include "gateway_link_protocol.h"
 #include "gateway_link_snapshot_cache.h"
 #include "gateway_link_stream.h"
 #include "gateway_uart_link.h"
+#include "sdkconfig.h"
 #include "zigbee_gateway.h"
 
 #define LINK_TX_QUEUE_DEPTH 16U
@@ -50,6 +52,7 @@ static portMUX_TYPE s_state_lock = portMUX_INITIALIZER_UNLOCKED;
 static gateway_link_snapshot_cache_t s_snapshot_cache;
 static const gateway_link_backend_t *s_backend;
 static gateway_link_status_t s_status;
+static uint32_t s_last_short_write_log_ms;
 
 static uint32_t allocate_sequence(void)
 {
@@ -308,8 +311,19 @@ static void write_message(const gateway_link_message_t *message, uint32_t sequen
     const int written = s_backend->write(encoded, encoded_length);
     note_tx_result(written, encoded_length);
     if (written != (int)encoded_length) {
-        ESP_LOGW(TAG, "short backend write seq=%lu wrote=%d expected=%u",
-                 (unsigned long)frame.sequence, written, (unsigned)encoded_length);
+        const uint32_t timestamp = now_ms();
+        bool log_warning = false;
+        portENTER_CRITICAL(&s_state_lock);
+        if (s_last_short_write_log_ms == 0U ||
+            (uint32_t)(timestamp - s_last_short_write_log_ms) >= 10000U) {
+            s_last_short_write_log_ms = timestamp;
+            log_warning = true;
+        }
+        portEXIT_CRITICAL(&s_state_lock);
+        if (log_warning) {
+            ESP_LOGW(TAG, "short backend write seq=%lu wrote=%d expected=%u",
+                     (unsigned long)frame.sequence, written, (unsigned)encoded_length);
+        }
     }
 }
 
@@ -375,13 +389,22 @@ static void tx_task(void *arg)
     }
 }
 
+static const gateway_link_backend_t *select_backend(void)
+{
+#if defined(CONFIG_GATEWAY_LINK_BACKEND_I2C) && CONFIG_GATEWAY_LINK_BACKEND_I2C
+    return gateway_i2c_link_backend();
+#else
+    return gateway_uart_link_backend();
+#endif
+}
+
 esp_err_t gateway_link_start(void)
 {
     if (s_tx_queue != NULL) {
         return ESP_OK;
     }
 
-    s_backend = gateway_uart_link_backend();
+    s_backend = select_backend();
     if (s_backend == NULL || s_backend->start == NULL || s_backend->stop == NULL ||
         s_backend->read == NULL || s_backend->write == NULL) {
         s_backend = NULL;
@@ -389,6 +412,7 @@ esp_err_t gateway_link_start(void)
     }
 
     memset(&s_status, 0, sizeof(s_status));
+    s_last_short_write_log_ms = 0U;
     s_status.backend = s_backend->name;
     gateway_link_snapshot_cache_init(&s_snapshot_cache);
     s_tx_queue = xQueueCreateStatic(

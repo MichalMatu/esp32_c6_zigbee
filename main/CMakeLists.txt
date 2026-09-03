@@ -11,6 +11,8 @@ idf_component_register(
         "gateway_link_stream.c"
         "gateway_link_snapshot_cache.c"
         "gateway_link_control.c"
+        "gateway_i2c_mailbox.c"
+        "gateway_i2c_link.c"
         "gateway_uart_link.c"
         "gateway_reporting_policy.c"
         "gateway_transport.c"
