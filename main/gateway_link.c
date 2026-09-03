@@ -3,6 +3,8 @@
 #include <string.h>
 
 #include "esp_log.h"
+#include "esp_system.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
@@ -47,6 +49,7 @@ static TaskHandle_t s_rx_task_handle;
 static portMUX_TYPE s_state_lock = portMUX_INITIALIZER_UNLOCKED;
 static gateway_link_snapshot_cache_t s_snapshot_cache;
 static const gateway_link_backend_t *s_backend;
+static gateway_link_status_t s_status;
 
 static uint32_t allocate_sequence(void)
 {
@@ -56,11 +59,87 @@ static uint32_t allocate_sequence(void)
     return value;
 }
 
+static uint32_t now_ms(void)
+{
+    return (uint32_t)(esp_timer_get_time() / 1000);
+}
+
 static void note_drop(void)
 {
     portENTER_CRITICAL(&s_state_lock);
     ++s_dropped;
+    ++s_status.queue_dropped;
     portEXIT_CRITICAL(&s_state_lock);
+}
+
+static void note_queue_depth(void)
+{
+    const uint32_t depth = (uint32_t)uxQueueMessagesWaiting(s_tx_queue);
+    portENTER_CRITICAL(&s_state_lock);
+    if (depth > s_status.tx_queue_high_water) {
+        s_status.tx_queue_high_water = depth;
+    }
+    portEXIT_CRITICAL(&s_state_lock);
+}
+
+static void set_peer_ready(bool ready)
+{
+    portENTER_CRITICAL(&s_state_lock);
+    s_status.peer_ready = ready;
+    portEXIT_CRITICAL(&s_state_lock);
+}
+
+static void note_rx_frame(void)
+{
+    const uint32_t timestamp = now_ms();
+    portENTER_CRITICAL(&s_state_lock);
+    ++s_status.rx_frames;
+    s_status.last_rx_ms = timestamp;
+    portEXIT_CRITICAL(&s_state_lock);
+}
+
+static void note_rx_invalid(void)
+{
+    portENTER_CRITICAL(&s_state_lock);
+    ++s_status.rx_invalid_frames;
+    portEXIT_CRITICAL(&s_state_lock);
+}
+
+static void note_tx_result(int written, size_t expected)
+{
+    const uint32_t timestamp = now_ms();
+    portENTER_CRITICAL(&s_state_lock);
+    if (written == (int)expected) {
+        ++s_status.tx_frames;
+        s_status.last_tx_ms = timestamp;
+    } else {
+        ++s_status.short_writes;
+    }
+    portEXIT_CRITICAL(&s_state_lock);
+}
+
+bool gateway_link_get_status(gateway_link_status_t *status)
+{
+    if (status == NULL) {
+        return false;
+    }
+
+    TaskHandle_t tx_task;
+    TaskHandle_t rx_task;
+    QueueHandle_t tx_queue;
+    portENTER_CRITICAL(&s_state_lock);
+    *status = s_status;
+    tx_task = s_tx_task_handle;
+    rx_task = s_rx_task_handle;
+    tx_queue = s_tx_queue;
+    portEXIT_CRITICAL(&s_state_lock);
+
+    status->tx_queue_capacity = LINK_TX_QUEUE_DEPTH;
+    status->tx_queue_depth = tx_queue != NULL ? (uint32_t)uxQueueMessagesWaiting(tx_queue) : 0U;
+    status->minimum_free_heap_bytes = (uint32_t)esp_get_minimum_free_heap_size();
+    status->tx_stack_high_water = tx_task != NULL ? (uint32_t)uxTaskGetStackHighWaterMark(tx_task) : 0U;
+    status->rx_stack_high_water = rx_task != NULL ? (uint32_t)uxTaskGetStackHighWaterMark(rx_task) : 0U;
+    return status->backend != NULL;
 }
 
 uint32_t gateway_link_take_dropped(void)
@@ -86,6 +165,7 @@ static bool enqueue_message(const gateway_link_message_t *message)
         note_drop();
         return false;
     }
+    note_queue_depth();
     return true;
 }
 
@@ -102,6 +182,7 @@ static bool enqueue_snapshot(uint32_t token)
         note_drop();
         return false;
     }
+    note_queue_depth();
     return true;
 }
 
@@ -123,6 +204,7 @@ static void handle_control_frame(const gateway_link_frame_t *frame)
             ESP_LOGW(TAG, "incompatible GatewayLink HELLO from peer");
             return;
         }
+        set_peer_ready(true);
         ESP_LOGI(TAG, "GatewayLink S3 peer compatible (HELLO)");
         if (gateway_link_make_hello_ack_message(&response)) {
             (void)enqueue_message(&response);
@@ -130,8 +212,10 @@ static void handle_control_frame(const gateway_link_frame_t *frame)
         break;
     case GATEWAY_LINK_CONTROL_HELLO_ACK:
         if (gateway_link_control_peer_compatible(&action.peer_hello)) {
+            set_peer_ready(true);
             ESP_LOGI(TAG, "GatewayLink S3 peer ready");
         } else {
+            set_peer_ready(false);
             ESP_LOGW(TAG, "incompatible GatewayLink HELLO_ACK from peer");
         }
         break;
@@ -188,8 +272,10 @@ static void rx_task(void *arg)
             const gateway_link_stream_event_t event = gateway_link_stream_feed(
                 &decoder, bytes[i], &frame, &decode_result);
             if (event == GATEWAY_LINK_STREAM_FRAME) {
+                note_rx_frame();
                 handle_control_frame(&frame);
             } else if (event == GATEWAY_LINK_STREAM_DROPPED) {
+                note_rx_invalid();
                 ESP_LOGW(TAG, "dropped invalid GatewayLink RX frame error=%u",
                          (unsigned)decode_result);
             }
@@ -220,6 +306,7 @@ static void write_message(const gateway_link_message_t *message, uint32_t sequen
         return;
     }
     const int written = s_backend->write(encoded, encoded_length);
+    note_tx_result(written, encoded_length);
     if (written != (int)encoded_length) {
         ESP_LOGW(TAG, "short backend write seq=%lu wrote=%d expected=%u",
                  (unsigned long)frame.sequence, written, (unsigned)encoded_length);
@@ -301,6 +388,8 @@ esp_err_t gateway_link_start(void)
         return ESP_ERR_INVALID_STATE;
     }
 
+    memset(&s_status, 0, sizeof(s_status));
+    s_status.backend = s_backend->name;
     gateway_link_snapshot_cache_init(&s_snapshot_cache);
     s_tx_queue = xQueueCreateStatic(
         LINK_TX_QUEUE_DEPTH,
