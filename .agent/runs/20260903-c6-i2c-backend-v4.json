@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-i2c-backend-v4",
+  "task_digest": "2f1378522f91d4e11ff8ea6c343245b960e6610d6a26e171a331cd976c147d7b",
+  "idle_timeout": 300,
+  "task_timeout": 2400,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T06:36:46.292751+00:00",
+  "attempt_id": "fc87df7c0be7db57c91e0d9a",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 947,
+  "updated_at": "2026-09-03T06:36:46.292946+00:00",
+  "pid": 947
+}
