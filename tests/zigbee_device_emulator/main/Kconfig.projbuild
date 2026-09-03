@@ -58,4 +58,18 @@ config EMULATOR_SLEEPY_KEEP_ALIVE_MS
         Parent poll/keep-alive timing used by the Zigbee end-device stack. This
         emulates a sleepy protocol surface; it is not a deep-sleep power test.
 
+config EMULATOR_LIFECYCLE_REBOOT
+    bool "Periodic lifecycle reboot/rejoin exercise"
+    default n
+    help
+        Periodically reboots the emulator without erasing Zigbee storage. This
+        exercises persisted end-device reboot/rejoin lifecycle handling without
+        relying on ezbee test-only leave APIs.
+
+config EMULATOR_LIFECYCLE_REBOOT_MS
+    int "Lifecycle reboot interval (ms)"
+    depends on EMULATOR_LIFECYCLE_REBOOT
+    range 10000 600000
+    default 60000
+
 endmenu

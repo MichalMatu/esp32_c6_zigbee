@@ -3,6 +3,7 @@
 
 #include "esp_err.h"
 #include "esp_log.h"
+#include "esp_system.h"
 #include "esp_zigbee.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
@@ -489,6 +490,18 @@ static void emulation_task(void *arg)
     }
 }
 
+#ifdef CONFIG_EMULATOR_LIFECYCLE_REBOOT
+static void lifecycle_reboot_task(void *arg)
+{
+    (void)arg;
+    vTaskDelay(pdMS_TO_TICKS(CONFIG_EMULATOR_LIFECYCLE_REBOOT_MS));
+    ESP_LOGW(TAG,
+             "lifecycle fault: rebooting after %u ms with Zigbee storage preserved",
+             (unsigned)CONFIG_EMULATOR_LIFECYCLE_REBOOT_MS);
+    esp_restart();
+}
+#endif
+
 static void zigbee_task(void *arg)
 {
     (void)arg;
@@ -534,6 +547,11 @@ static void zigbee_task(void *arg)
     if (xTaskCreate(emulation_task, "emu_values", 3072, NULL, 4, NULL) != pdPASS) {
         ESP_LOGE(TAG, "emulation task creation failed");
     }
+#ifdef CONFIG_EMULATOR_LIFECYCLE_REBOOT
+    if (xTaskCreate(lifecycle_reboot_task, "emu_lifecycle", 2048, NULL, 3, NULL) != pdPASS) {
+        ESP_LOGE(TAG, "lifecycle reboot task creation failed");
+    }
+#endif
 #if CONFIG_EMULATOR_PROFILE_ONOFF_LEVEL || CONFIG_EMULATOR_PROFILE_MIXED
     if (xTaskCreate(roundtrip_report_task, "emu_roundtrip", 3072, NULL, 4, NULL) != pdPASS) {
         ESP_LOGE(TAG, "roundtrip report task creation failed");

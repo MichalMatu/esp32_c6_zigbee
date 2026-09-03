@@ -31,3 +31,9 @@ For `On/Off + Level` and `Mixed multi-endpoint`, standard server-side On/Off and
 The sleepy profile exposes battery voltage (`0x0020`) and battery percentage remaining (`0x0021`) on Power Configuration plus a Poll Control server. Its defaults are a 30 s Check-In interval, 5 s long poll, 1 s short poll, 5 s fast-poll timeout, 10 s Zigbee keep-alive, and a 30 s emulator value tick. Battery percentage changes deterministically in Zigbee half-percent units.
 
 This profile emulates sleepy Zigbee protocol timing and Poll Control behavior. It intentionally does not claim MCU deep-sleep/current-consumption behavior; that requires the later two-board hardware validation gate.
+
+## Lifecycle reboot/rejoin fault
+
+An optional menuconfig fault periodically calls `esp_restart()` while preserving the Zigbee storage partition. On the next boot the end device starts with its persisted network state, exercising coordinator duplicate lifecycle/reboot/rejoin handling without depending on ezbee's test-only `ezb_nwk_leave_request()` API. The default interval is 60 s and the mode is disabled by default.
+
+This mode deliberately does not promise a new NWK short address or exact Device Announce ordering; those are stack/network outcomes and remain part of the later two-board hardware validation.
