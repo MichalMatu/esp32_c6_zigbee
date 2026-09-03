@@ -1,0 +1,15 @@
+{
+  "id": "20260903-c6-phase5-ezbee-cnf-api-v1",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 4096,
+  "command_timeout": 600,
+  "idle_timeout": 180,
+  "task_timeout": 900,
+  "commands": [
+    "set -euo pipefail\ngit fetch origin\ngit checkout integration/c6-s3-i2c-20260903\ngit reset --hard origin/integration/c6-s3-i2c-20260903\n[ -z \"$(git status --short)\" ]\n[ \"$(git rev-parse HEAD)\" = \"48d20ed7e17107a3d1378a394b12b5382ae58a49\" ]\n. ~/esp/esp-idf-v5.5.4/export.sh >/dev/null\nidf.py reconfigure >/dev/null\nFILE=managed_components/espressif__esp-zigbee-lib/include/ezbee/zcl/zcl_common.h\nsed -n '1,90p' \"$FILE\"\nprintf '%s\\n' '=== confirmation symbols ==='\ngrep -RniE -C 6 'cmd_cnf|command confirmation|confirmation callback' managed_components/espressif__esp-zigbee-lib/include/ezbee | sed -n '1,260p' || true"
+  ]
+}
