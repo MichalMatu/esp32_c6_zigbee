@@ -1,9 +1,0 @@
-{
-  "event": "invalid_task_rejected",
-  "status": "failed",
-  "failure_reason": "invalid_task_file",
-  "updated_at": "2026-09-03T06:09:42.897512+00:00",
-  "task_id": "20260903-c6-i2c-backend-v1",
-  "daemon_version": "4.15.0",
-  "pid": 76604
-}
