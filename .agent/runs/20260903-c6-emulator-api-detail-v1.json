@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-emulator-api-detail-v1",
+  "task_digest": "afed53795c64f6d8da2f30b1cd178dba9ae1bda52fa1000732ca08f75f8afb76",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T20:22:23.212705+00:00",
+  "attempt_id": "f13eab94d0aac3dfdef852ca",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 78869,
+  "updated_at": "2026-09-03T20:22:23.212906+00:00",
+  "pid": 78869
+}
