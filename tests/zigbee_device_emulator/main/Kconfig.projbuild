@@ -18,4 +18,31 @@ config EMULATOR_PROFILE_MIXED
 
 endchoice
 
+config EMULATOR_EXPLICIT_REPORTS
+    bool "Explicitly request reports after value changes"
+    default y
+    help
+        Calls the stack report-attribute request after deterministic value updates.
+        The stack still applies its configured-reporting rules; this makes report
+        generation explicit for emulator burst/fault exercises.
+
+config EMULATOR_BURST_UPDATES
+    bool "Burst value updates"
+    default n
+    help
+        Apply 24 deterministic update/report requests per emulator tick to stress
+        coordinator queues without requiring hardware-side timing tricks.
+
+config EMULATOR_INJECT_INVALID_VALUES
+    bool "Inject invalid/reserved measurement values"
+    default n
+    help
+        Every sixth tick emits Zigbee invalid sentinels for temperature and
+        humidity plus a reserved occupancy bitmap value.
+
+config EMULATOR_TICK_MS
+    int "Emulator tick interval (ms)"
+    range 1000 60000
+    default 10000
+
 endmenu

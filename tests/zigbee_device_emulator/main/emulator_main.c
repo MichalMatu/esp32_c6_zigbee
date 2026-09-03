@@ -19,12 +19,19 @@
 #include <ezbee/zcl/cluster/temperature_measurement_desc.h>
 #include <ezbee/zcl/zcl_common.h>
 #include <ezbee/zcl/zcl_core.h>
+#include <ezbee/zcl/zcl_general_cmd.h>
 
 #define EMULATOR_PROFILE_ID 0x0104U
 #define EMULATOR_DEVICE_ID_GENERIC 0x0000U
 #define EMULATOR_DEVICE_ID_TEMP_SENSOR 0x0302U
 #define EMULATOR_CHANNEL_MASK 0x07fff800UL
 #define EMULATOR_STD_MANUF_CODE 0x0000U
+#define EMULATOR_COORDINATOR_SHORT 0x0000U
+#define EMULATOR_COORDINATOR_ENDPOINT 1U
+#define EMULATOR_BURST_COUNT 24U
+#define EMULATOR_INVALID_TEMPERATURE ((int16_t)0x8000)
+#define EMULATOR_INVALID_HUMIDITY 0xffffU
+#define EMULATOR_RESERVED_OCCUPANCY 0x02U
 
 #define EMULATOR_CLUSTER_TEMPERATURE 0x0402U
 #define EMULATOR_CLUSTER_HUMIDITY 0x0405U
@@ -215,7 +222,28 @@ static esp_err_t register_selected_profile(void)
     return ezb_af_device_desc_register(device) == EZB_ERR_NONE ? ESP_OK : ESP_FAIL;
 }
 
-static void set_server_attr(
+static bool request_report(uint8_t endpoint, uint16_t cluster, uint16_t attribute)
+{
+    const ezb_zcl_report_attr_cmd_t request = {
+        .cmd_ctrl = {
+            .dst_addr = EZB_ADDRESS_SHORT(EMULATOR_COORDINATOR_SHORT),
+            .dst_ep = EMULATOR_COORDINATOR_ENDPOINT,
+            .src_ep = endpoint,
+            .cluster_id = cluster,
+            .manuf_code = EMULATOR_STD_MANUF_CODE,
+        },
+        .payload = {.attr_id = attribute},
+    };
+    const ezb_err_t error = ezb_zcl_report_attr_cmd_req(&request);
+    if (error != EZB_ERR_NONE) {
+        ESP_LOGW(TAG, "report request ep=%u cluster=0x%04x attr=0x%04x error=%u",
+                 endpoint, cluster, attribute, (unsigned)error);
+        return false;
+    }
+    return true;
+}
+
+static bool set_server_attr(
     uint8_t endpoint, uint16_t cluster, uint16_t attribute, void *value)
 {
     const ezb_zcl_status_t status = ezb_zcl_set_attr_value(
@@ -224,7 +252,12 @@ static void set_server_attr(
     if (status != 0U) {
         ESP_LOGW(TAG, "set attr ep=%u cluster=0x%04x attr=0x%04x status=0x%02x",
                  endpoint, cluster, attribute, (unsigned)status);
+        return false;
     }
+#if CONFIG_EMULATOR_EXPLICIT_REPORTS
+    (void)request_report(endpoint, cluster, attribute);
+#endif
+    return true;
 }
 
 static void emulation_task(void *arg)
@@ -235,40 +268,66 @@ static void emulation_task(void *arg)
     uint16_t humidity = 5500U;
     int16_t humidity_step = 100;
     uint8_t occupancy = 0U;
+    uint32_t tick = 0U;
 
     for (;;) {
-        vTaskDelay(pdMS_TO_TICKS(10000));
+        vTaskDelay(pdMS_TO_TICKS(CONFIG_EMULATOR_TICK_MS));
+        ++tick;
+#ifdef CONFIG_EMULATOR_BURST_UPDATES
+        const uint8_t iterations = EMULATOR_BURST_COUNT;
+#else
+        const uint8_t iterations = 1U;
+#endif
+#ifdef CONFIG_EMULATOR_INJECT_INVALID_VALUES
+        const bool inject_invalid = (tick % 6U) == 0U;
+#else
+        const bool inject_invalid = false;
+#endif
         if (!esp_zigbee_lock_acquire(pdMS_TO_TICKS(100))) {
             ESP_LOGW(TAG, "emulation update lock timeout");
             continue;
         }
 
+        for (uint8_t i = 0U; i < iterations; ++i) {
 #if CONFIG_EMULATOR_PROFILE_TEMP_HUM || CONFIG_EMULATOR_PROFILE_MIXED
-        temperature = (int16_t)(temperature + temperature_step);
-        if (temperature >= 2350 || temperature <= 1950) {
-            temperature_step = (int16_t)-temperature_step;
-        }
-        humidity = (uint16_t)((int32_t)humidity + humidity_step);
-        if (humidity >= 6500U || humidity <= 4500U) {
-            humidity_step = (int16_t)-humidity_step;
-        }
-        set_server_attr(
-            EMULATOR_ENV_ENDPOINT, EMULATOR_CLUSTER_TEMPERATURE,
-            EMULATOR_ATTR_MEASURED_VALUE, &temperature);
-        set_server_attr(
-            EMULATOR_ENV_ENDPOINT, EMULATOR_CLUSTER_HUMIDITY,
-            EMULATOR_ATTR_MEASURED_VALUE, &humidity);
+            temperature = (int16_t)(temperature + temperature_step);
+            if (temperature >= 2350 || temperature <= 1950) {
+                temperature_step = (int16_t)-temperature_step;
+            }
+            humidity = (uint16_t)((int32_t)humidity + humidity_step);
+            if (humidity >= 6500U || humidity <= 4500U) {
+                humidity_step = (int16_t)-humidity_step;
+            }
+            int16_t temperature_out = temperature;
+            uint16_t humidity_out = humidity;
+            if (inject_invalid) {
+                temperature_out = EMULATOR_INVALID_TEMPERATURE;
+                humidity_out = EMULATOR_INVALID_HUMIDITY;
+            }
+            (void)set_server_attr(
+                EMULATOR_ENV_ENDPOINT, EMULATOR_CLUSTER_TEMPERATURE,
+                EMULATOR_ATTR_MEASURED_VALUE, &temperature_out);
+            (void)set_server_attr(
+                EMULATOR_ENV_ENDPOINT, EMULATOR_CLUSTER_HUMIDITY,
+                EMULATOR_ATTR_MEASURED_VALUE, &humidity_out);
 #endif
 
 #if CONFIG_EMULATOR_PROFILE_OCCUPANCY || CONFIG_EMULATOR_PROFILE_MIXED
-        occupancy = occupancy == 0U ? 1U : 0U;
-        set_server_attr(
-            EMULATOR_OCC_ENDPOINT, EMULATOR_CLUSTER_OCCUPANCY,
-            EMULATOR_ATTR_OCCUPANCY, &occupancy);
+            occupancy = occupancy == 0U ? 1U : 0U;
+            uint8_t occupancy_out = occupancy;
+            if (inject_invalid) {
+                occupancy_out = EMULATOR_RESERVED_OCCUPANCY;
+            }
+            (void)set_server_attr(
+                EMULATOR_OCC_ENDPOINT, EMULATOR_CLUSTER_OCCUPANCY,
+                EMULATOR_ATTR_OCCUPANCY, &occupancy_out);
 #endif
+        }
 
         esp_zigbee_lock_release();
-        ESP_LOGI(TAG, "deterministic emulator tick");
+        ESP_LOGI(TAG, "emulator tick=%lu iterations=%u invalid=%u",
+                 (unsigned long)tick, (unsigned)iterations,
+                 (unsigned)(inject_invalid));
     }
 }
 

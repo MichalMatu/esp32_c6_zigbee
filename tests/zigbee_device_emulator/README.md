@@ -14,3 +14,9 @@ Select one under `Second-C6 Zigbee emulator` in menuconfig:
 Environment and occupancy attributes change deterministically every 10 seconds. This is intended to exercise coordinator interview, Basic metadata, endpoint/cluster capability normalization and Configure Reporting. On/Off and Level are real server descriptors; stack-side attribute changes are logged through the ZCL core action callback so command behavior can be observed when hardware validation begins.
 
 Hardware flashing remains a separate gate: verify two distinct Local Agent ESP32-C6 resource identities before any coordinator/emulator flash task.
+
+## Deterministic fault/report modes
+
+Menuconfig also exposes explicit report requests, a 24-update burst mode, invalid-value injection, and the tick interval. Invalid injection uses the Zigbee Temperature Measurement invalid sentinel `0x8000`, Relative Humidity invalid sentinel `0xffff`, and reserved Occupancy bitmap `0x02` every sixth tick. These modes are compile-time deterministic and require no production firmware coupling.
+
+Explicit report requests target coordinator short address `0x0000`, endpoint 1, which matches the Zigbee coordinator role and this repository's production gateway endpoint. The Zigbee stack still applies its reporting configuration rules.
