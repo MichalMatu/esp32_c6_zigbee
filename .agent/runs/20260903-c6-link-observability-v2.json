@@ -1,16 +1,16 @@
 {
   "event": "command_started",
   "phase": "commands",
-  "index": 2,
+  "index": 3,
   "total": 4,
-  "command": "set -eu\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_protocol.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_protocol\n/tmp/test_gateway_link_protocol\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_stream.c main/gateway_link_stream.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_stream\n/tmp/test_gateway_link_stream\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_control.c main/gateway_link_control.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_control\n/tmp/test_gateway_link_control\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_snapshot_cache.c main/gateway_link_snapshot_cache.c -o /tmp/test_gateway_link_snapshot_cache\n/tmp/test_gateway_link_snapshot_cache\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_e2e.c main/gateway_link_protocol.c main/gateway_link_stream.c main/gateway_link_control.c main/gateway_link_snapshot_cache.c main/gateway_inputs.c -lm -o /tmp/test_gateway_link_e2e\n/tmp/test_gateway_link_e2e",
-  "pid": 66960,
+  "command": "set -eu\nexport IDF_PYTHON_ENV_PATH=/Users/michal/.espressif/python_env/idf5.5_py3.13_env\n. ~/esp/esp-idf-v5.5.4/export.sh >/dev/null\nidf.py build",
+  "pid": 67085,
   "timeout": 900,
   "idle_timeout": 300,
   "memory_limit_mb": 4096,
-  "started_at": "2026-09-03T05:58:03.806647+00:00",
-  "stage_name": "command-2",
-  "stage_index": 2,
+  "started_at": "2026-09-03T05:58:09.108700+00:00",
+  "stage_name": "command-3",
+  "stage_index": 3,
   "stage_total": 4,
   "stage_phase": "commands",
   "task_id": "20260903-c6-link-observability-v2",
@@ -18,5 +18,5 @@
   "task_digest": "9933419b9fdf9c425cba7d072a26c6a2f93f10f6041aba48eeb7879653a68e32",
   "daemon_version": "4.15.0",
   "daemon_pid": 66757,
-  "updated_at": "2026-09-03T05:58:03.874920+00:00"
+  "updated_at": "2026-09-03T05:58:09.168036+00:00"
 }
