@@ -24,26 +24,32 @@ Repository identity:
 
 - repository: `MichalMatu/esp32_c6_zigbee`;
 - local-agent repository id: `esp32-c6-zigbee`;
+- agent binding: `64877d7d-af3f-4312-a511-699c44aa42dd`;
 - control branch: `agent-control`;
 - default source branch: `main`.
 
 Use this repository's own `agent-control` branch for Local Agent tasks and evidence. Never route ESP32-C6 Zigbee work through another repository's control branch.
 
+If Chat Bridge is active, require every wake to identify exactly `LA_AGENT=64877d7d-af3f-4312-a511-699c44aa42dd`, `LA_REPO=esp32-c6-zigbee`, and `LA_REPOSITORY=MichalMatu/esp32_c6_zigbee`. Never infer or switch repository identity from conversation history. A different repository requires explicit Bridge **Rebind**.
+
 Before queueing work:
 
 1. Read this file, the current `README.md`, and `docs/ARCHITECTURE.md`.
 2. Inspect the exact source branch/HEAD relevant to the request.
-3. Inspect `.agent/status/daemon.json` on `agent-control` and treat `daemon_version`, `self_revision`, `execution_model` / `execution_variant`, current task state, and `supervisor_pid` as repository-worker truth. Supervisor-wide fields such as `max_parallel_workers` are not guaranteed to be repeated in every repository-worker snapshot; read the shared supervisor status when that field matters.
+3. Inspect `.agent/binding.json` and `.agent/status/daemon.json` on `agent-control`. The binding file must match the repository identity above. Treat `daemon_version`, `self_revision`, `execution_model` / `execution_variant`, current task state, and `supervisor_pid` as repository-worker truth. Supervisor-wide fields such as `max_parallel_workers` are not guaranteed to be repeated in every repository-worker snapshot; read the shared supervisor status when that field matters.
 4. Follow any active task instead of queueing a duplicate.
 
 Task/evidence contract:
 
 - queue immutable tasks under `.agent/tasks/<task-id>.json`;
+- every executable task must contain exactly `"agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd"`;
 - follow `.agent/runs/<task-id>.json`;
 - read `.agent/results/<task-id>.json` before reporting completion;
 - use a new unique task id for every intentional retry or changed payload;
 - set `work_branch` explicitly when work must run anywhere other than `main`;
 - a successful Local Agent result proves execution/verification, not remote source publication unless the task explicitly publishes source.
+
+Hard binding is fail-closed. The executor requires local registry `agent_binding == .agent/binding.json agent_binding == task.agent_binding` before claim/execution. Missing repository binding reports `unbound`; a control mismatch reports `binding_error`; missing/wrong task binding is terminally rejected before any task command runs. Both production parallel execution and the serial fallback enforce this contract. Do not guess, rotate, or borrow another repository's binding to make a task run.
 
 The canonical executor/planner contract lives in `MichalMatu/local-agent`, especially `docs/OPERATIONS.md`, `docs/AUTONOMOUS_CHAT_LOOP.md`, `docs/MULTI_REPOSITORY.md`, and `docs/GOLDEN_STANDARD.md`. Do not pin a Local Agent release number here; read live status and canonical `local-agent/main` instead.
 
@@ -83,4 +89,4 @@ Do not erase flash or deliberately destroy the persisted Zigbee network unless t
 - Update README/docs when behavior, pairing/rejoin flow, supported reports, or hardware-test expectations materially change.
 - Run the narrowest meaningful verification first, then broaden only when the changed integration boundary warrants it.
 
-When the Local Agent task/control/resource/status/planner contract changes, audit this file together with the canonical `MichalMatu/local-agent` documentation so future chats do not depend on remembered conversation context.
+When the Local Agent task/control/resource/status/planner/binding contract changes, audit this file together with the canonical `MichalMatu/local-agent` documentation so future chats do not depend on remembered conversation context.
