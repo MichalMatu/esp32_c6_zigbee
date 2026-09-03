@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-link-observability-v2",
+  "task_digest": "9933419b9fdf9c425cba7d072a26c6a2f93f10f6041aba48eeb7879653a68e32",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T05:57:59.342529+00:00",
+  "attempt_id": "d91d49582df8be8460759cd9",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 66757,
+  "updated_at": "2026-09-03T05:57:59.342683+00:00",
+  "pid": 66757
+}
