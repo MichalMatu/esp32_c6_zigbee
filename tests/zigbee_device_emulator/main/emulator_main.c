@@ -16,6 +16,8 @@
 #include <ezbee/zcl/cluster/level_desc.h>
 #include <ezbee/zcl/cluster/occupancy_sensing_desc.h>
 #include <ezbee/zcl/cluster/on_off_desc.h>
+#include <ezbee/zcl/cluster/poll_control_desc.h>
+#include <ezbee/zcl/cluster/power_config_desc.h>
 #include <ezbee/zcl/cluster/rel_humidity_measurement_desc.h>
 #include <ezbee/zcl/cluster/temperature_measurement_desc.h>
 #include <ezbee/zcl/zcl_common.h>
@@ -38,6 +40,8 @@
 #define EMULATOR_ROUNDTRIP_QUEUE_DEPTH 8U
 #define EMULATOR_ROUNDTRIP_REPORT_DELAY_MS 20U
 
+#define EMULATOR_CLUSTER_POWER_CONFIG 0x0001U
+#define EMULATOR_CLUSTER_POLL_CONTROL 0x0020U
 #define EMULATOR_CLUSTER_TEMPERATURE 0x0402U
 #define EMULATOR_CLUSTER_HUMIDITY 0x0405U
 #define EMULATOR_CLUSTER_OCCUPANCY 0x0406U
@@ -45,6 +49,14 @@
 #define EMULATOR_CLUSTER_LEVEL 0x0008U
 #define EMULATOR_ATTR_MEASURED_VALUE 0x0000U
 #define EMULATOR_ATTR_OCCUPANCY 0x0000U
+#define EMULATOR_ATTR_BATTERY_VOLTAGE 0x0020U
+#define EMULATOR_ATTR_BATTERY_PERCENTAGE_REMAINING 0x0021U
+
+#if CONFIG_EMULATOR_PROFILE_SLEEPY_ENV_BATTERY
+#define EMULATOR_KEEP_ALIVE_MS CONFIG_EMULATOR_SLEEPY_KEEP_ALIVE_MS
+#else
+#define EMULATOR_KEEP_ALIVE_MS 3000U
+#endif
 
 #if CONFIG_EMULATOR_PROFILE_MIXED
 #define EMULATOR_ENV_ENDPOINT 1U
@@ -56,6 +68,8 @@
 #define EMULATOR_OCC_ENDPOINT 1U
 #elif CONFIG_EMULATOR_PROFILE_ONOFF_LEVEL
 #define EMULATOR_LIGHT_ENDPOINT 1U
+#elif CONFIG_EMULATOR_PROFILE_SLEEPY_ENV_BATTERY
+#define EMULATOR_ENV_ENDPOINT 1U
 #endif
 
 static const char *TAG = "zb_emulator";
@@ -186,6 +200,66 @@ static esp_err_t add_environment_endpoint(ezb_af_device_desc_t device, uint8_t e
     return ESP_OK;
 }
 
+static esp_err_t add_sleepy_environment_endpoint(
+    ezb_af_device_desc_t device, uint8_t endpoint_id)
+{
+    ezb_af_ep_desc_t endpoint = create_endpoint(endpoint_id, EMULATOR_DEVICE_ID_TEMP_SENSOR);
+    if (endpoint == EZB_INVALID_AF_EP_DESC || add_basic(endpoint) != ESP_OK) {
+        return ESP_FAIL;
+    }
+
+    const ezb_zcl_temperature_measurement_cluster_server_config_t temp_config = {
+        .measured_value = 2150,
+        .min_measured_value = -4000,
+        .max_measured_value = 12500,
+    };
+    ezb_zcl_cluster_desc_t temp = ezb_zcl_temperature_measurement_create_cluster_desc(
+        &temp_config, EZB_ZCL_CLUSTER_SERVER);
+
+    const ezb_zcl_rel_humidity_measurement_cluster_server_config_t humidity_config = {
+        .measured_value = 5500U,
+        .min_measured_value = 0U,
+        .max_measured_value = 10000U,
+    };
+    ezb_zcl_cluster_desc_t humidity = ezb_zcl_rel_humidity_measurement_create_cluster_desc(
+        &humidity_config, EZB_ZCL_CLUSTER_SERVER);
+
+    static const uint8_t initial_battery_voltage = 30U;      /* 3.0 V */
+    static const uint8_t initial_battery_percentage = 180U; /* 90%, half-percent units */
+    ezb_zcl_cluster_desc_t power = ezb_zcl_power_config_create_cluster_desc(
+        NULL, EZB_ZCL_CLUSTER_SERVER);
+    if (power != EZB_INVALID_ZCL_CLUSTER_DESC &&
+        (ezb_zcl_power_config_cluster_desc_add_attr(
+             power, EMULATOR_ATTR_BATTERY_VOLTAGE, &initial_battery_voltage) != EZB_ERR_NONE ||
+         ezb_zcl_power_config_cluster_desc_add_attr(
+             power, EMULATOR_ATTR_BATTERY_PERCENTAGE_REMAINING,
+             &initial_battery_percentage) != EZB_ERR_NONE)) {
+        return ESP_FAIL;
+    }
+
+    const ezb_zcl_poll_control_cluster_server_config_t poll_config = {
+        .check_in_interval = 120U,  /* 30 s, quarter-second units */
+        .long_poll_interval = 20U, /* 5 s */
+        .short_poll_interval = 4U, /* 1 s */
+        .fast_poll_timeout = 20U,  /* 5 s */
+    };
+    ezb_zcl_cluster_desc_t poll = ezb_zcl_poll_control_create_cluster_desc(
+        &poll_config, EZB_ZCL_CLUSTER_SERVER);
+
+    if (temp == EZB_INVALID_ZCL_CLUSTER_DESC ||
+        humidity == EZB_INVALID_ZCL_CLUSTER_DESC ||
+        power == EZB_INVALID_ZCL_CLUSTER_DESC ||
+        poll == EZB_INVALID_ZCL_CLUSTER_DESC ||
+        ezb_af_endpoint_add_cluster_desc(endpoint, temp) != EZB_ERR_NONE ||
+        ezb_af_endpoint_add_cluster_desc(endpoint, humidity) != EZB_ERR_NONE ||
+        ezb_af_endpoint_add_cluster_desc(endpoint, power) != EZB_ERR_NONE ||
+        ezb_af_endpoint_add_cluster_desc(endpoint, poll) != EZB_ERR_NONE ||
+        ezb_af_device_add_endpoint_desc(device, endpoint) != EZB_ERR_NONE) {
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+
 static esp_err_t add_occupancy_endpoint(ezb_af_device_desc_t device, uint8_t endpoint_id)
 {
     ezb_af_ep_desc_t endpoint = create_endpoint(endpoint_id, EMULATOR_DEVICE_ID_GENERIC);
@@ -249,6 +323,10 @@ static esp_err_t register_selected_profile(void)
     }
 #elif CONFIG_EMULATOR_PROFILE_ONOFF_LEVEL
     if (add_light_endpoint(device, EMULATOR_LIGHT_ENDPOINT) != ESP_OK) {
+        return ESP_FAIL;
+    }
+#elif CONFIG_EMULATOR_PROFILE_SLEEPY_ENV_BATTERY
+    if (add_sleepy_environment_endpoint(device, EMULATOR_ENV_ENDPOINT) != ESP_OK) {
         return ESP_FAIL;
     }
 #elif CONFIG_EMULATOR_PROFILE_MIXED
@@ -331,6 +409,8 @@ static void emulation_task(void *arg)
     uint16_t humidity = 5500U;
     int16_t humidity_step = 100;
     uint8_t occupancy = 0U;
+    uint8_t battery_voltage = 30U;
+    uint8_t battery_percentage = 180U;
     uint32_t tick = 0U;
 
     for (;;) {
@@ -352,7 +432,7 @@ static void emulation_task(void *arg)
         }
 
         for (uint8_t i = 0U; i < iterations; ++i) {
-#if CONFIG_EMULATOR_PROFILE_TEMP_HUM || CONFIG_EMULATOR_PROFILE_MIXED
+#if CONFIG_EMULATOR_PROFILE_TEMP_HUM || CONFIG_EMULATOR_PROFILE_MIXED ||     CONFIG_EMULATOR_PROFILE_SLEEPY_ENV_BATTERY
             temperature = (int16_t)(temperature + temperature_step);
             if (temperature >= 2350 || temperature <= 1950) {
                 temperature_step = (int16_t)-temperature_step;
@@ -373,6 +453,21 @@ static void emulation_task(void *arg)
             (void)set_server_attr(
                 EMULATOR_ENV_ENDPOINT, EMULATOR_CLUSTER_HUMIDITY,
                 EMULATOR_ATTR_MEASURED_VALUE, &humidity_out);
+
+#if CONFIG_EMULATOR_PROFILE_SLEEPY_ENV_BATTERY
+            if (battery_percentage > 120U) {
+                battery_percentage = (uint8_t)(battery_percentage - 2U);
+            } else {
+                battery_percentage = 180U;
+            }
+            battery_voltage = (uint8_t)(27U + ((battery_percentage - 120U) / 20U));
+            (void)set_server_attr(
+                EMULATOR_ENV_ENDPOINT, EMULATOR_CLUSTER_POWER_CONFIG,
+                EMULATOR_ATTR_BATTERY_VOLTAGE, &battery_voltage);
+            (void)set_server_attr(
+                EMULATOR_ENV_ENDPOINT, EMULATOR_CLUSTER_POWER_CONFIG,
+                EMULATOR_ATTR_BATTERY_PERCENTAGE_REMAINING, &battery_percentage);
+#endif
 #endif
 
 #if CONFIG_EMULATOR_PROFILE_OCCUPANCY || CONFIG_EMULATOR_PROFILE_MIXED
@@ -401,7 +496,7 @@ static void zigbee_task(void *arg)
         .device_config = {
             .device_type = EZB_NWK_DEVICE_TYPE_END_DEVICE,
             .install_code_policy = false,
-            .zed_config = {.keep_alive = 3000U},
+            .zed_config = {.keep_alive = EMULATOR_KEEP_ALIVE_MS},
         },
         .platform_config = {
             .storage_partition_name = "zb_storage",

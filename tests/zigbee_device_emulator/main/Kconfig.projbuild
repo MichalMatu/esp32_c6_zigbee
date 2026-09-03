@@ -13,6 +13,9 @@ config EMULATOR_PROFILE_OCCUPANCY
 config EMULATOR_PROFILE_ONOFF_LEVEL
     bool "On/Off + Level"
 
+config EMULATOR_PROFILE_SLEEPY_ENV_BATTERY
+    bool "Sleepy temperature + humidity + battery + Poll Control"
+
 config EMULATOR_PROFILE_MIXED
     bool "Mixed multi-endpoint"
 
@@ -43,6 +46,16 @@ config EMULATOR_INJECT_INVALID_VALUES
 config EMULATOR_TICK_MS
     int "Emulator tick interval (ms)"
     range 1000 60000
+    default 30000 if EMULATOR_PROFILE_SLEEPY_ENV_BATTERY
     default 10000
+
+config EMULATOR_SLEEPY_KEEP_ALIVE_MS
+    int "Sleepy end-device keep-alive (ms)"
+    depends on EMULATOR_PROFILE_SLEEPY_ENV_BATTERY
+    range 1000 60000
+    default 10000
+    help
+        Parent poll/keep-alive timing used by the Zigbee end-device stack. This
+        emulates a sleepy protocol surface; it is not a deep-sleep power test.
 
 endmenu
