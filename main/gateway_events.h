@@ -34,6 +34,7 @@ typedef enum {
     GATEWAY_EVENT_ENDPOINT,
     GATEWAY_EVENT_BASIC,
     GATEWAY_EVENT_REPORTING_CONFIG,
+    GATEWAY_EVENT_COMMAND_RESULT,
     GATEWAY_EVENT_INPUT_AVAILABLE,
     GATEWAY_EVENT_INPUT_UNAVAILABLE,
     GATEWAY_EVENT_MEASUREMENT,
@@ -48,6 +49,14 @@ typedef enum {
     GATEWAY_EVENT_CONFIG_UNSUPPORTED,
     GATEWAY_EVENT_CONFIG_ERROR,
 } gateway_event_config_result_t;
+
+
+typedef enum {
+    GATEWAY_EVENT_COMMAND_TRANSMITTED = 0,
+    GATEWAY_EVENT_COMMAND_UNSUPPORTED,
+    GATEWAY_EVENT_COMMAND_INVALID,
+    GATEWAY_EVENT_COMMAND_ERROR,
+} gateway_event_command_result_t;
 
 typedef struct {
     uint16_t cluster_id;
@@ -113,6 +122,12 @@ typedef struct {
             uint16_t cluster_id;
             uint8_t status;
         } binding;
+        struct {
+            uint32_t request_id;
+            gateway_event_command_result_t result;
+            uint8_t status;
+            uint8_t tsn;
+        } command;
         gateway_raw_attribute_t raw;
         struct {
             char key[16];

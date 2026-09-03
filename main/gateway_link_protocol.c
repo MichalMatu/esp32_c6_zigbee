@@ -352,6 +352,24 @@ static gateway_link_result_t measurement_kind_from_wire(uint8_t wire, gateway_me
     return GATEWAY_LINK_OK;
 }
 
+static gateway_link_result_t command_kind_to_wire(
+    gateway_command_kind_t kind, uint8_t *wire)
+{
+    if (wire == NULL) return GATEWAY_LINK_INVALID_ARG;
+    if (kind != GATEWAY_COMMAND_SET_ON_OFF) return GATEWAY_LINK_UNSUPPORTED_VALUE;
+    *wire = 0U;
+    return GATEWAY_LINK_OK;
+}
+
+static gateway_link_result_t command_kind_from_wire(
+    uint8_t wire, gateway_command_kind_t *kind)
+{
+    if (kind == NULL) return GATEWAY_LINK_INVALID_ARG;
+    if (wire != 0U) return GATEWAY_LINK_UNSUPPORTED_VALUE;
+    *kind = GATEWAY_COMMAND_SET_ON_OFF;
+    return GATEWAY_LINK_OK;
+}
+
 static gateway_link_result_t unit_to_wire(gateway_unit_t unit, uint8_t *wire)
 {
     if (wire == NULL) return GATEWAY_LINK_INVALID_ARG;
@@ -662,6 +680,86 @@ gateway_link_result_t gateway_link_decode_measurement_policy_payload(
     policy->max_interval_ms = read_u32_le(&payload[used]);
     used += 4U;
     policy->reportable_change = read_double_le(&payload[used]);
+    return GATEWAY_LINK_OK;
+}
+
+gateway_link_result_t gateway_link_encode_command_request_payload(
+    const gateway_link_command_request_t *command,
+    uint8_t *payload,
+    size_t capacity,
+    uint16_t *length)
+{
+    if (command == NULL || payload == NULL || length == NULL) return GATEWAY_LINK_INVALID_ARG;
+    if (capacity < 4U) return GATEWAY_LINK_BUFFER_TOO_SMALL;
+    write_u32_le(payload, command->request_id);
+    size_t used = 4U;
+    size_t ref_used = 0U;
+    gateway_link_result_t result = encode_input_ref(
+        &command->input, &payload[used], capacity - used, &ref_used);
+    if (result != GATEWAY_LINK_OK) return result;
+    used += ref_used;
+    if (used + 13U > capacity) return GATEWAY_LINK_BUFFER_TOO_SMALL;
+    uint8_t kind = 0U;
+    result = command_kind_to_wire(command->kind, &kind);
+    if (result != GATEWAY_LINK_OK) return result;
+    payload[used++] = kind;
+    write_double_le(&payload[used], command->value);
+    used += 8U;
+    write_u32_le(&payload[used], command->transition_ms);
+    used += 4U;
+    *length = (uint16_t)used;
+    return GATEWAY_LINK_OK;
+}
+
+gateway_link_result_t gateway_link_decode_command_request_payload(
+    const uint8_t *payload,
+    uint16_t length,
+    gateway_link_command_request_t *command)
+{
+    if (payload == NULL || command == NULL) return GATEWAY_LINK_INVALID_ARG;
+    if (length < 4U) return GATEWAY_LINK_MALFORMED;
+    memset(command, 0, sizeof(*command));
+    command->request_id = read_u32_le(payload);
+    size_t used = 4U;
+    size_t ref_used = 0U;
+    gateway_link_result_t result = decode_input_ref(
+        &payload[used], length - used, &command->input, &ref_used);
+    if (result != GATEWAY_LINK_OK) return result;
+    used += ref_used;
+    if (used + 13U != length) return GATEWAY_LINK_MALFORMED;
+    result = command_kind_from_wire(payload[used++], &command->kind);
+    if (result != GATEWAY_LINK_OK) return result;
+    command->value = read_double_le(&payload[used]);
+    used += 8U;
+    command->transition_ms = read_u32_le(&payload[used]);
+    return GATEWAY_LINK_OK;
+}
+
+gateway_link_result_t gateway_link_encode_command_result_payload(
+    const gateway_link_command_result_t *result,
+    uint8_t *payload,
+    size_t capacity,
+    uint16_t *length)
+{
+    if (result == NULL || payload == NULL || length == NULL) return GATEWAY_LINK_INVALID_ARG;
+    if (capacity < 5U) return GATEWAY_LINK_BUFFER_TOO_SMALL;
+    if (result->status > GATEWAY_LINK_COMMAND_ERROR) return GATEWAY_LINK_UNSUPPORTED_VALUE;
+    write_u32_le(payload, result->request_id);
+    payload[4] = (uint8_t)result->status;
+    *length = 5U;
+    return GATEWAY_LINK_OK;
+}
+
+gateway_link_result_t gateway_link_decode_command_result_payload(
+    const uint8_t *payload,
+    uint16_t length,
+    gateway_link_command_result_t *result)
+{
+    if (payload == NULL || result == NULL) return GATEWAY_LINK_INVALID_ARG;
+    if (length != 5U) return GATEWAY_LINK_MALFORMED;
+    if (payload[4] > GATEWAY_LINK_COMMAND_ERROR) return GATEWAY_LINK_UNSUPPORTED_VALUE;
+    result->request_id = read_u32_le(payload);
+    result->status = (gateway_link_command_status_t)payload[4];
     return GATEWAY_LINK_OK;
 }
 

@@ -60,6 +60,34 @@ bool gateway_link_message_from_event(
             &message->payload_length) == GATEWAY_LINK_OK;
     }
 
+    if (event->kind == GATEWAY_EVENT_COMMAND_RESULT &&
+        event->data.command.request_id != 0U) {
+        gateway_link_command_status_t status = GATEWAY_LINK_COMMAND_ERROR;
+        switch (event->data.command.result) {
+        case GATEWAY_EVENT_COMMAND_TRANSMITTED:
+            status = GATEWAY_LINK_COMMAND_TRANSMITTED;
+            break;
+        case GATEWAY_EVENT_COMMAND_UNSUPPORTED:
+            status = GATEWAY_LINK_COMMAND_UNSUPPORTED;
+            break;
+        case GATEWAY_EVENT_COMMAND_INVALID:
+            status = GATEWAY_LINK_COMMAND_INVALID;
+            break;
+        case GATEWAY_EVENT_COMMAND_ERROR:
+        default:
+            status = GATEWAY_LINK_COMMAND_ERROR;
+            break;
+        }
+        message->type = GATEWAY_LINK_MSG_COMMAND_RESULT;
+        const gateway_link_command_result_t result = {
+            .request_id = event->data.command.request_id,
+            .status = status,
+        };
+        return gateway_link_encode_command_result_payload(
+            &result, message->payload, sizeof(message->payload),
+            &message->payload_length) == GATEWAY_LINK_OK;
+    }
+
     if (event->kind == GATEWAY_EVENT_MEASUREMENT) {
         const gateway_link_measurement_t measurement = {
             .input = event->input,

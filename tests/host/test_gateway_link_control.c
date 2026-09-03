@@ -49,14 +49,16 @@ static void test_hello_builders_truthfully_advertise_permit_join(void)
         message.payload, message.payload_length, &hello) == GATEWAY_LINK_OK);
     assert(hello.role == GATEWAY_LINK_ROLE_C6_GATEWAY);
     assert(hello.features == (GATEWAY_LINK_FEATURE_SNAPSHOT | GATEWAY_LINK_FEATURE_MEASUREMENT_POLICY |
-        GATEWAY_LINK_FEATURE_PERMIT_JOIN | GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE));
+        GATEWAY_LINK_FEATURE_PERMIT_JOIN | GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE |
+        GATEWAY_LINK_FEATURE_COMMANDS));
 
     assert(gateway_link_make_hello_ack_message(&message));
     assert(message.type == GATEWAY_LINK_MSG_HELLO_ACK);
     assert(gateway_link_decode_hello_payload(
         message.payload, message.payload_length, &hello) == GATEWAY_LINK_OK);
     assert(hello.features == (GATEWAY_LINK_FEATURE_SNAPSHOT | GATEWAY_LINK_FEATURE_MEASUREMENT_POLICY |
-        GATEWAY_LINK_FEATURE_PERMIT_JOIN | GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE));
+        GATEWAY_LINK_FEATURE_PERMIT_JOIN | GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE |
+        GATEWAY_LINK_FEATURE_COMMANDS));
 }
 
 static void test_ping_and_pong(void)
@@ -143,6 +145,35 @@ static void test_measurement_policy_request(void)
     assert(action.measurement_policy.max_interval_ms == 60000U);
 }
 
+static void test_command_request_and_result(void)
+{
+    gateway_link_frame_t frame = {.type = GATEWAY_LINK_MSG_COMMAND_REQUEST};
+    gateway_link_command_request_t command = {0};
+    command.request_id = 88U;
+    command.input.source = GATEWAY_SOURCE_ZIGBEE;
+    command.input.channel = 1U;
+    strcpy(command.input.id, "zigbee:00124b00aabbccdd");
+    command.kind = GATEWAY_COMMAND_SET_ON_OFF;
+    command.value = 0.0;
+    assert(gateway_link_encode_command_request_payload(
+        &command, frame.payload, sizeof(frame.payload), &frame.payload_length) == GATEWAY_LINK_OK);
+    const gateway_link_control_action_t action = gateway_link_control_parse(&frame);
+    assert(action.kind == GATEWAY_LINK_CONTROL_COMMAND);
+    assert(action.request_id == 88U);
+    assert(action.command.kind == GATEWAY_COMMAND_SET_ON_OFF);
+    assert(action.command.value == 0.0);
+
+    gateway_link_message_t response;
+    assert(gateway_link_make_command_result_message(
+        88U, GATEWAY_LINK_COMMAND_TRANSMITTED, &response));
+    assert(response.type == GATEWAY_LINK_MSG_COMMAND_RESULT);
+    gateway_link_command_result_t decoded = {0};
+    assert(gateway_link_decode_command_result_payload(
+        response.payload, response.payload_length, &decoded) == GATEWAY_LINK_OK);
+    assert(decoded.request_id == 88U);
+    assert(decoded.status == GATEWAY_LINK_COMMAND_TRANSMITTED);
+}
+
 static void test_malformed_control_is_invalid(void)
 {
     gateway_link_frame_t frame = {
@@ -161,6 +192,7 @@ int main(void)
     test_snapshot_request_and_markers();
     test_permit_join_and_result();
     test_measurement_policy_request();
+    test_command_request_and_result();
     test_malformed_control_is_invalid();
     puts("gateway_link_control host tests passed");
     return 0;

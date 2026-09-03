@@ -78,7 +78,8 @@ static void test_hello_round_trip(void)
         .features = GATEWAY_LINK_FEATURE_SNAPSHOT |
             GATEWAY_LINK_FEATURE_MEASUREMENT_POLICY |
             GATEWAY_LINK_FEATURE_PERMIT_JOIN |
-            GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE,
+            GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE |
+            GATEWAY_LINK_FEATURE_COMMANDS,
     };
     uint8_t payload[32];
     uint16_t length = 0U;
@@ -174,6 +175,49 @@ static void test_measurement_policy_round_trip(void)
     assert(fabs(decoded.reportable_change - 0.2) < 0.000001);
 }
 
+static void test_command_round_trip(void)
+{
+    gateway_link_command_request_t command = {0};
+    command.request_id = 0x55667788U;
+    command.input.source = GATEWAY_SOURCE_ZIGBEE;
+    command.input.channel = 2U;
+    strcpy(command.input.id, "zigbee:00124b00aabbccdd");
+    command.kind = GATEWAY_COMMAND_SET_ON_OFF;
+    command.value = 1.0;
+    command.transition_ms = 0U;
+
+    uint8_t payload[GATEWAY_LINK_MAX_PAYLOAD];
+    uint16_t length = 0U;
+    assert(gateway_link_encode_command_request_payload(
+        &command, payload, sizeof(payload), &length) == GATEWAY_LINK_OK);
+    gateway_link_command_request_t decoded = {0};
+    assert(gateway_link_decode_command_request_payload(
+        payload, length, &decoded) == GATEWAY_LINK_OK);
+    assert(decoded.request_id == command.request_id);
+    assert(decoded.input.source == GATEWAY_SOURCE_ZIGBEE);
+    assert(decoded.input.channel == 2U);
+    assert(strcmp(decoded.input.id, command.input.id) == 0);
+    assert(decoded.kind == GATEWAY_COMMAND_SET_ON_OFF);
+    assert(decoded.value == 1.0);
+    assert(decoded.transition_ms == 0U);
+
+    const gateway_link_command_result_t result = {
+        .request_id = command.request_id,
+        .status = GATEWAY_LINK_COMMAND_TRANSMITTED,
+    };
+    assert(gateway_link_encode_command_result_payload(
+        &result, payload, sizeof(payload), &length) == GATEWAY_LINK_OK);
+    gateway_link_command_result_t decoded_result = {0};
+    assert(gateway_link_decode_command_result_payload(
+        payload, length, &decoded_result) == GATEWAY_LINK_OK);
+    assert(decoded_result.request_id == command.request_id);
+    assert(decoded_result.status == GATEWAY_LINK_COMMAND_TRANSMITTED);
+
+    decoded_result.status = (gateway_link_command_status_t)99;
+    assert(gateway_link_encode_command_result_payload(
+        &decoded_result, payload, sizeof(payload), &length) == GATEWAY_LINK_UNSUPPORTED_VALUE);
+}
+
 static void test_small_buffer_and_unknown_source_fail(void)
 {
     gateway_link_input_descriptor_t descriptor = {0};
@@ -200,6 +244,7 @@ int main(void)
     test_scd41_descriptor_round_trip();
     test_scd41_measurement_round_trip();
     test_measurement_policy_round_trip();
+    test_command_round_trip();
     test_small_buffer_and_unknown_source_fail();
     puts("gateway_link_protocol host tests passed");
     return 0;

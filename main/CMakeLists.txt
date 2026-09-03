@@ -2,6 +2,7 @@ idf_component_register(
     SRCS
         "app_main.c"
         "gateway_console.c"
+        "gateway_command_policy.c"
         "gateway_device_state.c"
         "gateway_events.c"
         "gateway_inputs.c"

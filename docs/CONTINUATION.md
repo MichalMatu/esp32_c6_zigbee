@@ -149,7 +149,8 @@ Implementation progress after the generic-coordinator audit:
 - Phase 2 is complete: fixed reporting/binding bitmaps were replaced with bounded records keyed by endpoint/cluster/attribute so Configure Reporting state preserves per-attribute status.
 - Phase 3 introduces the normalized capability access profile and GatewayLink v2: readable, reportable, configurable and commandable masks plus manufacturer/model metadata are carried without exposing raw Zigbee semantics to the future S3. There is intentionally no v1 shim on the active branch.
 - Phase 4 connects `SET_MEASUREMENT_POLICY` to standard Zigbee Configure Reporting through the discovery-task ownership boundary. Supported requests are correlated by `request_id`; APPLIED/CLAMPED/UNSUPPORTED/ERROR is emitted only from real validation/device-response outcomes.
-- The next implementation slice adds normalized writable On/Off first, then Level Control, before building the second-C6 emulator profiles for deterministic round-trip testing.
+- Phase 5 adds normalized writable On/Off over GatewayLink v2. `COMMAND_RESULT=TRANSMITTED` is emitted only from the ezbee AF confirmation callback; the later normalized On/Off measurement remains authoritative device state.
+- The next implementation slice adds normalized Level Control, then the separate second-C6 emulator profiles for deterministic command/state round-trip testing.
 
 Execution order:
 

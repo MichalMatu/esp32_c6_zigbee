@@ -144,6 +144,12 @@ static void log_event(const gateway_event_t *event)
                  event->data.reporting.attribute_id, event->data.reporting.status,
                  event->data.reporting.request_id, (unsigned)event->data.reporting.result);
         break;
+    case GATEWAY_EVENT_COMMAND_RESULT:
+        ESP_LOGI(TAG,
+                 "command result request=%" PRIu32 " result=%u af_status=0x%02x tsn=%u",
+                 event->data.command.request_id, (unsigned)event->data.command.result,
+                 event->data.command.status, event->data.command.tsn);
+        break;
     case GATEWAY_EVENT_INPUT_AVAILABLE:
     case GATEWAY_EVENT_INPUT_UNAVAILABLE:
     {

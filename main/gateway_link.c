@@ -262,6 +262,26 @@ static void handle_control_frame(const gateway_link_frame_t *frame)
         }
         break;
     }
+    case GATEWAY_LINK_CONTROL_COMMAND:
+    {
+        const gateway_link_command_request_t *command = &action.command;
+        const zigbee_gateway_command_submit_result_t result =
+            zigbee_gateway_submit_command(
+                command->request_id, &command->input, command->kind,
+                command->value, command->transition_ms);
+        if (result == ZIGBEE_GATEWAY_COMMAND_QUEUED) {
+            break;
+        }
+        const gateway_link_command_status_t status =
+            result == ZIGBEE_GATEWAY_COMMAND_UNSUPPORTED ? GATEWAY_LINK_COMMAND_UNSUPPORTED :
+            result == ZIGBEE_GATEWAY_COMMAND_INVALID ? GATEWAY_LINK_COMMAND_INVALID :
+            GATEWAY_LINK_COMMAND_ERROR;
+        if (gateway_link_make_command_result_message(
+                command->request_id, status, &response)) {
+            (void)enqueue_message(&response);
+        }
+        break;
+    }
     case GATEWAY_LINK_CONTROL_INVALID:
         ESP_LOGW(TAG, "invalid GatewayLink control payload type=0x%02x", frame->type);
         break;

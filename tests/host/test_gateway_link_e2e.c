@@ -127,6 +127,7 @@ static void test_handshake_fragmentation_and_ping(void)
     assert((c6_hello.features & GATEWAY_LINK_FEATURE_PERMIT_JOIN) != 0U);
     assert((c6_hello.features & GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE) != 0U);
     assert((c6_hello.features & GATEWAY_LINK_FEATURE_MEASUREMENT_POLICY) != 0U);
+    assert((c6_hello.features & GATEWAY_LINK_FEATURE_COMMANDS) != 0U);
 
     uint16_t token_length = 0U;
     assert(gateway_link_encode_u32_payload(
@@ -400,12 +401,60 @@ static void test_snapshot_replay_and_policy_control(void)
     assert(gateway_link_control_parse(&unknown).kind == GATEWAY_LINK_CONTROL_IGNORE);
 }
 
+static void test_command_request_result_round_trip(void)
+{
+    gateway_link_command_request_t request = {0};
+    request.request_id = 7001U;
+    request.input = gateway_input_make(
+        GATEWAY_SOURCE_ZIGBEE, "zigbee:00124b00aabbccdd", 1U);
+    request.kind = GATEWAY_COMMAND_SET_ON_OFF;
+    request.value = 1.0;
+    request.transition_ms = 0U;
+
+    gateway_link_message_t outgoing = {.type = GATEWAY_LINK_MSG_COMMAND_REQUEST};
+    assert(gateway_link_encode_command_request_payload(
+        &request, outgoing.payload, sizeof(outgoing.payload),
+        &outgoing.payload_length) == GATEWAY_LINK_OK);
+    uint8_t encoded[GATEWAY_LINK_MAX_FRAME_BYTES];
+    const size_t encoded_length = encode_message(&outgoing, 900U, encoded);
+
+    gateway_link_stream_decoder_t decoder;
+    gateway_link_stream_init(&decoder);
+    gateway_link_frame_t frame = {0};
+    gateway_link_result_t result = GATEWAY_LINK_OK;
+    size_t frames = 0U;
+    size_t drops = 0U;
+    assert(feed_all(&decoder, encoded, encoded_length,
+                    &frame, &result, &frames, &drops) == GATEWAY_LINK_STREAM_FRAME);
+    assert(frames == 1U && drops == 0U);
+    const gateway_link_control_action_t action = gateway_link_control_parse(&frame);
+    assert(action.kind == GATEWAY_LINK_CONTROL_COMMAND);
+    assert(action.command.request_id == 7001U);
+    assert(action.command.value == 1.0);
+
+    gateway_link_message_t response;
+    assert(gateway_link_make_command_result_message(
+        action.request_id, GATEWAY_LINK_COMMAND_TRANSMITTED, &response));
+    const size_t response_length = encode_message(&response, 901U, encoded);
+    gateway_link_stream_init(&decoder);
+    frames = drops = 0U;
+    assert(feed_all(&decoder, encoded, response_length,
+                    &frame, &result, &frames, &drops) == GATEWAY_LINK_STREAM_FRAME);
+    assert(frame.type == GATEWAY_LINK_MSG_COMMAND_RESULT);
+    gateway_link_command_result_t decoded = {0};
+    assert(gateway_link_decode_command_result_payload(
+        frame.payload, frame.payload_length, &decoded) == GATEWAY_LINK_OK);
+    assert(decoded.request_id == 7001U);
+    assert(decoded.status == GATEWAY_LINK_COMMAND_TRANSMITTED);
+}
+
 int main(void)
 {
     test_handshake_fragmentation_and_ping();
     test_corruption_overflow_and_resync();
     test_sequence_gap_and_wrap_preserved_on_wire();
     test_snapshot_replay_and_policy_control();
+    test_command_request_result_round_trip();
     puts("gateway_link virtual S3 E2E host tests passed");
     return 0;
 }

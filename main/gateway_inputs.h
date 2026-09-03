@@ -33,6 +33,10 @@ typedef enum {
 } gateway_measurement_kind_t;
 
 typedef enum {
+    GATEWAY_COMMAND_SET_ON_OFF = 0,
+} gateway_command_kind_t;
+
+typedef enum {
     GATEWAY_UNIT_NONE,
     GATEWAY_UNIT_CELSIUS,
     GATEWAY_UNIT_PERCENT,

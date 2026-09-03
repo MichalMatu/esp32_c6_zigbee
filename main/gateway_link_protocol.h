@@ -16,6 +16,7 @@
 #define GATEWAY_LINK_FEATURE_MEASUREMENT_POLICY (1UL << 1)
 #define GATEWAY_LINK_FEATURE_PERMIT_JOIN        (1UL << 2)
 #define GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE (1UL << 3)
+#define GATEWAY_LINK_FEATURE_COMMANDS           (1UL << 4)
 
 typedef enum {
     GATEWAY_LINK_OK = 0,
@@ -40,6 +41,8 @@ typedef enum {
     GATEWAY_LINK_MSG_SET_MEASUREMENT_POLICY = 0x20,
     GATEWAY_LINK_MSG_CONFIG_RESULT = 0x21,
     GATEWAY_LINK_MSG_PERMIT_JOIN = 0x22,
+    GATEWAY_LINK_MSG_COMMAND_REQUEST = 0x30,
+    GATEWAY_LINK_MSG_COMMAND_RESULT = 0x31,
 } gateway_link_message_type_t;
 
 typedef enum {
@@ -60,6 +63,14 @@ typedef enum {
     GATEWAY_LINK_CONFIG_UNSUPPORTED = 2,
     GATEWAY_LINK_CONFIG_ERROR = 3,
 } gateway_link_config_status_t;
+
+
+typedef enum {
+    GATEWAY_LINK_COMMAND_TRANSMITTED = 0,
+    GATEWAY_LINK_COMMAND_UNSUPPORTED = 1,
+    GATEWAY_LINK_COMMAND_INVALID = 2,
+    GATEWAY_LINK_COMMAND_ERROR = 3,
+} gateway_link_command_status_t;
 
 typedef struct {
     uint8_t type;
@@ -110,6 +121,20 @@ typedef struct {
     uint32_t request_id;
     uint8_t duration_seconds;
 } gateway_link_permit_join_t;
+
+
+typedef struct {
+    uint32_t request_id;
+    gateway_input_id_t input;
+    gateway_command_kind_t kind;
+    double value;
+    uint32_t transition_ms;
+} gateway_link_command_request_t;
+
+typedef struct {
+    uint32_t request_id;
+    gateway_link_command_status_t status;
+} gateway_link_command_result_t;
 
 uint32_t gateway_link_crc32(const uint8_t *data, size_t length);
 
@@ -189,6 +214,28 @@ gateway_link_result_t gateway_link_decode_permit_join_payload(
     const uint8_t *payload,
     uint16_t length,
     gateway_link_permit_join_t *command);
+
+gateway_link_result_t gateway_link_encode_command_request_payload(
+    const gateway_link_command_request_t *command,
+    uint8_t *payload,
+    size_t capacity,
+    uint16_t *length);
+
+gateway_link_result_t gateway_link_decode_command_request_payload(
+    const uint8_t *payload,
+    uint16_t length,
+    gateway_link_command_request_t *command);
+
+gateway_link_result_t gateway_link_encode_command_result_payload(
+    const gateway_link_command_result_t *result,
+    uint8_t *payload,
+    size_t capacity,
+    uint16_t *length);
+
+gateway_link_result_t gateway_link_decode_command_result_payload(
+    const uint8_t *payload,
+    uint16_t length,
+    gateway_link_command_result_t *result);
 
 gateway_link_result_t gateway_link_encode_u32_payload(
     uint32_t value,

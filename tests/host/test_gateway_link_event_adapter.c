@@ -89,6 +89,33 @@ static void test_reporting_config_result(void)
     assert(!gateway_link_message_from_event(&event, &message));
 }
 
+static void test_command_result_event(void)
+{
+    gateway_event_t event = {0};
+    event.kind = GATEWAY_EVENT_COMMAND_RESULT;
+    event.data.command.request_id = 123U;
+    event.data.command.result = GATEWAY_EVENT_COMMAND_TRANSMITTED;
+    event.data.command.status = 0U;
+    event.data.command.tsn = 9U;
+    gateway_link_message_t message;
+    assert(gateway_link_message_from_event(&event, &message));
+    assert(message.type == GATEWAY_LINK_MSG_COMMAND_RESULT);
+    gateway_link_command_result_t decoded = {0};
+    assert(gateway_link_decode_command_result_payload(
+        message.payload, message.payload_length, &decoded) == GATEWAY_LINK_OK);
+    assert(decoded.request_id == 123U);
+    assert(decoded.status == GATEWAY_LINK_COMMAND_TRANSMITTED);
+
+    event.data.command.result = GATEWAY_EVENT_COMMAND_ERROR;
+    assert(gateway_link_message_from_event(&event, &message));
+    assert(gateway_link_decode_command_result_payload(
+        message.payload, message.payload_length, &decoded) == GATEWAY_LINK_OK);
+    assert(decoded.status == GATEWAY_LINK_COMMAND_ERROR);
+
+    event.data.command.request_id = 0U;
+    assert(!gateway_link_message_from_event(&event, &message));
+}
+
 static void test_protocol_specific_event_is_not_forwarded(void)
 {
     gateway_event_t event = {0};
@@ -105,6 +132,7 @@ int main(void)
     test_input_descriptor_event();
     test_measurement_event();
     test_reporting_config_result();
+    test_command_result_event();
     test_protocol_specific_event_is_not_forwarded();
     puts("gateway_link_event_adapter host tests passed");
     return 0;

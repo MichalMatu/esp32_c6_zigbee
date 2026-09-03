@@ -13,12 +13,14 @@
 #include <ezbee/app_signals.h>
 #include <ezbee/bdb.h>
 #include <ezbee/secur.h>
+#include <ezbee/zcl/cluster/on_off.h>
 #include <ezbee/zcl/cluster/poll_control.h>
 #include <ezbee/zcl/zcl_core.h>
 #include <ezbee/zcl/zcl_general_cmd.h>
 #include <ezbee/zdo/zdo_bind_mgmt.h>
 #include <ezbee/zdo/zdo_dev_srv_disc.h>
 
+#include "gateway_command_policy.h"
 #include "gateway_device_state.h"
 #include "gateway_events.h"
 #include "gateway_reporting_policy.h"
@@ -31,6 +33,7 @@
 #define GATEWAY_CHANNEL_MASK 0x07fff800UL
 #define GATEWAY_DISCOVERY_QUEUE_DEPTH 16U
 #define GATEWAY_MAX_ASYNC_CONTEXTS 32U
+#define GATEWAY_MAX_COMMAND_CONTEXTS 16U
 #define GATEWAY_ZIGBEE_LOCK_TIMEOUT_MS 100U
 #define GATEWAY_DISCOVERY_MAX_RETRIES 3U
 #define GATEWAY_DISCOVERY_RETRY_DELAY_MS 50U
@@ -49,6 +52,7 @@ typedef enum {
     DISCOVERY_BIND_CLUSTER,
     DISCOVERY_CONFIG_REPORTING,
     DISCOVERY_EXTERNAL_REPORTING,
+    DISCOVERY_EXTERNAL_COMMAND,
 } discovery_kind_t;
 
 typedef struct {
@@ -64,6 +68,8 @@ typedef struct {
     bool config_clamped;
     gateway_input_id_t external_input;
     gateway_measurement_kind_t external_kind;
+    gateway_command_plan_t command_plan;
+    uint32_t command_request_id;
 } discovery_job_t;
 
 typedef struct {
@@ -75,7 +81,18 @@ typedef struct {
     uint8_t retry_count;
 } async_context_t;
 
+
+typedef struct {
+    bool in_use;
+    device_ref_t device;
+    ezb_shortaddr_t route_short_addr;
+    uint8_t endpoint;
+    uint32_t request_id;
+    gateway_input_id_t input;
+} command_context_t;
+
 static async_context_t s_async_contexts[GATEWAY_MAX_ASYNC_CONTEXTS];
+static command_context_t s_command_contexts[GATEWAY_MAX_COMMAND_CONTEXTS];
 static StaticQueue_t s_discovery_queue_storage;
 static uint8_t s_discovery_queue_buffer[
     GATEWAY_DISCOVERY_QUEUE_DEPTH * sizeof(discovery_job_t)
@@ -1109,6 +1126,149 @@ static void handle_external_reporting(const discovery_job_t *external)
     reporting->request_clamped = external->config_clamped;
 }
 
+static void publish_command_result(
+    const gateway_input_id_t *input,
+    uint32_t request_id,
+    gateway_event_command_result_t result,
+    uint8_t status,
+    uint8_t tsn)
+{
+    if (input == NULL || request_id == 0U) {
+        return;
+    }
+    gateway_event_t event = gateway_event_make_input(GATEWAY_EVENT_COMMAND_RESULT, input);
+    event.data.command.request_id = request_id;
+    event.data.command.result = result;
+    event.data.command.status = status;
+    event.data.command.tsn = tsn;
+    gateway_event_publish(&event);
+}
+
+static command_context_t *command_context_alloc(
+    device_slot_t *slot,
+    const gateway_input_id_t *input,
+    uint8_t endpoint,
+    uint32_t request_id)
+{
+    if (slot == NULL || input == NULL || request_id == 0U) {
+        return NULL;
+    }
+    for (size_t i = 0U; i < GATEWAY_MAX_COMMAND_CONTEXTS; ++i) {
+        if (!s_command_contexts[i].in_use) {
+            s_command_contexts[i] = (command_context_t){
+                .in_use = true,
+                .device = gateway_device_ref_for(slot),
+                .route_short_addr = slot->device.short_addr,
+                .endpoint = endpoint,
+                .request_id = request_id,
+                .input = *input,
+            };
+            ++slot->pending_requests;
+            return &s_command_contexts[i];
+        }
+    }
+    return NULL;
+}
+
+static void command_context_release(command_context_t *context)
+{
+    if (context == NULL || !context->in_use) {
+        return;
+    }
+    device_slot_t *slot = gateway_device_from_ref(context->device, true);
+    if (slot != NULL && slot->pending_requests != 0U) {
+        --slot->pending_requests;
+        gateway_device_maybe_reclaim(slot);
+    }
+    context->in_use = false;
+}
+
+static void command_confirm_callback(ezb_af_user_cnf_t *cnf, void *user_ctx)
+{
+    command_context_t *context = user_ctx;
+    if (context == NULL || !context->in_use) {
+        return;
+    }
+    const uint8_t status = cnf == NULL ? 0xffU : cnf->status;
+    const uint8_t tsn = cnf == NULL ? 0xffU : cnf->tsn;
+    device_slot_t *slot = gateway_device_from_ref(context->device, true);
+    const bool route_current = slot != NULL && slot->state == SLOT_ACTIVE &&
+        slot->device.short_addr == context->route_short_addr;
+    publish_command_result(
+        &context->input,
+        context->request_id,
+        cnf != NULL && status == 0U && route_current ?
+            GATEWAY_EVENT_COMMAND_TRANSMITTED : GATEWAY_EVENT_COMMAND_ERROR,
+        status,
+        tsn);
+    command_context_release(context);
+}
+
+static void handle_external_command(const discovery_job_t *job)
+{
+    if (job == NULL || job->command_request_id == 0U) {
+        return;
+    }
+    uint8_t ieee[8];
+    uint8_t endpoint = 0U;
+    if (!gateway_zigbee_parse_input_identity(&job->external_input, ieee, &endpoint)) {
+        publish_command_result(
+            &job->external_input, job->command_request_id,
+            GATEWAY_EVENT_COMMAND_INVALID, 0xffU, 0xffU);
+        return;
+    }
+    device_slot_t *slot = gateway_device_find_by_ieee(ieee, false);
+    endpoint_state_t *state = slot == NULL ? NULL : endpoint_state(slot, endpoint, false);
+    if (slot == NULL || state == NULL || slot->device.short_addr == GATEWAY_INVALID_SHORT_ADDR) {
+        publish_command_result(
+            &job->external_input, job->command_request_id,
+            GATEWAY_EVENT_COMMAND_ERROR, 0xffU, 0xffU);
+        return;
+    }
+    if ((state->input_profile.commandable & job->command_plan.capability) == 0U) {
+        publish_command_result(
+            &job->external_input, job->command_request_id,
+            GATEWAY_EVENT_COMMAND_UNSUPPORTED, 0xffU, 0xffU);
+        return;
+    }
+    command_context_t *context = command_context_alloc(
+        slot, &job->external_input, endpoint, job->command_request_id);
+    if (context == NULL) {
+        publish_command_result(
+            &job->external_input, job->command_request_id,
+            GATEWAY_EVENT_COMMAND_ERROR, 0xffU, 0xffU);
+        return;
+    }
+    if (!esp_zigbee_lock_acquire(pdMS_TO_TICKS(GATEWAY_ZIGBEE_LOCK_TIMEOUT_MS))) {
+        publish_command_result(
+            &job->external_input, job->command_request_id,
+            GATEWAY_EVENT_COMMAND_ERROR, 0xffU, 0xffU);
+        command_context_release(context);
+        return;
+    }
+    const ezb_zcl_on_off_cmd_t request = {
+        .cmd_ctrl = {
+            .dst_addr = EZB_ADDRESS_SHORT(slot->device.short_addr),
+            .dst_ep = endpoint,
+            .src_ep = GATEWAY_ENDPOINT,
+            .dis_default_rsp = false,
+            .cnf_ctx = {
+                .cb = command_confirm_callback,
+                .user_ctx = context,
+            },
+        },
+    };
+    const ezb_err_t send_result = job->command_plan.target_on ?
+        ezb_zcl_on_off_on_cmd_req(&request) : ezb_zcl_on_off_off_cmd_req(&request);
+    esp_zigbee_lock_release();
+    if (send_result != EZB_ERR_NONE && context->in_use) {
+        publish_command_result(
+            &job->external_input, job->command_request_id,
+            GATEWAY_EVENT_COMMAND_ERROR, 0xffU, 0xffU);
+        command_context_release(context);
+    }
+}
+
 static void discovery_task(void *arg)
 {
     (void)arg;
@@ -1119,6 +1279,10 @@ static void discovery_task(void *arg)
         }
         if (job.kind == DISCOVERY_EXTERNAL_REPORTING) {
             handle_external_reporting(&job);
+            continue;
+        }
+        if (job.kind == DISCOVERY_EXTERNAL_COMMAND) {
+            handle_external_command(&job);
             continue;
         }
         device_slot_t *slot = gateway_device_from_ref(job.device, true);
@@ -1454,6 +1618,46 @@ esp_err_t zigbee_gateway_start(void)
 {
     return xTaskCreate(zigbee_task, "zigbee_main", 6144, NULL, 5, NULL) == pdPASS ?
         ESP_OK : ESP_ERR_NO_MEM;
+}
+
+zigbee_gateway_command_submit_result_t zigbee_gateway_submit_command(
+    uint32_t request_id,
+    const gateway_input_id_t *input,
+    gateway_command_kind_t kind,
+    double value,
+    uint32_t transition_ms)
+{
+    if (request_id == 0U || input == NULL) {
+        return ZIGBEE_GATEWAY_COMMAND_INVALID;
+    }
+    if (input->source != GATEWAY_SOURCE_ZIGBEE) {
+        return ZIGBEE_GATEWAY_COMMAND_UNSUPPORTED;
+    }
+    uint8_t ieee[8];
+    uint8_t endpoint = 0U;
+    if (!gateway_zigbee_parse_input_identity(input, ieee, &endpoint)) {
+        return ZIGBEE_GATEWAY_COMMAND_INVALID;
+    }
+    gateway_command_plan_t plan;
+    const gateway_command_plan_result_t plan_result = gateway_command_policy_plan(
+        kind, value, transition_ms, &plan);
+    if (plan_result == GATEWAY_COMMAND_PLAN_UNSUPPORTED) {
+        return ZIGBEE_GATEWAY_COMMAND_UNSUPPORTED;
+    }
+    if (plan_result != GATEWAY_COMMAND_PLAN_OK) {
+        return ZIGBEE_GATEWAY_COMMAND_INVALID;
+    }
+    if (!stack_is_ready() || s_discovery_queue == NULL) {
+        return ZIGBEE_GATEWAY_COMMAND_ERROR;
+    }
+    const discovery_job_t job = {
+        .kind = DISCOVERY_EXTERNAL_COMMAND,
+        .external_input = *input,
+        .command_plan = plan,
+        .command_request_id = request_id,
+    };
+    return xQueueSend(s_discovery_queue, &job, 0U) == pdPASS ?
+        ZIGBEE_GATEWAY_COMMAND_QUEUED : ZIGBEE_GATEWAY_COMMAND_ERROR;
 }
 
 zigbee_gateway_policy_submit_result_t zigbee_gateway_set_measurement_policy(

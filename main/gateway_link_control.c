@@ -15,7 +15,8 @@ static bool make_hello(uint8_t type, gateway_link_message_t *message)
         .max_version = GATEWAY_LINK_PROTOCOL_VERSION,
         .max_frame_bytes = GATEWAY_LINK_MAX_FRAME_BYTES,
         .features = GATEWAY_LINK_FEATURE_SNAPSHOT | GATEWAY_LINK_FEATURE_MEASUREMENT_POLICY |
-            GATEWAY_LINK_FEATURE_PERMIT_JOIN | GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE,
+            GATEWAY_LINK_FEATURE_PERMIT_JOIN | GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE |
+            GATEWAY_LINK_FEATURE_COMMANDS,
     };
     return gateway_link_encode_hello_payload(
         &hello,
@@ -91,6 +92,20 @@ gateway_link_control_action_t gateway_link_control_parse(
         return action;
     }
 
+    case GATEWAY_LINK_MSG_COMMAND_REQUEST:
+    {
+        gateway_link_command_request_t command = {0};
+        if (gateway_link_decode_command_request_payload(
+                frame->payload, frame->payload_length, &command) != GATEWAY_LINK_OK) {
+            action.kind = GATEWAY_LINK_CONTROL_INVALID;
+            return action;
+        }
+        action.kind = GATEWAY_LINK_CONTROL_COMMAND;
+        action.request_id = command.request_id;
+        action.command = command;
+        return action;
+    }
+
     default:
         action.kind = GATEWAY_LINK_CONTROL_IGNORE;
         return action;
@@ -143,6 +158,25 @@ bool gateway_link_make_config_result_message(
         .status = status,
     };
     return gateway_link_encode_config_result_payload(
+        &result, message->payload, sizeof(message->payload),
+        &message->payload_length) == GATEWAY_LINK_OK;
+}
+
+bool gateway_link_make_command_result_message(
+    uint32_t request_id,
+    gateway_link_command_status_t status,
+    gateway_link_message_t *message)
+{
+    if (message == NULL) {
+        return false;
+    }
+    memset(message, 0, sizeof(*message));
+    message->type = GATEWAY_LINK_MSG_COMMAND_RESULT;
+    const gateway_link_command_result_t result = {
+        .request_id = request_id,
+        .status = status,
+    };
+    return gateway_link_encode_command_result_payload(
         &result, message->payload, sizeof(message->payload),
         &message->payload_length) == GATEWAY_LINK_OK;
 }

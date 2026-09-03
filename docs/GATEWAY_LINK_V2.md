@@ -25,7 +25,7 @@ Every input-bearing payload starts with `source:u8, channel:u8, id_length:u8, id
 
 A bit is advertised only when C6 has an explicit standard implementation. Manufacturer-specific or Tuya-style behavior must not silently set generic bits.
 
-At this phase, standard Zigbee temperature, humidity and battery-percentage reporting policy populate `reportable` and `configurable`. Standard On/Off server endpoints populate `commandable`; the actual command request/result path is added in the following implementation phase. Local SCD4x exposes readable temperature/humidity/CO2 but no configurable measurement policy yet.
+Standard Zigbee temperature, humidity and battery-percentage reporting policy populate `reportable` and `configurable`. Standard On/Off server endpoints populate `commandable` and accept the normalized `SET_ON_OFF` command. Local SCD4x exposes readable temperature/humidity/CO2 but no configurable measurement policy or command path yet.
 
 ## INPUT_DESCRIPTOR payload
 
@@ -37,8 +37,12 @@ Manufacturer and model are bounded to 23 data bytes each plus local NUL terminat
 
 ## Other messages
 
-Message numbers remain: HELLO/ACK `0x01/0x02`, PING/PONG `0x03/0x04`, snapshot `0x05..0x07`, INPUT_DESCRIPTOR `0x10`, MEASUREMENT `0x11`, SET_MEASUREMENT_POLICY `0x20`, CONFIG_RESULT `0x21`, PERMIT_JOIN `0x22`.
+Message numbers are: HELLO/ACK `0x01/0x02`, PING/PONG `0x03/0x04`, snapshot `0x05..0x07`, INPUT_DESCRIPTOR `0x10`, MEASUREMENT `0x11`, SET_MEASUREMENT_POLICY `0x20`, CONFIG_RESULT `0x21`, PERMIT_JOIN `0x22`, COMMAND_REQUEST `0x30`, COMMAND_RESULT `0x31`.
 
-HELLO advertises `snapshot`, `measurement-policy`, `permit-join` and `capability-profile`. For supported Zigbee inputs, `SET_MEASUREMENT_POLICY` is translated into a standard Configure Reporting request. The C6 returns `CONFIG_RESULT` only after the device response, or an explicit normalized error/unsupported result if the request cannot be applied. Interval quantization or reportable-change quantization is returned as `CLAMPED` after a successful device response.
+HELLO advertises `snapshot`, `measurement-policy`, `permit-join`, `capability-profile` and `commands`. For supported Zigbee inputs, `SET_MEASUREMENT_POLICY` is translated into a standard Configure Reporting request. The C6 returns `CONFIG_RESULT` only after the device response, or an explicit normalized error/unsupported result if the request cannot be applied. Interval quantization or reportable-change quantization is returned as `CLAMPED` after a successful device response.
+
+`COMMAND_REQUEST` payload is `request_id:u32`, stable input reference, `kind:u8`, `value:f64`, `transition_ms:u32`. The first normalized command kind is `SET_ON_OFF`; it accepts value `0` or `1` and requires zero transition time. `COMMAND_RESULT` is `request_id:u32,status:u8` with `TRANSMITTED`, `UNSUPPORTED`, `INVALID` and `ERROR`.
+
+`TRANSMITTED` means the Zigbee AF transmission confirmation completed successfully. It does **not** assert that the actuator applied the requested state. A subsequent normalized On/Off `MEASUREMENT` report remains the authoritative state observation. This distinction keeps transport acknowledgement separate from device state.
 
 MEASUREMENT, SET_MEASUREMENT_POLICY, CONFIG_RESULT and PERMIT_JOIN payload encodings remain otherwise unchanged from v1. Supported measurement-policy targets are currently temperature, relative humidity and battery percentage, matching the standard reporting policy table. Requests are routed by authoritative Zigbee IEEE input identity plus endpoint; the GatewayLink RX task never uses a mutable short address as application identity. A peer must negotiate protocol version 2; the active branch intentionally does not decode v1 frames.
