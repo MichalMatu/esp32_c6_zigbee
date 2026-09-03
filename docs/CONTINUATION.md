@@ -139,9 +139,26 @@ The I2C backend is host-tested and firmware-build-tested. It has **not** yet bee
 
 ## Active goal
 
-Next milestone: physical C6 ↔ S3 GatewayLink over I2C while the local SCD4x continues to share the C6 bus safely.
+Next milestone: **build and validate the C6-only Zigbee laboratory before physically wiring the S3**. The coordinator should reach a generic, self-tested Zigbee capability baseline first, so later S3/I2C work debugs only the inter-MCU link and application integration rather than mixing those failures with Zigbee discovery/reporting defects.
 
-Required end-to-end behaviors:
+Do not add or solder the S3 yet. Keep UART as the known-working GatewayLink observation path while the Zigbee side is generalized and tested.
+
+Execution order:
+
+1. audit the current coordinator against the Generic Zigbee Device Interview & Capability Discovery goal below;
+2. implement a separate second-C6 Zigbee end-device emulator/test application without contaminating the production coordinator image;
+3. make standard endpoint/cluster discovery, capability normalization, bind/reporting setup, commands, and configuration results generic where ZCL allows it;
+4. build a deterministic self-check loop using the coordinator C6 plus emulator C6, with host/UART observation of normalized GatewayLink output;
+5. exercise happy paths, rejoin/identity changes, sleepy behavior, reporting policy, command round-trips, malformed/unsupported cases, and bounded-failure behavior;
+6. keep the real SONOFF SNZB-02D and local SCD4x as real-world regressions while the emulator drives systematic coverage;
+7. run host tests plus dual-C6 hardware regression/soak and freeze a new verified Zigbee-lab baseline;
+8. only after that freeze, proceed to physical C6 ↔ S3 I2C integration.
+
+Before automating tests with two attached ESP32-C6 boards, verify or define distinct Local Agent hardware resource identities so coordinator and emulator ownership cannot be confused. Do not guess resource names from this document.
+
+### Deferred physical C6 ↔ S3 milestone
+
+After the Zigbee-laboratory baseline is frozen, required C6↔S3 end-to-end behaviors are:
 
 1. Implement the matching GatewayLink I2C slave/mailbox side on S3 in the S3 repository.
 2. Connect C6 and S3 physically with common ground, SDA, and SCL using the agreed pins/voltage domain.
@@ -158,9 +175,9 @@ Do not delete the UART backend. UART remains the known-working fallback/diagnost
 
 A later cleanup may split logical packet encoding from UART-specific COBS stream framing more strictly, but do not perform that refactor merely as a prerequisite for the first physical I2C validation unless evidence shows it is necessary.
 
-## Planned next major milestone — Generic Zigbee Device Interview & Capability Discovery
+## Active milestone — Generic Zigbee Device Interview & Capability Discovery
 
-After physical C6↔S3 transport is proven, the next major C6 feature is **Generic Zigbee Device Interview & Capability Discovery**. The goal is to stop treating supported devices as model-specific special cases wherever standard ZCL metadata is sufficient.
+Before physical C6↔S3 wiring, the next major C6 feature is **Generic Zigbee Device Interview & Capability Discovery**. The goal is to stop treating supported devices as model-specific special cases wherever standard ZCL metadata is sufficient.
 
 The C6 should generically discover and normalize device capabilities from the Zigbee network:
 
@@ -226,7 +243,7 @@ emulated device profile
     ↓ join/interview/bind/reporting
 C6 coordinator
     ↓ normalized GatewayLink output
-host/S3 test observer
+host/UART test observer
     ↓ assertions
 expected capabilities + measurements + configuration behavior
 ```
@@ -245,6 +262,25 @@ C6 + GatewayLink
 ```
 
 This emulator is a test harness, not a replacement for physical validation with real devices. Keep at least the existing SONOFF as a real-world regression device, and add selected commercial devices only where they expose behavior the emulator cannot faithfully represent.
+
+Prefer the emulator as a separate ESP-IDF test application/profile inside this C6 repository rather than compile-time emulator branches inside the production coordinator firmware. Choose the exact directory/layout only after auditing the repository's existing test-app conventions.
+
+### Zigbee laboratory completion gate before S3
+
+Do not start physical S3 wiring merely because individual emulator profiles work. The Zigbee-lab phase is complete only when evidence shows all of the following:
+
+- generic interview discovers endpoints and supported standard clusters without model-specific branching for the covered standard profiles;
+- normalized capabilities are stable and independent of Zigbee short-address changes; IEEE identity remains authoritative;
+- standard temperature, humidity, battery, occupancy/contact, on/off, level-control, multi-endpoint, and mixed-measurement emulator profiles have deterministic regression coverage where implemented;
+- Configure Reporting requests and their success/failure results are observable, including min interval, max interval, and reportable change for supported reportable attributes;
+- writable/controllable profiles pass reverse command/configuration round-trips through the coordinator;
+- rejoin, changed short address, duplicate lifecycle signals, sleepy timing, unsupported reporting, delayed/missing responses, malformed values, and reporting bursts fail visibly and remain bounded;
+- normalized GatewayLink descriptors/measurements/state/configuration results can be asserted from the existing UART/host side without an S3 attached;
+- the paired real SONOFF and local SCD4x still pass regression checks;
+- queue/drop/heap/stack observability shows no progressive degradation in a bounded dual-C6 soak;
+- the resulting coordinator code is host-tested, hardware-tested, documented, and frozen with a new immutable recovery tag before S3 integration begins.
+
+The future S3 frontend and automation engine should consume exactly this normalized contract. Physical UART/I2C selection must not change Zigbee semantics or capability representation.
 
 ### Reporting-policy goal
 
