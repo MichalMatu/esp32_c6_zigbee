@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-generic-zigbee-phase4-v2",
+  "task_digest": "b1edcb351f2640e8600e0487c656f129245291fa9ec5a52d319318fd0d8d80d6",
+  "idle_timeout": 300,
+  "task_timeout": 5400,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T19:09:54.945854+00:00",
+  "attempt_id": "54d6fb3660410e6c8c230df2",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 1396,
+  "updated_at": "2026-09-03T19:09:54.945997+00:00",
+  "pid": 1396
+}
