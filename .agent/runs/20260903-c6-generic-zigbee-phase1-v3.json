@@ -1,16 +1,16 @@
 {
   "event": "command_started",
   "phase": "commands",
-  "index": 3,
+  "index": 4,
   "total": 5,
-  "command": "set -euo pipefail\ncc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zcl_value.c main/gateway_zcl_value.c -lm -o /tmp/test_gateway_zcl_value && /tmp/test_gateway_zcl_value\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_device_state.c main/gateway_device_state.c -o /tmp/test_gateway_device_state && /tmp/test_gateway_device_state\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_inputs.c main/gateway_inputs.c -o /tmp/test_gateway_inputs && /tmp/test_gateway_inputs\ncc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zigbee_input.c main/gateway_zigbee_input.c main/gateway_zcl_value.c main/gateway_inputs.c -lm -o /tmp/test_gateway_zigbee_input && /tmp/test_gateway_zigbee_input\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_protocol.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_protocol && /tmp/test_gateway_link_protocol\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_event_adapter.c main/gateway_link_event_adapter.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_event_adapter && /tmp/test_gateway_link_event_adapter\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_stream.c main/gateway_link_stream.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_stream && /tmp/test_gateway_link_stream\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_snapshot_cache.c main/gateway_link_snapshot_cache.c -o /tmp/test_gateway_link_snapshot_cache && /tmp/test_gateway_link_snapshot_cache\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_control.c main/gateway_link_control.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_control && /tmp/test_gateway_link_control\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_e2e.c main/gateway_link_protocol.c main/gateway_link_stream.c main/gateway_link_control.c main/gateway_link_snapshot_cache.c main/gateway_inputs.c -lm -o /tmp/test_gateway_link_e2e && /tmp/test_gateway_link_e2e\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_reporting_policy.c main/gateway_reporting_policy.c -o /tmp/test_gateway_reporting_policy && /tmp/test_gateway_reporting_policy\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_i2c_mailbox.c main/gateway_i2c_mailbox.c -o /tmp/test_gateway_i2c_mailbox && /tmp/test_gateway_i2c_mailbox",
-  "pid": 8408,
+  "command": "set -euo pipefail\n. ~/esp/esp-idf-v5.5.4/export.sh >/dev/null\nidf.py set-target esp32c6\nidf.py build\nrm -f sdkconfig.old\ngit diff --check",
+  "pid": 8581,
   "timeout": 1800,
   "idle_timeout": 300,
   "memory_limit_mb": 4096,
-  "started_at": "2026-09-03T17:39:40.018037+00:00",
-  "stage_name": "command-3",
-  "stage_index": 3,
+  "started_at": "2026-09-03T17:39:47.041954+00:00",
+  "stage_name": "command-4",
+  "stage_index": 4,
   "stage_total": 5,
   "stage_phase": "commands",
   "task_id": "20260903-c6-generic-zigbee-phase1-v3",
@@ -18,5 +18,5 @@
   "task_digest": "45c946a9cfd7d46b9af043700acf4f7dd6eccd3a5fa2b7153477cc253f59d10d",
   "daemon_version": "4.15.0",
   "daemon_pid": 8024,
-  "updated_at": "2026-09-03T17:39:40.113130+00:00"
+  "updated_at": "2026-09-03T17:39:47.083716+00:00"
 }
