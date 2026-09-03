@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-emulator-profiles-api-v2",
+  "task_digest": "535d73d42a0ed2706f414305c7eabbc8b40e64434ab62e6412155d3b87709cad",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T21:11:04.149496+00:00",
+  "attempt_id": "9a452a3c26ddf629cbde7f24",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 26003,
+  "updated_at": "2026-09-03T21:11:04.149619+00:00",
+  "pid": 26003
+}
