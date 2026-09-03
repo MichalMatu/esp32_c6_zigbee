@@ -9,7 +9,7 @@
 #include "freertos/task.h"
 
 #include "gateway_events.h"
-#include "gateway_uart_link.h"
+#include "gateway_link.h"
 
 static const char *TAG = "gateway_transport";
 
@@ -191,9 +191,9 @@ static void gateway_transport_task(void *arg)
     for (;;) {
         if (gateway_event_receive(&event, pdMS_TO_TICKS(1000))) {
             log_event(&event);
-            gateway_uart_link_publish_event(&event);
+            gateway_link_publish_event(&event);
         }
-        const uint32_t link_dropped = gateway_uart_link_take_dropped();
+        const uint32_t link_dropped = gateway_link_take_dropped();
         if (link_dropped != 0U) {
             ESP_LOGW(TAG, "dropped %" PRIu32 " GatewayLink messages because the UART TX queue was full", link_dropped);
         }
