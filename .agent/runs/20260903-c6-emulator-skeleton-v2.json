@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-emulator-skeleton-v2",
+  "task_digest": "9a7a29d51989130763dbc396b53f457ab933357a0bd386b74f0c40c1cd54e569",
+  "idle_timeout": 300,
+  "task_timeout": 5400,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T20:52:02.608220+00:00",
+  "attempt_id": "7e6513af2e2a1b785fc2b7c8",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 8380,
+  "updated_at": "2026-09-03T20:52:02.608484+00:00",
+  "pid": 8380
+}
