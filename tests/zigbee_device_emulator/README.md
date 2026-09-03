@@ -20,3 +20,7 @@ Hardware flashing remains a separate gate: verify two distinct Local Agent ESP32
 Menuconfig also exposes explicit report requests, a 24-update burst mode, invalid-value injection, and the tick interval. Invalid injection uses the Zigbee Temperature Measurement invalid sentinel `0x8000`, Relative Humidity invalid sentinel `0xffff`, and reserved Occupancy bitmap `0x02` every sixth tick. These modes are compile-time deterministic and require no production firmware coupling.
 
 Explicit report requests target coordinator short address `0x0000`, endpoint 1, which matches the Zigbee coordinator role and this repository's production gateway endpoint. The Zigbee stack still applies its reporting configuration rules.
+
+## Writable command round-trip
+
+For `On/Off + Level` and `Mixed multi-endpoint`, standard server-side On/Off and Level commands are handled by the Zigbee stack. The emulator watches `EZB_ZCL_CORE_SET_ATTR_VALUE_CB_ID`; when the server OnOff or CurrentLevel attribute changes, it queues a report request after a short delay so the coordinator can observe authoritative post-command state rather than treating AF transmission confirmation as application state.

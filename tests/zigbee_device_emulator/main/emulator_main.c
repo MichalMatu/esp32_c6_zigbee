@@ -5,6 +5,7 @@
 #include "esp_log.h"
 #include "esp_zigbee.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 #include "freertos/task.h"
 #include "nvs_flash.h"
 
@@ -32,6 +33,10 @@
 #define EMULATOR_INVALID_TEMPERATURE ((int16_t)0x8000)
 #define EMULATOR_INVALID_HUMIDITY 0xffffU
 #define EMULATOR_RESERVED_OCCUPANCY 0x02U
+#define EMULATOR_ATTR_ON_OFF 0x0000U
+#define EMULATOR_ATTR_CURRENT_LEVEL 0x0000U
+#define EMULATOR_ROUNDTRIP_QUEUE_DEPTH 8U
+#define EMULATOR_ROUNDTRIP_REPORT_DELAY_MS 20U
 
 #define EMULATOR_CLUSTER_TEMPERATURE 0x0402U
 #define EMULATOR_CLUSTER_HUMIDITY 0x0405U
@@ -57,6 +62,18 @@ static const char *TAG = "zb_emulator";
 static const uint8_t s_manufacturer[] = {5U, 'C', '6', 'L', 'a', 'b'};
 static const uint8_t s_model[] = {8U, 'C', '6', 'E', 'm', 'u', 'V', '2', '0'};
 
+typedef struct {
+    uint8_t endpoint;
+    uint16_t cluster;
+    uint16_t attribute;
+} emulator_roundtrip_event_t;
+
+static StaticQueue_t s_roundtrip_queue_storage;
+static uint8_t s_roundtrip_queue_buffer[
+    EMULATOR_ROUNDTRIP_QUEUE_DEPTH * sizeof(emulator_roundtrip_event_t)
+];
+static QueueHandle_t s_roundtrip_queue;
+
 static bool app_signal_handler(const ezb_app_signal_t *signal)
 {
     const ezb_app_signal_type_t type = ezb_app_signal_get_type(signal);
@@ -76,9 +93,34 @@ static bool app_signal_handler(const ezb_app_signal_t *signal)
 static void zcl_core_action_handler(
     ezb_zcl_core_action_callback_id_t callback_id, void *message)
 {
-    (void)message;
-    if (callback_id == EZB_ZCL_CORE_SET_ATTR_VALUE_CB_ID) {
-        ESP_LOGI(TAG, "ZCL server attribute changed");
+    if (callback_id != EZB_ZCL_CORE_SET_ATTR_VALUE_CB_ID ||
+        message == NULL || s_roundtrip_queue == NULL) {
+        return;
+    }
+    const ezb_zcl_set_attr_value_message_t *changed = message;
+    if (changed->info.cluster_role != EZB_ZCL_CLUSTER_SERVER) {
+        return;
+    }
+
+    emulator_roundtrip_event_t event = {
+        .endpoint = changed->info.dst_ep,
+        .cluster = changed->info.cluster_id,
+        .attribute = 0U,
+    };
+    if (event.cluster == EMULATOR_CLUSTER_ON_OFF) {
+        event.attribute = EMULATOR_ATTR_ON_OFF;
+    } else if (event.cluster == EMULATOR_CLUSTER_LEVEL) {
+        event.attribute = EMULATOR_ATTR_CURRENT_LEVEL;
+    } else {
+        return;
+    }
+
+    if (xQueueSend(s_roundtrip_queue, &event, 0) != pdPASS) {
+        ESP_LOGW(TAG, "roundtrip report queue full ep=%u cluster=0x%04x",
+                 event.endpoint, event.cluster);
+    } else {
+        ESP_LOGI(TAG, "writable state changed ep=%u cluster=0x%04x; report queued",
+                 event.endpoint, event.cluster);
     }
 }
 
@@ -243,6 +285,27 @@ static bool request_report(uint8_t endpoint, uint16_t cluster, uint16_t attribut
     return true;
 }
 
+static void roundtrip_report_task(void *arg)
+{
+    (void)arg;
+    emulator_roundtrip_event_t event;
+    for (;;) {
+        if (xQueueReceive(s_roundtrip_queue, &event, portMAX_DELAY) != pdPASS) {
+            continue;
+        }
+        vTaskDelay(pdMS_TO_TICKS(EMULATOR_ROUNDTRIP_REPORT_DELAY_MS));
+        if (!esp_zigbee_lock_acquire(pdMS_TO_TICKS(100))) {
+            ESP_LOGW(TAG, "roundtrip report lock timeout ep=%u cluster=0x%04x",
+                     event.endpoint, event.cluster);
+            continue;
+        }
+        const bool sent = request_report(event.endpoint, event.cluster, event.attribute);
+        esp_zigbee_lock_release();
+        ESP_LOGI(TAG, "roundtrip report ep=%u cluster=0x%04x sent=%u",
+                 event.endpoint, event.cluster, (unsigned)sent);
+    }
+}
+
 static bool set_server_attr(
     uint8_t endpoint, uint16_t cluster, uint16_t attribute, void *value)
 {
@@ -356,6 +419,16 @@ static void zigbee_task(void *arg)
         vTaskDelete(NULL);
         return;
     }
+    s_roundtrip_queue = xQueueCreateStatic(
+        EMULATOR_ROUNDTRIP_QUEUE_DEPTH,
+        sizeof(emulator_roundtrip_event_t),
+        s_roundtrip_queue_buffer,
+        &s_roundtrip_queue_storage);
+    if (s_roundtrip_queue == NULL) {
+        ESP_LOGE(TAG, "roundtrip queue creation failed");
+        vTaskDelete(NULL);
+        return;
+    }
     ezb_app_signal_add_handler(app_signal_handler);
     ezb_zcl_core_action_handler_register(zcl_core_action_handler);
     if (esp_zigbee_start(true) != ESP_OK) {
@@ -366,6 +439,11 @@ static void zigbee_task(void *arg)
     if (xTaskCreate(emulation_task, "emu_values", 3072, NULL, 4, NULL) != pdPASS) {
         ESP_LOGE(TAG, "emulation task creation failed");
     }
+#if CONFIG_EMULATOR_PROFILE_ONOFF_LEVEL || CONFIG_EMULATOR_PROFILE_MIXED
+    if (xTaskCreate(roundtrip_report_task, "emu_roundtrip", 3072, NULL, 4, NULL) != pdPASS) {
+        ESP_LOGE(TAG, "roundtrip report task creation failed");
+    }
+#endif
     ESP_LOGI(TAG, "selected Zigbee emulator profile started");
     esp_zigbee_launch_mainloop();
 }
