@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-ias-production-path-v1",
+  "task_digest": "eb795d0d8cd4e5610c1afd404efe5e469bd765434bbfa4a8e8627c086e0c4084",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T23:44:12.307470+00:00",
+  "attempt_id": "c0eb26a7e174e1ef38439241",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 86220,
+  "updated_at": "2026-09-03T23:44:12.307625+00:00",
+  "pid": 86220
+}
