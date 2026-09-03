@@ -1,16 +1,16 @@
 {
   "event": "command_started",
   "phase": "commands",
-  "index": 1,
+  "index": 3,
   "total": 4,
-  "command": "set -eu\ngit fetch -q origin agent-control\npython3 - <<'PY'\nimport json, subprocess\nraw = subprocess.check_output(['git','show','origin/agent-control:.agent/tasks/20260903-c6-i2c-backend-v3.json'], text=True)\ncmds = json.loads(raw)['commands']\nfor i in (0,1,2):\n    r = subprocess.run(['bash','-lc',cmds[i]])\n    if r.returncode:\n        raise SystemExit(r.returncode)\nPY\npython3 - <<'PY'\nfrom pathlib import Path\np = Path('main/gateway_i2c_link.c')\ntext = p.read_text()\nneedle = '#define LINK_I2C_IO_TIMEOUT_MS 20U\\n#define LINK_I2C_MISSING_PEER_BACKOFF_MS 1000U\\n'\nreplacement = '''#define LINK_I2C_IO_TIMEOUT_MS 20U\n#define LINK_I2C_MISSING_PEER_BACKOFF_MS 1000U\n\n#ifndef CONFIG_GATEWAY_LINK_I2C_ADDRESS\n#define CONFIG_GATEWAY_LINK_I2C_ADDRESS 0x42\n#endif\n#ifndef CONFIG_GATEWAY_LINK_I2C_SPEED_HZ\n#define CONFIG_GATEWAY_LINK_I2C_SPEED_HZ 400000\n#endif\n'''\nif needle not in text:\n    raise SystemExit('I2C defaults insertion point not found')\np.write_text(text.replace(needle, replacement, 1))\nPY\ngit diff --check",
-  "pid": 1134,
+  "command": "set -eu\npython3 - <<'PY'\nimport json, subprocess\nraw = subprocess.check_output(['git','show','origin/agent-control:.agent/tasks/20260903-c6-i2c-backend-v3.json'], text=True)\ncmd = json.loads(raw)['commands'][4]\nraise SystemExit(subprocess.run(['bash','-lc',cmd]).returncode)\nPY",
+  "pid": 1341,
   "timeout": 900,
   "idle_timeout": 300,
   "memory_limit_mb": 4096,
-  "started_at": "2026-09-03T06:36:49.163624+00:00",
-  "stage_name": "command-1",
-  "stage_index": 1,
+  "started_at": "2026-09-03T06:36:56.643077+00:00",
+  "stage_name": "command-3",
+  "stage_index": 3,
   "stage_total": 4,
   "stage_phase": "commands",
   "task_id": "20260903-c6-i2c-backend-v4",
@@ -18,5 +18,5 @@
   "task_digest": "2f1378522f91d4e11ff8ea6c343245b960e6610d6a26e171a331cd976c147d7b",
   "daemon_version": "4.15.0",
   "daemon_pid": 947,
-  "updated_at": "2026-09-03T06:36:49.164104+00:00"
+  "updated_at": "2026-09-03T06:36:56.707803+00:00"
 }
