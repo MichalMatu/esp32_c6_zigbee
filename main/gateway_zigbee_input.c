@@ -6,6 +6,7 @@
 #include "gateway_zcl_value.h"
 
 #define ZCL_CLUSTER_ON_OFF 0x0006U
+#define ZCL_CLUSTER_LEVEL_CONTROL 0x0008U
 
 gateway_input_capability_profile_t gateway_zigbee_capability_profile_from_clusters(
     const uint16_t *clusters, size_t count)
@@ -27,6 +28,9 @@ gateway_input_capability_profile_t gateway_zigbee_capability_profile_from_cluste
         }
         if (cluster == ZCL_CLUSTER_ON_OFF) {
             profile.commandable |= GATEWAY_INPUT_CAP_ON_OFF;
+        }
+        if (cluster == ZCL_CLUSTER_LEVEL_CONTROL) {
+            profile.commandable |= GATEWAY_INPUT_CAP_LEVEL;
         }
     }
     return profile;

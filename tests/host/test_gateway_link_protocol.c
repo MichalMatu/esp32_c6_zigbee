@@ -218,6 +218,28 @@ static void test_command_round_trip(void)
         &decoded_result, payload, sizeof(payload), &length) == GATEWAY_LINK_UNSUPPORTED_VALUE);
 }
 
+static void test_level_command_wire(void)
+{
+    gateway_link_command_request_t command = {0};
+    command.request_id = 99U;
+    command.input.source = GATEWAY_SOURCE_ZIGBEE;
+    command.input.channel = 3U;
+    strcpy(command.input.id, "zigbee:00124b00aabbccdd");
+    command.kind = GATEWAY_COMMAND_SET_LEVEL;
+    command.value = 75.0;
+    command.transition_ms = 500U;
+    uint8_t payload[GATEWAY_LINK_MAX_PAYLOAD];
+    uint16_t length = 0U;
+    assert(gateway_link_encode_command_request_payload(
+        &command, payload, sizeof(payload), &length) == GATEWAY_LINK_OK);
+    gateway_link_command_request_t decoded = {0};
+    assert(gateway_link_decode_command_request_payload(
+        payload, length, &decoded) == GATEWAY_LINK_OK);
+    assert(decoded.kind == GATEWAY_COMMAND_SET_LEVEL);
+    assert(decoded.value == 75.0);
+    assert(decoded.transition_ms == 500U);
+}
+
 static void test_small_buffer_and_unknown_source_fail(void)
 {
     gateway_link_input_descriptor_t descriptor = {0};
@@ -245,6 +267,7 @@ int main(void)
     test_scd41_measurement_round_trip();
     test_measurement_policy_round_trip();
     test_command_round_trip();
+    test_level_command_wire();
     test_small_buffer_and_unknown_source_fail();
     puts("gateway_link_protocol host tests passed");
     return 0;

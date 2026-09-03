@@ -325,6 +325,7 @@ static gateway_link_result_t measurement_kind_to_wire(gateway_measurement_kind_t
     case GATEWAY_MEAS_POWER: *wire = 11U; break;
     case GATEWAY_MEAS_ENERGY: *wire = 12U; break;
     case GATEWAY_MEAS_ON_OFF: *wire = 13U; break;
+    case GATEWAY_MEAS_LEVEL: *wire = 14U; break;
     default: return GATEWAY_LINK_UNSUPPORTED_VALUE;
     }
     return GATEWAY_LINK_OK;
@@ -347,6 +348,7 @@ static gateway_link_result_t measurement_kind_from_wire(uint8_t wire, gateway_me
     case 11U: *kind = GATEWAY_MEAS_POWER; break;
     case 12U: *kind = GATEWAY_MEAS_ENERGY; break;
     case 13U: *kind = GATEWAY_MEAS_ON_OFF; break;
+    case 14U: *kind = GATEWAY_MEAS_LEVEL; break;
     default: return GATEWAY_LINK_UNSUPPORTED_VALUE;
     }
     return GATEWAY_LINK_OK;
@@ -356,8 +358,9 @@ static gateway_link_result_t command_kind_to_wire(
     gateway_command_kind_t kind, uint8_t *wire)
 {
     if (wire == NULL) return GATEWAY_LINK_INVALID_ARG;
-    if (kind != GATEWAY_COMMAND_SET_ON_OFF) return GATEWAY_LINK_UNSUPPORTED_VALUE;
-    *wire = 0U;
+    if (kind == GATEWAY_COMMAND_SET_ON_OFF) { *wire = 0U; return GATEWAY_LINK_OK; }
+    if (kind == GATEWAY_COMMAND_SET_LEVEL) { *wire = 1U; return GATEWAY_LINK_OK; }
+    return GATEWAY_LINK_UNSUPPORTED_VALUE;
     return GATEWAY_LINK_OK;
 }
 
@@ -365,9 +368,9 @@ static gateway_link_result_t command_kind_from_wire(
     uint8_t wire, gateway_command_kind_t *kind)
 {
     if (kind == NULL) return GATEWAY_LINK_INVALID_ARG;
-    if (wire != 0U) return GATEWAY_LINK_UNSUPPORTED_VALUE;
-    *kind = GATEWAY_COMMAND_SET_ON_OFF;
-    return GATEWAY_LINK_OK;
+    if (wire == 0U) { *kind = GATEWAY_COMMAND_SET_ON_OFF; return GATEWAY_LINK_OK; }
+    if (wire == 1U) { *kind = GATEWAY_COMMAND_SET_LEVEL; return GATEWAY_LINK_OK; }
+    return GATEWAY_LINK_UNSUPPORTED_VALUE;
 }
 
 static gateway_link_result_t unit_to_wire(gateway_unit_t unit, uint8_t *wire)

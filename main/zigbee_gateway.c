@@ -14,6 +14,7 @@
 #include <ezbee/bdb.h>
 #include <ezbee/secur.h>
 #include <ezbee/zcl/cluster/on_off.h>
+#include <ezbee/zcl/cluster/level.h>
 #include <ezbee/zcl/cluster/poll_control.h>
 #include <ezbee/zcl/zcl_core.h>
 #include <ezbee/zcl/zcl_general_cmd.h>
@@ -1246,20 +1247,43 @@ static void handle_external_command(const discovery_job_t *job)
         command_context_release(context);
         return;
     }
-    const ezb_zcl_on_off_cmd_t request = {
-        .cmd_ctrl = {
-            .dst_addr = EZB_ADDRESS_SHORT(slot->device.short_addr),
-            .dst_ep = endpoint,
-            .src_ep = GATEWAY_ENDPOINT,
-            .dis_default_rsp = false,
-            .cnf_ctx = {
-                .cb = command_confirm_callback,
-                .user_ctx = context,
+    ezb_err_t send_result = (ezb_err_t)1;
+    if (job->command_plan.kind == GATEWAY_COMMAND_SET_ON_OFF) {
+        const ezb_zcl_on_off_cmd_t request = {
+            .cmd_ctrl = {
+                .dst_addr = EZB_ADDRESS_SHORT(slot->device.short_addr),
+                .dst_ep = endpoint,
+                .src_ep = GATEWAY_ENDPOINT,
+                .dis_default_rsp = false,
+                .cnf_ctx = {
+                    .cb = command_confirm_callback,
+                    .user_ctx = context,
+                },
             },
-        },
-    };
-    const ezb_err_t send_result = job->command_plan.target_on ?
-        ezb_zcl_on_off_on_cmd_req(&request) : ezb_zcl_on_off_off_cmd_req(&request);
+        };
+        send_result = job->command_plan.target_on ?
+            ezb_zcl_on_off_on_cmd_req(&request) : ezb_zcl_on_off_off_cmd_req(&request);
+    } else if (job->command_plan.kind == GATEWAY_COMMAND_SET_LEVEL) {
+        const ezb_zcl_level_move_to_level_cmd_t request = {
+            .cmd_ctrl = {
+                .dst_addr = EZB_ADDRESS_SHORT(slot->device.short_addr),
+                .dst_ep = endpoint,
+                .src_ep = GATEWAY_ENDPOINT,
+                .dis_default_rsp = false,
+                .cnf_ctx = {
+                    .cb = command_confirm_callback,
+                    .user_ctx = context,
+                },
+            },
+            .payload = {
+                .level = job->command_plan.level,
+                .transition_time = job->command_plan.transition_time,
+                .options_mask = 0U,
+                .options_override = 0U,
+            },
+        };
+        send_result = ezb_zcl_level_move_to_level_cmd_req(&request);
+    }
     esp_zigbee_lock_release();
     if (send_result != EZB_ERR_NONE && context->in_use) {
         publish_command_result(

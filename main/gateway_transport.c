@@ -39,7 +39,7 @@ static const char *measurement_name(gateway_measurement_kind_t kind)
 {
     static const char *const names[] = {
         "temperature", "humidity", "illuminance", "occupancy", "co2", "battery_voltage",
-        "battery_percent", "mains_voltage", "voltage", "current", "power", "energy", "on_off",
+        "battery_percent", "mains_voltage", "voltage", "current", "power", "energy", "on_off", "level",
     };
     return kind < (sizeof(names) / sizeof(names[0])) ? names[kind] : "unknown";
 }

@@ -52,6 +52,7 @@ gateway_input_capabilities_t gateway_input_capability_for_measurement(
         GATEWAY_INPUT_CAP_POWER,
         GATEWAY_INPUT_CAP_ENERGY,
         GATEWAY_INPUT_CAP_ON_OFF,
+        GATEWAY_INPUT_CAP_LEVEL,
     };
     return kind < (sizeof(capabilities) / sizeof(capabilities[0])) ?
         capabilities[kind] : 0U;

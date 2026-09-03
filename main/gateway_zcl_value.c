@@ -4,11 +4,14 @@
 #include <math.h>
 #include <string.h>
 
+#define ZCL_CLUSTER_LEVEL_CONTROL 0x0008U
+
 #ifndef GATEWAY_ZCL_HOST_TEST
 #include <ezbee/zcl/zcl_core.h>
 #else
 #define EZB_ZCL_CLUSTER_ID_POWER_CONFIG 0x0001U
 #define EZB_ZCL_CLUSTER_ID_ON_OFF 0x0006U
+#define ZCL_CLUSTER_LEVEL_CONTROL 0x0008U
 #define EZB_ZCL_CLUSTER_ID_ILLUMINANCE_MEASUREMENT 0x0400U
 #define EZB_ZCL_CLUSTER_ID_TEMPERATURE_MEASUREMENT 0x0402U
 #define EZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT 0x0405U
@@ -25,6 +28,7 @@
 #define ZCL_ATTR_MEASURED_VALUE 0x0000U
 #define ZCL_ATTR_OCCUPANCY 0x0000U
 #define ZCL_ATTR_ON_OFF 0x0000U
+#define ZCL_ATTR_CURRENT_LEVEL 0x0000U
 #define ZCL_ATTR_BATTERY_VOLTAGE 0x0020U
 #define ZCL_ATTR_BATTERY_PERCENT 0x0021U
 
@@ -89,6 +93,9 @@ gateway_input_capabilities_t gateway_zcl_capabilities_for_server_cluster(
     if (cluster == EZB_ZCL_CLUSTER_ID_ON_OFF) {
         return GATEWAY_INPUT_CAP_ON_OFF;
     }
+    if (cluster == ZCL_CLUSTER_LEVEL_CONTROL) {
+        return GATEWAY_INPUT_CAP_LEVEL;
+    }
     if (cluster == EZB_ZCL_CLUSTER_ID_ILLUMINANCE_MEASUREMENT) {
         return GATEWAY_INPUT_CAP_ILLUMINANCE;
     }
@@ -121,6 +128,10 @@ gateway_input_capabilities_t gateway_zcl_capability_for_attribute(
     }
     if (cluster == EZB_ZCL_CLUSTER_ID_ON_OFF && attribute == ZCL_ATTR_ON_OFF) {
         return GATEWAY_INPUT_CAP_ON_OFF;
+    }
+    if (cluster == ZCL_CLUSTER_LEVEL_CONTROL &&
+        attribute == ZCL_ATTR_CURRENT_LEVEL) {
+        return GATEWAY_INPUT_CAP_LEVEL;
     }
     if (attribute != ZCL_ATTR_MEASURED_VALUE) {
         return 0U;
@@ -221,6 +232,14 @@ bool gateway_zcl_normalize(uint16_t cluster,
         *kind = GATEWAY_MEAS_ON_OFF;
         *unit = GATEWAY_UNIT_BOOLEAN;
         *number = u8 != 0U;
+        return true;
+    }
+    if (cluster == ZCL_CLUSTER_LEVEL_CONTROL &&
+        attribute == ZCL_ATTR_CURRENT_LEVEL &&
+        read_u8(value, type, &u8) && u8 <= 254U) {
+        *kind = GATEWAY_MEAS_LEVEL;
+        *unit = GATEWAY_UNIT_PERCENT;
+        *number = (double)u8 * 100.0 / 254.0;
         return true;
     }
     return false;

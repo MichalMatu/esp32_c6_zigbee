@@ -150,7 +150,8 @@ Implementation progress after the generic-coordinator audit:
 - Phase 3 introduces the normalized capability access profile and GatewayLink v2: readable, reportable, configurable and commandable masks plus manufacturer/model metadata are carried without exposing raw Zigbee semantics to the future S3. There is intentionally no v1 shim on the active branch.
 - Phase 4 connects `SET_MEASUREMENT_POLICY` to standard Zigbee Configure Reporting through the discovery-task ownership boundary. Supported requests are correlated by `request_id`; APPLIED/CLAMPED/UNSUPPORTED/ERROR is emitted only from real validation/device-response outcomes.
 - Phase 5 adds normalized writable On/Off over GatewayLink v2. `COMMAND_RESULT=TRANSMITTED` is emitted only from the ezbee AF confirmation callback; the later normalized On/Off measurement remains authoritative device state.
-- The next implementation slice adds normalized Level Control, then the separate second-C6 emulator profiles for deterministic command/state round-trip testing.
+- Phase 6 adds normalized Level Control: CurrentLevel is normalized to percent and `SET_LEVEL` maps to standard `MoveToLevel` without implicit On/Off side effects.
+- The next implementation slice is the separate second-C6 emulator app/profiles for deterministic interview/reporting/command/state round-trip testing.
 
 Execution order:
 

@@ -7,6 +7,7 @@
 
 #define CLUSTER_POWER_CONFIG 0x0001U
 #define CLUSTER_ON_OFF 0x0006U
+#define CLUSTER_LEVEL_CONTROL 0x0008U
 #define CLUSTER_ILLUMINANCE 0x0400U
 #define CLUSTER_TEMPERATURE 0x0402U
 #define CLUSTER_HUMIDITY 0x0405U
@@ -78,6 +79,22 @@ static void test_boolean_values(void)
     assert(kind == GATEWAY_MEAS_OCCUPANCY);
 }
 
+static void test_level(void)
+{
+    uint8_t raw = 127U;
+    gateway_measurement_kind_t kind;
+    gateway_unit_t unit;
+    double value;
+    assert(gateway_zcl_normalize(
+        CLUSTER_LEVEL_CONTROL, 0x0000U, TYPE_UINT8, &raw, &kind, &unit, &value));
+    assert(kind == GATEWAY_MEAS_LEVEL);
+    assert(unit == GATEWAY_UNIT_PERCENT);
+    expect_close(value, 50.0);
+    raw = 0xffU;
+    assert(!gateway_zcl_normalize(
+        CLUSTER_LEVEL_CONTROL, 0x0000U, TYPE_UINT8, &raw, &kind, &unit, &value));
+}
+
 static void test_attribute_capabilities(void)
 {
     assert(gateway_zcl_capability_for_attribute(CLUSTER_POWER_CONFIG, 0x0020U) ==
@@ -86,6 +103,8 @@ static void test_attribute_capabilities(void)
         GATEWAY_INPUT_CAP_BATTERY_PERCENT);
     assert(gateway_zcl_capability_for_attribute(CLUSTER_ON_OFF, 0x0000U) ==
         GATEWAY_INPUT_CAP_ON_OFF);
+    assert(gateway_zcl_capability_for_attribute(CLUSTER_LEVEL_CONTROL, 0x0000U) ==
+        GATEWAY_INPUT_CAP_LEVEL);
     assert(gateway_zcl_capability_for_attribute(CLUSTER_TEMPERATURE, 0x0000U) ==
         GATEWAY_INPUT_CAP_TEMPERATURE);
     assert(gateway_zcl_capability_for_attribute(CLUSTER_HUMIDITY, 0x0000U) ==
@@ -119,6 +138,7 @@ int main(void)
     test_temperature();
     test_humidity_and_battery();
     test_boolean_values();
+    test_level();
     test_attribute_capabilities();
     test_co2_and_invalid_input();
     puts("gateway_zcl_value host tests passed");

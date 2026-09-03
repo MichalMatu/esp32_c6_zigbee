@@ -90,6 +90,8 @@ The application boundary uses `gateway_input_capability_profile_t`, not Zigbee c
 GatewayLink RX validates and enqueues source-neutral measurement policy requests but does not mutate the Zigbee registry. The Zigbee discovery task resolves the stable IEEE+endpoint identity, validates the endpoint's configurable capability, checks binding state and owns Configure Reporting submission. A correlated request completes only after the ZCL Configure Reporting response (or an explicit timeout/queue/route failure), which is normalized to `APPLIED`, `CLAMPED`, `UNSUPPORTED` or `ERROR` before crossing GatewayLink.
 
 
+Level Control follows the same boundary: `CurrentLevel` becomes a normalized percent measurement/capability and `SET_LEVEL` is translated only inside C6 to standard ZCL `MoveToLevel`. The normalized API does not expose raw level bytes or ZCL transition units.
+
 ## Normalized command ownership
 
 GatewayLink command requests carry a stable input identity, normalized command kind and source-neutral value. The Zigbee worker resolves IEEE+endpoint at execution time and validates the endpoint's `commandable` capability before translating the command to a standard ZCL request. For On/Off, the C6 uses the ezbee cluster-specific On/Off API with a bounded confirmation context. `COMMAND_RESULT=TRANSMITTED` reflects successful AF transmission confirmation only; normalized state reports remain authoritative device state. Raw cluster IDs and mutable short addresses never become application command identities.

@@ -18,6 +18,28 @@ static void test_on_off_plan(void)
     assert(!plan.target_on);
 }
 
+static void test_level_plan(void)
+{
+    gateway_command_plan_t plan;
+    assert(gateway_command_policy_plan(
+        GATEWAY_COMMAND_SET_LEVEL, 50.0, 1200U, &plan) == GATEWAY_COMMAND_PLAN_OK);
+    assert(plan.kind == GATEWAY_COMMAND_SET_LEVEL);
+    assert(plan.cluster_id == 0x0008U);
+    assert(plan.capability == GATEWAY_INPUT_CAP_LEVEL);
+    assert(plan.level == 127U);
+    assert(plan.transition_time == 12U);
+
+    assert(gateway_command_policy_plan(
+        GATEWAY_COMMAND_SET_LEVEL, 100.0, 0U, &plan) == GATEWAY_COMMAND_PLAN_OK);
+    assert(plan.level == 254U);
+    assert(gateway_command_policy_plan(
+        GATEWAY_COMMAND_SET_LEVEL, -1.0, 0U, &plan) == GATEWAY_COMMAND_PLAN_INVALID);
+    assert(gateway_command_policy_plan(
+        GATEWAY_COMMAND_SET_LEVEL, 101.0, 0U, &plan) == GATEWAY_COMMAND_PLAN_INVALID);
+    assert(gateway_command_policy_plan(
+        GATEWAY_COMMAND_SET_LEVEL, 50.0, 150U, &plan) == GATEWAY_COMMAND_PLAN_INVALID);
+}
+
 static void test_invalid_on_off_values(void)
 {
     gateway_command_plan_t plan;
@@ -36,6 +58,7 @@ static void test_invalid_on_off_values(void)
 int main(void)
 {
     test_on_off_plan();
+    test_level_plan();
     test_invalid_on_off_values();
     puts("gateway_command_policy host tests passed");
     return 0;

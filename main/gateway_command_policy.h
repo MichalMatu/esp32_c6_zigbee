@@ -14,7 +14,10 @@ typedef enum {
 typedef struct {
     uint16_t cluster_id;
     gateway_input_capabilities_t capability;
+    gateway_command_kind_t kind;
     bool target_on;
+    uint8_t level;
+    uint16_t transition_time;
 } gateway_command_plan_t;
 
 gateway_command_plan_result_t gateway_command_policy_plan(

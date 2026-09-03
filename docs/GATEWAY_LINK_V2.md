@@ -41,7 +41,7 @@ Message numbers are: HELLO/ACK `0x01/0x02`, PING/PONG `0x03/0x04`, snapshot `0x0
 
 HELLO advertises `snapshot`, `measurement-policy`, `permit-join`, `capability-profile` and `commands`. For supported Zigbee inputs, `SET_MEASUREMENT_POLICY` is translated into a standard Configure Reporting request. The C6 returns `CONFIG_RESULT` only after the device response, or an explicit normalized error/unsupported result if the request cannot be applied. Interval quantization or reportable-change quantization is returned as `CLAMPED` after a successful device response.
 
-`COMMAND_REQUEST` payload is `request_id:u32`, stable input reference, `kind:u8`, `value:f64`, `transition_ms:u32`. The first normalized command kind is `SET_ON_OFF`; it accepts value `0` or `1` and requires zero transition time. `COMMAND_RESULT` is `request_id:u32,status:u8` with `TRANSMITTED`, `UNSUPPORTED`, `INVALID` and `ERROR`.
+`COMMAND_REQUEST` payload is `request_id:u32`, stable input reference, `kind:u8`, `value:f64`, `transition_ms:u32`. Normalized command kinds are `SET_ON_OFF` and `SET_LEVEL`. `SET_ON_OFF` accepts value `0` or `1` and requires zero transition time. `SET_LEVEL` accepts `0..100` percent and uses transition time in exact 100 ms increments; C6 translates it to standard ZCL `MoveToLevel` without the implicit On/Off variant. `COMMAND_RESULT` is `request_id:u32,status:u8` with `TRANSMITTED`, `UNSUPPORTED`, `INVALID` and `ERROR`.
 
 `TRANSMITTED` means the Zigbee AF transmission confirmation completed successfully. It does **not** assert that the actuator applied the requested state. A subsequent normalized On/Off `MEASUREMENT` report remains the authoritative state observation. This distinction keeps transport acknowledgement separate from device state.
 
