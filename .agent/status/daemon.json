@@ -2,8 +2,8 @@
   "version": 1,
   "daemon_version": "4.15.0",
   "state": "idle",
-  "pid": 86238,
-  "updated_at": "2026-09-03T19:01:19.260794+00:00",
+  "pid": 98314,
+  "updated_at": "2026-09-03T19:06:26.032801+00:00",
   "self_revision": "3742045cc6492c49e2f94bdcc910ec92436edc38",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -23,8 +23,7 @@
   "default_branch": "main",
   "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 86238,
+  "worker_pid": 98314,
   "supervisor_pid": 59663,
-  "last_task_id": "20260903-c6-generic-zigbee-phase3-v1",
   "execution_variant": "parallel"
 }
