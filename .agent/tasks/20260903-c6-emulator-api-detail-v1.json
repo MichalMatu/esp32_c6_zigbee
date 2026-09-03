@@ -1,0 +1,15 @@
+{
+  "id": "20260903-c6-emulator-api-detail-v1",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 4096,
+  "command_timeout": 900,
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "commands": [
+    "set -euo pipefail\ngit fetch origin\ngit checkout integration/c6-s3-i2c-20260903\ngit reset --hard origin/integration/c6-s3-i2c-20260903\n[ \"$(git rev-parse HEAD)\" = \"a5ad4d5cf5d9faf8c12de571ea088a4b6e2893e3\" ]\nprintf '%s\\n' '=== AF endpoint descriptor/registration ==='\nsed -n '250,560p' managed_components/espressif__esp-zigbee-lib/include/ezbee/af.h\nprintf '%s\\n' '=== temperature cluster descriptor ==='\nsed -n '1,180p' managed_components/espressif__esp-zigbee-lib/include/ezbee/zcl/cluster/temperature_measurement_desc.h\nprintf '%s\\n' '=== basic cluster descriptor ==='\nsed -n '1,180p' managed_components/espressif__esp-zigbee-lib/include/ezbee/zcl/cluster/basic_desc.h\nprintf '%s\\n' '=== core/start/network ==='\ngrep -R -n -E 'ezb_.*start|ezb_.*init|network_steer|steering|commission' managed_components/espressif__esp-zigbee-lib/include/ezbee/{core.h,bdb.h,nwk.h} | head -n 220\nprintf '%s\\n' '=== app signal registration ==='\nsed -n '1,220p' managed_components/espressif__esp-zigbee-lib/include/ezbee/app_signals.h"
+  ]
+}
