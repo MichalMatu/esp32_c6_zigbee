@@ -6,6 +6,8 @@ These instructions apply to the whole repository.
 
 This repository contains native ESP-IDF firmware for an ESP32-C6 Zigbee coordinator/gateway. Keep changes aligned with the current README contract unless the user explicitly asks to change that architecture.
 
+For cross-chat continuation, read `docs/CONTINUATION.md` when it exists on the active branch. It is the living source for current work state, completed milestones, and exact next steps; do not reconstruct that state from remembered chat history.
+
 Current baseline:
 
 - target: ESP32-C6;
@@ -34,7 +36,7 @@ If Chat Bridge is active, require every wake to identify exactly `LA_AGENT=64877
 
 Before queueing work:
 
-1. Read this file, the current `README.md`, and `docs/ARCHITECTURE.md`.
+1. Read this file, `docs/CONTINUATION.md` when present on the active branch, the current `README.md`, and `docs/ARCHITECTURE.md`.
 2. Inspect the exact source branch/HEAD relevant to the request.
 3. Inspect `.agent/binding.json` and `.agent/status/daemon.json` on `agent-control`. The binding file must match the repository identity above. Treat `daemon_version`, `self_revision`, `execution_model` / `execution_variant`, current task state, and `supervisor_pid` as repository-worker truth. Supervisor-wide fields such as `max_parallel_workers` are not guaranteed to be repeated in every repository-worker snapshot; read the shared supervisor status when that field matters.
 4. Follow any active task instead of queueing a duplicate.
@@ -88,5 +90,6 @@ Do not erase flash or deliberately destroy the persisted Zigbee network unless t
 - Do not fabricate support for Zigbee clusters/attributes that the firmware does not actually interpret.
 - Update README/docs when behavior, pairing/rejoin flow, supported reports, or hardware-test expectations materially change.
 - Run the narrowest meaningful verification first, then broaden only when the changed integration boundary warrants it.
+- Update `docs/CONTINUATION.md` after a major milestone or when the active branch, hardware state, current goal, or exact next step changes materially.
 
 When the Local Agent task/control/resource/status/planner/binding contract changes, audit this file together with the canonical `MichalMatu/local-agent` documentation so future chats do not depend on remembered conversation context.
