@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-uart-smoke-validate-v2",
+  "task_digest": "b8ca78147872c388b4b2b3a8693b1c7af0b4d828d0661223ff10d11627956b6d",
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T06:57:11.403969+00:00",
+  "attempt_id": "27cd6cd3d7680fd5399822bb",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 27327,
+  "updated_at": "2026-09-03T06:57:11.404134+00:00",
+  "pid": 27327
+}
