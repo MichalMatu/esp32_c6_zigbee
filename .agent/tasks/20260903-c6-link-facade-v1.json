@@ -1,0 +1,17 @@
+{
+  "id": "20260903-c6-link-facade-v1",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "night/link-backend-refactor-20260903",
+  "allow_write": true,
+  "resources": [],
+  "command_timeout": 900,
+  "task_timeout": 1800,
+  "memory_limit_mb": 4096,
+  "commands": [
+    "set -eu\n[ -z \"$(git status --short)\" ]\ncat > main/gateway_link.h <<'EOF'\n#pragma once\n\n#include <stdint.h>\n\n#include \"esp_err.h\"\n#include \"gateway_events.h\"\n\nesp_err_t gateway_link_start(void);\nvoid gateway_link_publish_event(const gateway_event_t *event);\nuint32_t gateway_link_take_dropped(void);\nEOF\ncat > main/gateway_link.c <<'EOF'\n#include \"gateway_link.h\"\n\n#include \"gateway_uart_link.h\"\n\nesp_err_t gateway_link_start(void)\n{\n    return gateway_uart_link_start();\n}\n\nvoid gateway_link_publish_event(const gateway_event_t *event)\n{\n    gateway_uart_link_publish_event(event);\n}\n\nuint32_t gateway_link_take_dropped(void)\n{\n    return gateway_uart_link_take_dropped();\n}\nEOF\npython3 - <<'PY'\nfrom pathlib import Path\n\ndef replace(path, old, new):\n    p = Path(path)\n    text = p.read_text()\n    if old not in text:\n        raise SystemExit(f'missing expected text in {path}: {old!r}')\n    p.write_text(text.replace(old, new))\n\nreplace('main/app_main.c', '#include \"gateway_uart_link.h\"', '#include \"gateway_link.h\"')\nreplace('main/app_main.c', 'ESP_ERROR_CHECK(gateway_uart_link_start());', 'ESP_ERROR_CHECK(gateway_link_start());')\nreplace('main/gateway_transport.c', '#include \"gateway_uart_link.h\"', '#include \"gateway_link.h\"')\nreplace('main/gateway_transport.c', 'gateway_uart_link_publish_event(&event);', 'gateway_link_publish_event(&event);')\nreplace('main/gateway_transport.c', 'gateway_uart_link_take_dropped()', 'gateway_link_take_dropped()')\nreplace('main/CMakeLists.txt', '        \"gateway_inputs.c\"\\n        \"gateway_link_protocol.c\"', '        \"gateway_inputs.c\"\\n        \"gateway_link.c\"\\n        \"gateway_link_protocol.c\"')\nPY\ngit diff --check\ngit status --short\ngit diff -- main/CMakeLists.txt main/app_main.c main/gateway_transport.c main/gateway_link.c main/gateway_link.h",
+    "set -eu\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_e2e.c main/gateway_link_protocol.c main/gateway_link_stream.c main/gateway_link_control.c main/gateway_link_snapshot_cache.c main/gateway_inputs.c -lm -o /tmp/test_gateway_link_e2e\n/tmp/test_gateway_link_e2e",
+    "set -eu\n. ~/esp/esp-idf-v5.5.4/export.sh >/dev/null\nidf.py build",
+    "set -eu\ngit diff --check\ngit status --short\ngit add main/CMakeLists.txt main/app_main.c main/gateway_transport.c main/gateway_link.c main/gateway_link.h\ngit commit -m 'Introduce GatewayLink transport facade'\ngit push origin HEAD:night/link-backend-refactor-20260903\ngit status --short\ngit rev-parse HEAD"
+  ]
+}
