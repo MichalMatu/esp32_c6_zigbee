@@ -1,0 +1,15 @@
+{
+  "id": "20260903-c6-uart-smoke-validate-v2",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "night/link-backend-refactor-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 4096,
+  "command_timeout": 300,
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "commands": [
+    "set -eu\n[ \"$(git rev-parse HEAD)\" = \"a4b1f629c1286d631ac208515b71aeeaa7c44b23\" ]\n[ -z \"$(git status --short)\" ]\nLOG=/tmp/c6-smoke.log\n[ -s \"$LOG\" ]\ngrep -q 'measurement local_i2c/' \"$LOG\"\ngrep -q 'measurement zigbee/zigbee:881a14fffeef6bd9/' \"$LOG\"\ngrep -q 'link backend=uart1' \"$LOG\"\ngrep -q 'drop=0 short=0' \"$LOG\"\nif grep -Eiq 'Guru Meditation|abort\\(\\)|panic|watchdog|ZIGBEE_DEVICE_LEAVE_RESET|APS.*security.*failed|security.*failed|dropped [1-9][0-9]* gateway events|dropped [1-9][0-9]* GatewayLink messages' \"$LOG\"; then\n  echo 'fatal smoke-test pattern found'\n  exit 1\nfi\necho 'C6 UART smoke PASS: SCD4x + SONOFF + link telemetry healthy'"
+  ]
+}
