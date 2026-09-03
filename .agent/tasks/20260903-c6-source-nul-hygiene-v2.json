@@ -1,0 +1,17 @@
+{
+  "id": "20260903-c6-source-nul-hygiene-v2",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": true,
+  "resources": [],
+  "memory_limit_mb": 4096,
+  "command_timeout": 1800,
+  "idle_timeout": 300,
+  "task_timeout": 3600,
+  "commands": [
+    "set -euo pipefail\ngit fetch origin\ngit checkout integration/c6-s3-i2c-20260903\ngit reset --hard origin/integration/c6-s3-i2c-20260903\nrm -f sdkconfig.old\n[ -z \"$(git status --short)\" ]\n[ \"$(git rev-parse HEAD)\" = \"b6d0e443ebb6fa214d83db172d8c31984c4ca3ed\" ]\npython3 - <<'PY'\nfrom pathlib import Path\np = Path('main/zigbee_gateway.c')\ndata = p.read_bytes()\nneedle = b\"'\" + bytes([0]) + b\"'\"\ncount = data.count(needle)\nif count != 1:\n    raise SystemExit(f'expected exactly one embedded NUL char literal, found {count}')\np.write_bytes(data.replace(needle, b\"'\\\\0'\", 1))\nPath('tests/host/test_no_embedded_nul.py').write_text('''#!/usr/bin/env python3\nimport subprocess\nfrom pathlib import Path\n\nTEXT_SUFFIXES = {\".c\", \".h\", \".md\", \".py\", \".yml\", \".yaml\", \".json\", \".txt\"}\nTEXT_NAMES = {\"CMakeLists.txt\", \"Kconfig\", \"sdkconfig.defaults\"}\n\nfiles = subprocess.check_output([\"git\", \"ls-files\"], text=True).splitlines()\nbad = []\nfor name in files:\n    path = Path(name)\n    if path.suffix not in TEXT_SUFFIXES and path.name not in TEXT_NAMES:\n        continue\n    if 0 in path.read_bytes():\n        bad.append(name)\nif bad:\n    raise SystemExit(\"embedded NUL bytes: \" + \", \".join(bad))\nprint(\"text source NUL scan passed\")\n''')\nPY\npython3 tests/host/test_no_embedded_nul.py\ngit diff --check\ngit diff --stat",
+    "set -euo pipefail\npython3 tests/host/test_no_embedded_nul.py\n. ~/esp/esp-idf-v5.5.4/export.sh >/dev/null\nidf.py set-target esp32c6\nidf.py build\nrm -f sdkconfig.old\ngit diff --check",
+    "set -euo pipefail\ngit add main/zigbee_gateway.c tests/host/test_no_embedded_nul.py\ngit diff --cached --check\ngit commit -m 'Reject embedded NUL bytes in source'\ngit push origin HEAD:integration/c6-s3-i2c-20260903\nprintf 'NUL_HYGIENE_HEAD=%s\\n' \"$(git rev-parse HEAD)\"\ngit status --short"
+  ]
+}
