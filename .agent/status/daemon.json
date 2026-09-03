@@ -1,9 +1,9 @@
 {
   "version": 1,
   "daemon_version": "4.15.0",
-  "state": "running",
+  "state": "idle",
   "pid": 57357,
-  "updated_at": "2026-09-03T23:09:02.134208+00:00",
+  "updated_at": "2026-09-03T23:09:28.729274+00:00",
   "self_revision": "3742045cc6492c49e2f94bdcc910ec92436edc38",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -14,7 +14,7 @@
   "task_timeout_default": 1800,
   "task_timeout_max": 21600,
   "memory_limit_mb_default": 4096,
-  "current_task_id": "20260904-c6-emulator-reporting-unsupported-api-v2",
+  "current_task_id": null,
   "current_attempt_id": null,
   "current_task_digest": null,
   "repository_id": "esp32-c6-zigbee",
@@ -25,6 +25,6 @@
   "execution_model": "multi_repository_worker",
   "worker_pid": 57357,
   "supervisor_pid": 59663,
-  "active_resources": [],
+  "last_task_id": "20260904-c6-emulator-reporting-unsupported-api-v2",
   "execution_variant": "parallel"
 }
