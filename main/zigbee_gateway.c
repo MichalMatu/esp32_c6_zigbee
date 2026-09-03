@@ -473,7 +473,7 @@ static void publish_basic_read(const ezb_zcl_cmd_read_attr_rsp_message_t *messag
         const size_t len = string[0] < GATEWAY_TEXT_MAX_BYTES - 1U ?
             string[0] : GATEWAY_TEXT_MAX_BYTES - 1U;
         memcpy(event.data.text.value, string + 1, len);
-        event.data.text.value[len] = ' ';
+        event.data.text.value[len] = '\0';
         if (state != NULL) {
             const bool changed = item->attr_id == ZCL_ATTR_BASIC_MANUFACTURER_NAME ?
                 gateway_device_endpoint_update_basic(
