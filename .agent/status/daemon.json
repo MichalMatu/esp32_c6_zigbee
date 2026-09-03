@@ -1,9 +1,9 @@
 {
   "version": 1,
   "daemon_version": "4.15.0",
-  "state": "idle",
-  "pid": 51031,
-  "updated_at": "2026-09-03T05:40:13.363684+00:00",
+  "state": "running",
+  "pid": 55563,
+  "updated_at": "2026-09-03T05:45:05.493092+00:00",
   "self_revision": "3742045cc6492c49e2f94bdcc910ec92436edc38",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -14,7 +14,7 @@
   "task_timeout_default": 1800,
   "task_timeout_max": 21600,
   "memory_limit_mb_default": 4096,
-  "current_task_id": null,
+  "current_task_id": "20260903-c6-link-runtime-extract-v3",
   "current_attempt_id": null,
   "current_task_digest": null,
   "repository_id": "esp32-c6-zigbee",
@@ -23,8 +23,8 @@
   "default_branch": "main",
   "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 51031,
+  "worker_pid": 55563,
   "supervisor_pid": 59663,
-  "last_task_id": "20260903-c6-link-runtime-extract-v2",
+  "active_resources": [],
   "execution_variant": "parallel"
 }
