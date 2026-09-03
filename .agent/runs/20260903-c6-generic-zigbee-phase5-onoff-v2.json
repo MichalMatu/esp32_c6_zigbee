@@ -1,16 +1,16 @@
 {
   "event": "command_started",
   "phase": "commands",
-  "index": 2,
+  "index": 3,
   "total": 5,
-  "command": "set -euo pipefail\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_command_policy.c main/gateway_command_policy.c -lm -o /tmp/test_gateway_command_policy\n/tmp/test_gateway_command_policy\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_protocol.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_protocol\n/tmp/test_gateway_link_protocol\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_control.c main/gateway_link_control.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_control\n/tmp/test_gateway_link_control\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_event_adapter.c main/gateway_link_event_adapter.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_event_adapter\n/tmp/test_gateway_link_event_adapter\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_e2e.c main/gateway_link_protocol.c main/gateway_link_stream.c main/gateway_link_control.c main/gateway_link_snapshot_cache.c main/gateway_inputs.c -lm -o /tmp/test_gateway_link_e2e\n/tmp/test_gateway_link_e2e\ncc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zigbee_input.c main/gateway_zigbee_input.c main/gateway_zcl_value.c main/gateway_reporting_policy.c main/gateway_inputs.c -lm -o /tmp/test_gateway_zigbee_input\n/tmp/test_gateway_zigbee_input",
-  "pid": 26485,
+  "command": "set -euo pipefail\npython3 tests/host/test_no_embedded_nul.py\ncc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zcl_value.c main/gateway_zcl_value.c -lm -o /tmp/test_gateway_zcl_value && /tmp/test_gateway_zcl_value\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_device_state.c main/gateway_device_state.c -o /tmp/test_gateway_device_state && /tmp/test_gateway_device_state\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_inputs.c main/gateway_inputs.c -o /tmp/test_gateway_inputs && /tmp/test_gateway_inputs\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_command_policy.c main/gateway_command_policy.c -lm -o /tmp/test_gateway_command_policy && /tmp/test_gateway_command_policy\ncc -std=c11 -Wall -Wextra -Werror -pedantic -DGATEWAY_ZCL_HOST_TEST -Imain tests/host/test_gateway_zigbee_input.c main/gateway_zigbee_input.c main/gateway_zcl_value.c main/gateway_reporting_policy.c main/gateway_inputs.c -lm -o /tmp/test_gateway_zigbee_input && /tmp/test_gateway_zigbee_input\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_protocol.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_protocol && /tmp/test_gateway_link_protocol\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_event_adapter.c main/gateway_link_event_adapter.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_event_adapter && /tmp/test_gateway_link_event_adapter\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_stream.c main/gateway_link_stream.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_stream && /tmp/test_gateway_link_stream\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_snapshot_cache.c main/gateway_link_snapshot_cache.c -o /tmp/test_gateway_link_snapshot_cache && /tmp/test_gateway_link_snapshot_cache\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_control.c main/gateway_link_control.c main/gateway_link_protocol.c -lm -o /tmp/test_gateway_link_control && /tmp/test_gateway_link_control\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_link_e2e.c main/gateway_link_protocol.c main/gateway_link_stream.c main/gateway_link_control.c main/gateway_link_snapshot_cache.c main/gateway_inputs.c -lm -o /tmp/test_gateway_link_e2e && /tmp/test_gateway_link_e2e\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_reporting_policy.c main/gateway_reporting_policy.c -o /tmp/test_gateway_reporting_policy && /tmp/test_gateway_reporting_policy\ncc -std=c11 -Wall -Wextra -Werror -pedantic -Imain tests/host/test_gateway_i2c_mailbox.c main/gateway_i2c_mailbox.c -o /tmp/test_gateway_i2c_mailbox && /tmp/test_gateway_i2c_mailbox",
+  "pid": 26635,
   "timeout": 1800,
   "idle_timeout": 300,
   "memory_limit_mb": 4096,
-  "started_at": "2026-09-03T19:32:57.243674+00:00",
-  "stage_name": "command-2",
-  "stage_index": 2,
+  "started_at": "2026-09-03T19:33:02.792880+00:00",
+  "stage_name": "command-3",
+  "stage_index": 3,
   "stage_total": 5,
   "stage_phase": "commands",
   "task_id": "20260903-c6-generic-zigbee-phase5-onoff-v2",
@@ -18,5 +18,5 @@
   "task_digest": "f3efc3bd6b5a4a14bcf4eca3bfbee566e1243c669f51ae02f918aea2a7ec8c17",
   "daemon_version": "4.15.0",
   "daemon_pid": 26210,
-  "updated_at": "2026-09-03T19:32:58.590175+00:00"
+  "updated_at": "2026-09-03T19:33:02.866860+00:00"
 }
