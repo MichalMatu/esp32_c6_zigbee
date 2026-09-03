@@ -10,6 +10,7 @@ Select one under `Second-C6 Zigbee emulator` in menuconfig:
 - `Occupancy`: endpoint 1, Basic + Occupancy Sensing (PIR).
 - `On/Off + Level`: endpoint 1, Basic + On/Off + Level Control server clusters.
 - `Sleepy temperature + humidity + battery + Poll Control`: endpoint 1, Basic + Temperature + Humidity + Power Configuration + Poll Control.
+- `IAS Zone contact switch`: endpoint 1, Basic + IAS Zone server with ZoneType `ContactSwitch`; ZoneStatus toggles Alarm1 deterministically.
 - `Mixed multi-endpoint` (default): environment on endpoint 1, occupancy on endpoint 2, On/Off + Level on endpoint 3.
 
 Environment and occupancy attributes change deterministically every 10 seconds. This is intended to exercise coordinator interview, Basic metadata, endpoint/cluster capability normalization and Configure Reporting. On/Off and Level are real server descriptors; stack-side attribute changes are logged through the ZCL core action callback so command behavior can be observed when hardware validation begins.
@@ -37,3 +38,7 @@ This profile emulates sleepy Zigbee protocol timing and Poll Control behavior. I
 An optional menuconfig fault periodically calls `esp_restart()` while preserving the Zigbee storage partition. On the next boot the end device starts with its persisted network state, exercising coordinator duplicate lifecycle/reboot/rejoin handling without depending on ezbee's test-only `ezb_nwk_leave_request()` API. The default interval is 60 s and the mode is disabled by default.
 
 This mode deliberately does not promise a new NWK short address or exact Device Announce ordering; those are stack/network outcomes and remain part of the later two-board hardware validation.
+
+## IAS contact profile
+
+The IAS contact profile uses the standard IAS Zone cluster (`0x0500`) with `ZoneType=ContactSwitch` (`0x0015`). It toggles the `ZoneStatus.Alarm1` bit on each emulator tick. The ezbee IAS API documents that changing ZoneStatus can trigger the standard Zone Status Change Notification; the emulator also exposes the authoritative ZoneStatus attribute. Enrollment/CIE behavior is left to the Zigbee stack and later two-board validation rather than being faked in application code.

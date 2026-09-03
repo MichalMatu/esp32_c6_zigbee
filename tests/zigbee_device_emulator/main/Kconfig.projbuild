@@ -16,6 +16,9 @@ config EMULATOR_PROFILE_ONOFF_LEVEL
 config EMULATOR_PROFILE_SLEEPY_ENV_BATTERY
     bool "Sleepy temperature + humidity + battery + Poll Control"
 
+config EMULATOR_PROFILE_IAS_CONTACT
+    bool "IAS Zone contact switch"
+
 config EMULATOR_PROFILE_MIXED
     bool "Mixed multi-endpoint"
 

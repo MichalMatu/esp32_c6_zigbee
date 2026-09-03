@@ -14,6 +14,7 @@
 #include <ezbee/app_signals.h>
 #include <ezbee/bdb.h>
 #include <ezbee/zcl/cluster/basic_desc.h>
+#include <ezbee/zcl/cluster/ias_zone_desc.h>
 #include <ezbee/zcl/cluster/level_desc.h>
 #include <ezbee/zcl/cluster/occupancy_sensing_desc.h>
 #include <ezbee/zcl/cluster/on_off_desc.h>
@@ -48,7 +49,10 @@
 #define EMULATOR_CLUSTER_OCCUPANCY 0x0406U
 #define EMULATOR_CLUSTER_ON_OFF 0x0006U
 #define EMULATOR_CLUSTER_LEVEL 0x0008U
+#define EMULATOR_CLUSTER_IAS_ZONE 0x0500U
 #define EMULATOR_ATTR_MEASURED_VALUE 0x0000U
+#define EMULATOR_ATTR_IAS_ZONE_TYPE 0x0001U
+#define EMULATOR_ATTR_IAS_ZONE_STATUS 0x0002U
 #define EMULATOR_ATTR_OCCUPANCY 0x0000U
 #define EMULATOR_ATTR_BATTERY_VOLTAGE 0x0020U
 #define EMULATOR_ATTR_BATTERY_PERCENTAGE_REMAINING 0x0021U
@@ -71,6 +75,8 @@
 #define EMULATOR_LIGHT_ENDPOINT 1U
 #elif CONFIG_EMULATOR_PROFILE_SLEEPY_ENV_BATTERY
 #define EMULATOR_ENV_ENDPOINT 1U
+#elif CONFIG_EMULATOR_PROFILE_IAS_CONTACT
+#define EMULATOR_IAS_ENDPOINT 1U
 #endif
 
 static const char *TAG = "zb_emulator";
@@ -283,6 +289,23 @@ static esp_err_t add_occupancy_endpoint(ezb_af_device_desc_t device, uint8_t end
     return ESP_OK;
 }
 
+static esp_err_t add_ias_contact_endpoint(ezb_af_device_desc_t device, uint8_t endpoint_id)
+{
+    ezb_af_ep_desc_t endpoint = create_endpoint(endpoint_id, EMULATOR_DEVICE_ID_GENERIC);
+    if (endpoint == EZB_INVALID_AF_EP_DESC || add_basic(endpoint) != ESP_OK) {
+        return ESP_FAIL;
+    }
+
+    ezb_zcl_cluster_desc_t ias_zone = ezb_zcl_ias_zone_create_cluster_desc(
+        NULL, EZB_ZCL_CLUSTER_SERVER);
+    if (ias_zone == EZB_INVALID_ZCL_CLUSTER_DESC ||
+        ezb_af_endpoint_add_cluster_desc(endpoint, ias_zone) != EZB_ERR_NONE ||
+        ezb_af_device_add_endpoint_desc(device, endpoint) != EZB_ERR_NONE) {
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+
 static esp_err_t add_light_endpoint(ezb_af_device_desc_t device, uint8_t endpoint_id)
 {
     ezb_af_ep_desc_t endpoint = create_endpoint(endpoint_id, EMULATOR_DEVICE_ID_GENERIC);
@@ -330,6 +353,10 @@ static esp_err_t register_selected_profile(void)
     if (add_sleepy_environment_endpoint(device, EMULATOR_ENV_ENDPOINT) != ESP_OK) {
         return ESP_FAIL;
     }
+#elif CONFIG_EMULATOR_PROFILE_IAS_CONTACT
+    if (add_ias_contact_endpoint(device, EMULATOR_IAS_ENDPOINT) != ESP_OK) {
+        return ESP_FAIL;
+    }
 #elif CONFIG_EMULATOR_PROFILE_MIXED
     if (add_environment_endpoint(device, EMULATOR_ENV_ENDPOINT) != ESP_OK ||
         add_occupancy_endpoint(device, EMULATOR_OCC_ENDPOINT) != ESP_OK ||
@@ -342,6 +369,30 @@ static esp_err_t register_selected_profile(void)
 
     return ezb_af_device_desc_register(device) == EZB_ERR_NONE ? ESP_OK : ESP_FAIL;
 }
+
+#if CONFIG_EMULATOR_PROFILE_IAS_CONTACT
+static bool initialize_ias_contact_attributes(void)
+{
+    uint16_t zone_type = EZB_ZCL_IAS_ZONE_ZONE_TYPE_CONTACT_SWITCH;
+    uint16_t zone_status = 0U;
+    const ezb_zcl_status_t type_status = ezb_zcl_set_attr_value(
+        EMULATOR_IAS_ENDPOINT, EMULATOR_CLUSTER_IAS_ZONE,
+        EZB_ZCL_CLUSTER_SERVER, EMULATOR_ATTR_IAS_ZONE_TYPE,
+        EMULATOR_STD_MANUF_CODE, &zone_type, false);
+    const ezb_zcl_status_t status_status = ezb_zcl_set_attr_value(
+        EMULATOR_IAS_ENDPOINT, EMULATOR_CLUSTER_IAS_ZONE,
+        EZB_ZCL_CLUSTER_SERVER, EMULATOR_ATTR_IAS_ZONE_STATUS,
+        EMULATOR_STD_MANUF_CODE, &zone_status, false);
+    if (type_status != 0U || status_status != 0U) {
+        ESP_LOGE(TAG, "IAS contact init failed type=0x%02x status=0x%02x",
+                 (unsigned)type_status, (unsigned)status_status);
+        return false;
+    }
+    ESP_LOGI(TAG, "IAS contact initialized ZoneType=0x%04x ZoneStatus=0x%04x",
+             (unsigned)zone_type, (unsigned)zone_status);
+    return true;
+}
+#endif
 
 static bool request_report(uint8_t endpoint, uint16_t cluster, uint16_t attribute)
 {
@@ -412,6 +463,7 @@ static void emulation_task(void *arg)
     uint8_t occupancy = 0U;
     uint8_t battery_voltage = 30U;
     uint8_t battery_percentage = 180U;
+    uint16_t ias_zone_status = 0U;
     uint32_t tick = 0U;
 
     for (;;) {
@@ -469,6 +521,14 @@ static void emulation_task(void *arg)
                 EMULATOR_ENV_ENDPOINT, EMULATOR_CLUSTER_POWER_CONFIG,
                 EMULATOR_ATTR_BATTERY_PERCENTAGE_REMAINING, &battery_percentage);
 #endif
+#endif
+
+#if CONFIG_EMULATOR_PROFILE_IAS_CONTACT
+            ias_zone_status = ias_zone_status == 0U ?
+                EZB_ZCL_IAS_ZONE_ZONE_STATUS_ALARM1 : 0U;
+            (void)set_server_attr(
+                EMULATOR_IAS_ENDPOINT, EMULATOR_CLUSTER_IAS_ZONE,
+                EMULATOR_ATTR_IAS_ZONE_STATUS, &ias_zone_status);
 #endif
 
 #if CONFIG_EMULATOR_PROFILE_OCCUPANCY || CONFIG_EMULATOR_PROFILE_MIXED
@@ -544,6 +604,12 @@ static void zigbee_task(void *arg)
         vTaskDelete(NULL);
         return;
     }
+#if CONFIG_EMULATOR_PROFILE_IAS_CONTACT
+    if (!initialize_ias_contact_attributes()) {
+        vTaskDelete(NULL);
+        return;
+    }
+#endif
     if (xTaskCreate(emulation_task, "emu_values", 3072, NULL, 4, NULL) != pdPASS) {
         ESP_LOGE(TAG, "emulation task creation failed");
     }
