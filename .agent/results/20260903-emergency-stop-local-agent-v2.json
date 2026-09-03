@@ -1,0 +1,11 @@
+{
+  "id": "20260903-emergency-stop-local-agent-v2",
+  "status": "failed",
+  "failure_reason": "interrupted_previous_attempt",
+  "task_digest": "2efe70e7e2f9ad8c9e478e0df72a35453c58ad9eb400560a343baa729961eb5a",
+  "attempt_id": "de49b5c8712cc37f7bb63ca6",
+  "daemon_version": "4.13.1",
+  "started_at": "2026-09-02T23:58:40.949787+00:00",
+  "finished_at": "2026-09-03T01:02:33.550793+00:00",
+  "error": "Previous daemon instance ended while this task was claimed. Automatic replay was blocked."
+}
