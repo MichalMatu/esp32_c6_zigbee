@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-emulator-fault-report-v2",
+  "task_digest": "ba9e3e0848e69a68ab6d62d6b420d7efc8fcf9d711f3debe15bc2a008e36f5ea",
+  "idle_timeout": 300,
+  "task_timeout": 5400,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T21:56:14.536077+00:00",
+  "attempt_id": "0511529e2e224b936372b99a",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 78403,
+  "updated_at": "2026-09-03T21:56:14.537137+00:00",
+  "pid": 78403
+}
