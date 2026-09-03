@@ -14,7 +14,8 @@ static bool make_hello(uint8_t type, gateway_link_message_t *message)
         .min_version = GATEWAY_LINK_PROTOCOL_VERSION,
         .max_version = GATEWAY_LINK_PROTOCOL_VERSION,
         .max_frame_bytes = GATEWAY_LINK_MAX_FRAME_BYTES,
-        .features = GATEWAY_LINK_FEATURE_SNAPSHOT | GATEWAY_LINK_FEATURE_PERMIT_JOIN,
+        .features = GATEWAY_LINK_FEATURE_SNAPSHOT | GATEWAY_LINK_FEATURE_PERMIT_JOIN |
+            GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE,
     };
     return gateway_link_encode_hello_payload(
         &hello,

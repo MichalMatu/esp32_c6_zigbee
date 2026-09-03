@@ -72,12 +72,13 @@ static void test_hello_round_trip(void)
 {
     const gateway_link_hello_t hello = {
         .role = GATEWAY_LINK_ROLE_C6_GATEWAY,
-        .min_version = 1U,
-        .max_version = 1U,
+        .min_version = GATEWAY_LINK_PROTOCOL_VERSION,
+        .max_version = GATEWAY_LINK_PROTOCOL_VERSION,
         .max_frame_bytes = GATEWAY_LINK_MAX_FRAME_BYTES,
         .features = GATEWAY_LINK_FEATURE_SNAPSHOT |
             GATEWAY_LINK_FEATURE_MEASUREMENT_POLICY |
-            GATEWAY_LINK_FEATURE_PERMIT_JOIN,
+            GATEWAY_LINK_FEATURE_PERMIT_JOIN |
+            GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE,
     };
     uint8_t payload[32];
     uint16_t length = 0U;
@@ -85,7 +86,8 @@ static void test_hello_round_trip(void)
     gateway_link_hello_t decoded = {0};
     assert(gateway_link_decode_hello_payload(payload, length, &decoded) == GATEWAY_LINK_OK);
     assert(decoded.role == hello.role);
-    assert(decoded.min_version == 1U && decoded.max_version == 1U);
+    assert(decoded.min_version == GATEWAY_LINK_PROTOCOL_VERSION &&
+           decoded.max_version == GATEWAY_LINK_PROTOCOL_VERSION);
     assert(decoded.max_frame_bytes == GATEWAY_LINK_MAX_FRAME_BYTES);
     assert(decoded.features == hello.features);
 }
@@ -95,9 +97,12 @@ static void test_scd41_descriptor_round_trip(void)
     gateway_link_input_descriptor_t descriptor = {0};
     descriptor.input = scd41_input();
     descriptor.available = true;
-    descriptor.capabilities = GATEWAY_INPUT_CAP_TEMPERATURE |
+    descriptor.profile.readable = GATEWAY_INPUT_CAP_TEMPERATURE |
         GATEWAY_INPUT_CAP_HUMIDITY |
         GATEWAY_INPUT_CAP_CO2;
+    descriptor.profile.reportable = GATEWAY_INPUT_CAP_TEMPERATURE;
+    descriptor.profile.configurable = GATEWAY_INPUT_CAP_TEMPERATURE;
+    strcpy(descriptor.manufacturer, "Sensirion");
     strcpy(descriptor.model, "SCD41");
 
     uint8_t payload[GATEWAY_LINK_MAX_PAYLOAD];
@@ -111,7 +116,11 @@ static void test_scd41_descriptor_round_trip(void)
     assert(decoded.input.channel == 0U);
     assert(strcmp(decoded.input.id, "scd4x:a12bef073b43") == 0);
     assert(decoded.available);
-    assert(decoded.capabilities == 0x13U);
+    assert(decoded.profile.readable == 0x13U);
+    assert(decoded.profile.reportable == GATEWAY_INPUT_CAP_TEMPERATURE);
+    assert(decoded.profile.configurable == GATEWAY_INPUT_CAP_TEMPERATURE);
+    assert(decoded.profile.commandable == 0U);
+    assert(strcmp(decoded.manufacturer, "Sensirion") == 0);
     assert(strcmp(decoded.model, "SCD41") == 0);
 }
 

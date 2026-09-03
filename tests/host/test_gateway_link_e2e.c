@@ -77,7 +77,8 @@ static void test_handshake_fragmentation_and_ping(void)
         .min_version = GATEWAY_LINK_PROTOCOL_VERSION,
         .max_version = GATEWAY_LINK_PROTOCOL_VERSION,
         .max_frame_bytes = GATEWAY_LINK_MAX_FRAME_BYTES,
-        .features = GATEWAY_LINK_FEATURE_SNAPSHOT | GATEWAY_LINK_FEATURE_PERMIT_JOIN,
+        .features = GATEWAY_LINK_FEATURE_SNAPSHOT | GATEWAY_LINK_FEATURE_PERMIT_JOIN |
+            GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE,
     };
     uint8_t payload[GATEWAY_LINK_MAX_PAYLOAD];
     uint16_t payload_length = 0U;
@@ -124,6 +125,7 @@ static void test_handshake_fragmentation_and_ping(void)
     assert(c6_hello.role == GATEWAY_LINK_ROLE_C6_GATEWAY);
     assert((c6_hello.features & GATEWAY_LINK_FEATURE_SNAPSHOT) != 0U);
     assert((c6_hello.features & GATEWAY_LINK_FEATURE_PERMIT_JOIN) != 0U);
+    assert((c6_hello.features & GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE) != 0U);
     assert((c6_hello.features & GATEWAY_LINK_FEATURE_MEASUREMENT_POLICY) == 0U);
 
     uint16_t token_length = 0U;
@@ -268,7 +270,7 @@ static gateway_link_input_descriptor_t descriptor(
     gateway_link_input_descriptor_t value = {
         .input = gateway_input_make(source, id, channel),
         .available = true,
-        .capabilities = capabilities,
+        .profile = {.readable = capabilities},
     };
     if (model != NULL) {
         strncpy(value.model, model, sizeof(value.model) - 1U);
@@ -365,6 +367,7 @@ static void test_snapshot_replay_and_unsupported_controls(void)
             assert(gateway_link_decode_input_descriptor_payload(
                 frame.payload, frame.payload_length, &decoded) == GATEWAY_LINK_OK);
             assert(decoded.available);
+            assert(decoded.profile.readable != 0U);
             ++descriptors_seen;
         }
     }

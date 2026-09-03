@@ -6,14 +6,16 @@
 
 #include "gateway_inputs.h"
 
-#define GATEWAY_LINK_PROTOCOL_VERSION 1U
+#define GATEWAY_LINK_PROTOCOL_VERSION 2U
 #define GATEWAY_LINK_MAX_PAYLOAD 220U
 #define GATEWAY_LINK_MAX_FRAME_BYTES 256U
+#define GATEWAY_LINK_MANUFACTURER_MAX_BYTES 24U
 #define GATEWAY_LINK_MODEL_MAX_BYTES 24U
 
 #define GATEWAY_LINK_FEATURE_SNAPSHOT           (1UL << 0)
 #define GATEWAY_LINK_FEATURE_MEASUREMENT_POLICY (1UL << 1)
 #define GATEWAY_LINK_FEATURE_PERMIT_JOIN        (1UL << 2)
+#define GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE (1UL << 3)
 
 typedef enum {
     GATEWAY_LINK_OK = 0,
@@ -78,7 +80,8 @@ typedef struct {
 typedef struct {
     gateway_input_id_t input;
     bool available;
-    gateway_input_capabilities_t capabilities;
+    gateway_input_capability_profile_t profile;
+    char manufacturer[GATEWAY_LINK_MANUFACTURER_MAX_BYTES];
     char model[GATEWAY_LINK_MODEL_MAX_BYTES];
 } gateway_link_input_descriptor_t;
 

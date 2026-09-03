@@ -4,19 +4,35 @@
 
 #include "gateway_zigbee_input.h"
 
-static void test_capabilities(void)
+static void test_capability_profile(void)
 {
     const uint16_t clusters[] = {
-        0x0000U, 0x0001U, 0x0402U, 0x0405U, 0x0b04U,
+        0x0000U, 0x0001U, 0x0006U, 0x0402U, 0x0405U, 0x0b04U,
     };
-    const gateway_input_capabilities_t expected =
+    const gateway_input_capability_profile_t profile =
+        gateway_zigbee_capability_profile_from_clusters(
+            clusters, sizeof(clusters) / sizeof(clusters[0]));
+    const gateway_input_capabilities_t expected_readable =
         GATEWAY_INPUT_CAP_BATTERY_VOLTAGE |
+        GATEWAY_INPUT_CAP_BATTERY_PERCENT |
+        GATEWAY_INPUT_CAP_ON_OFF |
+        GATEWAY_INPUT_CAP_TEMPERATURE |
+        GATEWAY_INPUT_CAP_HUMIDITY;
+    const gateway_input_capabilities_t expected_reporting =
         GATEWAY_INPUT_CAP_BATTERY_PERCENT |
         GATEWAY_INPUT_CAP_TEMPERATURE |
         GATEWAY_INPUT_CAP_HUMIDITY;
-    assert(gateway_zigbee_capabilities_from_clusters(
-        clusters, sizeof(clusters) / sizeof(clusters[0])) == expected);
-    assert(gateway_zigbee_capabilities_from_clusters(NULL, 3U) == 0U);
+    assert(profile.readable == expected_readable);
+    assert(profile.reportable == expected_reporting);
+    assert(profile.configurable == expected_reporting);
+    assert(profile.commandable == GATEWAY_INPUT_CAP_ON_OFF);
+
+    const gateway_input_capability_profile_t empty =
+        gateway_zigbee_capability_profile_from_clusters(NULL, 3U);
+    assert(empty.readable == 0U);
+    assert(empty.reportable == 0U);
+    assert(empty.configurable == 0U);
+    assert(empty.commandable == 0U);
 }
 
 static void test_stable_ieee_identity(void)
@@ -32,7 +48,7 @@ static void test_stable_ieee_identity(void)
 
 int main(void)
 {
-    test_capabilities();
+    test_capability_profile();
     test_stable_ieee_identity();
     puts("gateway_zigbee_input host tests passed");
     return 0;

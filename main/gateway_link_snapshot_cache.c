@@ -50,8 +50,12 @@ bool gateway_link_snapshot_cache_update(
         target->descriptor.input = descriptor->input;
     }
     target->descriptor.available = descriptor->available;
-    if (descriptor->capabilities != 0U || target->descriptor.capabilities == 0U) {
-        target->descriptor.capabilities = descriptor->capabilities;
+    target->descriptor.profile = descriptor->profile;
+    if (descriptor->manufacturer[0] != '\0') {
+        strncpy(target->descriptor.manufacturer,
+                descriptor->manufacturer,
+                sizeof(target->descriptor.manufacturer) - 1U);
+        target->descriptor.manufacturer[sizeof(target->descriptor.manufacturer) - 1U] = '\0';
     }
     if (descriptor->model[0] != '\0') {
         strncpy(target->descriptor.model,

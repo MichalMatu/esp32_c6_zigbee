@@ -61,6 +61,15 @@ typedef uint32_t gateway_input_capabilities_t;
 #define GATEWAY_INPUT_CAP_ENERGY          (1UL << 11)
 #define GATEWAY_INPUT_CAP_ON_OFF          (1UL << 12)
 
+#define GATEWAY_INPUT_METADATA_MAX_BYTES 24U
+
+typedef struct {
+    gateway_input_capabilities_t readable;
+    gateway_input_capabilities_t reportable;
+    gateway_input_capabilities_t configurable;
+    gateway_input_capabilities_t commandable;
+} gateway_input_capability_profile_t;
+
 typedef struct {
     gateway_measurement_kind_t kind;
     gateway_unit_t unit;

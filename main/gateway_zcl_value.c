@@ -107,6 +107,42 @@ gateway_input_capabilities_t gateway_zcl_capabilities_for_server_cluster(
     return 0U;
 }
 
+gateway_input_capabilities_t gateway_zcl_capability_for_attribute(
+    uint16_t cluster, uint16_t attribute)
+{
+    if (cluster == EZB_ZCL_CLUSTER_ID_POWER_CONFIG) {
+        if (attribute == ZCL_ATTR_BATTERY_VOLTAGE) {
+            return GATEWAY_INPUT_CAP_BATTERY_VOLTAGE;
+        }
+        if (attribute == ZCL_ATTR_BATTERY_PERCENT) {
+            return GATEWAY_INPUT_CAP_BATTERY_PERCENT;
+        }
+        return 0U;
+    }
+    if (cluster == EZB_ZCL_CLUSTER_ID_ON_OFF && attribute == ZCL_ATTR_ON_OFF) {
+        return GATEWAY_INPUT_CAP_ON_OFF;
+    }
+    if (attribute != ZCL_ATTR_MEASURED_VALUE) {
+        return 0U;
+    }
+    if (cluster == EZB_ZCL_CLUSTER_ID_ILLUMINANCE_MEASUREMENT) {
+        return GATEWAY_INPUT_CAP_ILLUMINANCE;
+    }
+    if (cluster == EZB_ZCL_CLUSTER_ID_TEMPERATURE_MEASUREMENT) {
+        return GATEWAY_INPUT_CAP_TEMPERATURE;
+    }
+    if (cluster == EZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT) {
+        return GATEWAY_INPUT_CAP_HUMIDITY;
+    }
+    if (cluster == EZB_ZCL_CLUSTER_ID_OCCUPANCY_SENSING) {
+        return GATEWAY_INPUT_CAP_OCCUPANCY;
+    }
+    if (cluster == EZB_ZCL_CLUSTER_ID_CARBON_DIOXIDE_MEASUREMENT) {
+        return GATEWAY_INPUT_CAP_CO2;
+    }
+    return 0U;
+}
+
 bool gateway_zcl_normalize(uint16_t cluster,
                            uint16_t attribute,
                            uint8_t type,

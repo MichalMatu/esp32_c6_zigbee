@@ -14,6 +14,9 @@ uint16_t gateway_zcl_attr_size(uint8_t type, const void *value);
 gateway_input_capabilities_t gateway_zcl_capabilities_for_server_cluster(
     uint16_t cluster);
 
+gateway_input_capabilities_t gateway_zcl_capability_for_attribute(
+    uint16_t cluster, uint16_t attribute);
+
 bool gateway_zcl_normalize(uint16_t cluster,
                            uint16_t attribute,
                            uint8_t type,

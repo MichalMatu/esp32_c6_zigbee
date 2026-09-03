@@ -1,18 +1,33 @@
 #include "gateway_zigbee_input.h"
 
+#include "gateway_reporting_policy.h"
 #include "gateway_zcl_value.h"
 
-gateway_input_capabilities_t gateway_zigbee_capabilities_from_clusters(
+#define ZCL_CLUSTER_ON_OFF 0x0006U
+
+gateway_input_capability_profile_t gateway_zigbee_capability_profile_from_clusters(
     const uint16_t *clusters, size_t count)
 {
-    gateway_input_capabilities_t capabilities = 0U;
+    gateway_input_capability_profile_t profile = {0};
     if (clusters == NULL) {
-        return capabilities;
+        return profile;
     }
     for (size_t i = 0U; i < count; ++i) {
-        capabilities |= gateway_zcl_capabilities_for_server_cluster(clusters[i]);
+        const uint16_t cluster = clusters[i];
+        profile.readable |= gateway_zcl_capabilities_for_server_cluster(cluster);
+
+        gateway_reporting_spec_t spec;
+        if (gateway_reporting_policy_spec(cluster, &spec)) {
+            const gateway_input_capabilities_t capability =
+                gateway_zcl_capability_for_attribute(cluster, spec.attribute_id);
+            profile.reportable |= capability;
+            profile.configurable |= capability;
+        }
+        if (cluster == ZCL_CLUSTER_ON_OFF) {
+            profile.commandable |= GATEWAY_INPUT_CAP_ON_OFF;
+        }
     }
-    return capabilities;
+    return profile;
 }
 
 bool gateway_zigbee_stable_input_id(

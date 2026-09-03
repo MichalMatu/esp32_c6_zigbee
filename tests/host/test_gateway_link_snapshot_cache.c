@@ -12,7 +12,10 @@ static gateway_link_input_descriptor_t descriptor(
     value.input.channel = channel;
     strncpy(value.input.id, id, sizeof(value.input.id) - 1U);
     value.available = available;
-    value.capabilities = GATEWAY_INPUT_CAP_TEMPERATURE | GATEWAY_INPUT_CAP_CO2;
+    value.profile.readable = GATEWAY_INPUT_CAP_TEMPERATURE | GATEWAY_INPUT_CAP_CO2;
+    value.profile.reportable = GATEWAY_INPUT_CAP_TEMPERATURE;
+    value.profile.configurable = GATEWAY_INPUT_CAP_TEMPERATURE;
+    strcpy(value.manufacturer, "sensor-maker");
     strcpy(value.model, "sensor-model");
     return value;
 }
@@ -30,6 +33,10 @@ static void test_update_and_unavailable_preserves_descriptor(void)
     assert(gateway_link_snapshot_cache_copy_slot(&cache, 0U, &copied));
     assert(copied.available);
     assert(strcmp(copied.input.id, "sensor:a") == 0);
+    assert(copied.profile.readable ==
+           (GATEWAY_INPUT_CAP_TEMPERATURE | GATEWAY_INPUT_CAP_CO2));
+    assert(copied.profile.reportable == GATEWAY_INPUT_CAP_TEMPERATURE);
+    assert(strcmp(copied.manufacturer, "sensor-maker") == 0);
     assert(strcmp(copied.model, "sensor-model") == 0);
 
     value.available = false;

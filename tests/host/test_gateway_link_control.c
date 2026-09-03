@@ -22,16 +22,19 @@ static gateway_link_frame_t make_hello(uint8_t type, gateway_link_role_t role, u
 static void test_hello_compatibility(void)
 {
     gateway_link_frame_t frame = make_hello(
-        GATEWAY_LINK_MSG_HELLO_ACK, GATEWAY_LINK_ROLE_S3_HOST, 1U, 1U);
+        GATEWAY_LINK_MSG_HELLO_ACK, GATEWAY_LINK_ROLE_S3_HOST,
+        GATEWAY_LINK_PROTOCOL_VERSION, GATEWAY_LINK_PROTOCOL_VERSION);
     gateway_link_control_action_t action = gateway_link_control_parse(&frame);
     assert(action.kind == GATEWAY_LINK_CONTROL_HELLO_ACK);
     assert(gateway_link_control_peer_compatible(&action.peer_hello));
 
-    frame = make_hello(GATEWAY_LINK_MSG_HELLO_ACK, GATEWAY_LINK_ROLE_S3_HOST, 2U, 2U);
+    frame = make_hello(GATEWAY_LINK_MSG_HELLO_ACK, GATEWAY_LINK_ROLE_S3_HOST, 1U, 1U);
     action = gateway_link_control_parse(&frame);
     assert(!gateway_link_control_peer_compatible(&action.peer_hello));
 
-    frame = make_hello(GATEWAY_LINK_MSG_HELLO_ACK, GATEWAY_LINK_ROLE_C6_GATEWAY, 1U, 1U);
+    frame = make_hello(
+        GATEWAY_LINK_MSG_HELLO_ACK, GATEWAY_LINK_ROLE_C6_GATEWAY,
+        GATEWAY_LINK_PROTOCOL_VERSION, GATEWAY_LINK_PROTOCOL_VERSION);
     action = gateway_link_control_parse(&frame);
     assert(!gateway_link_control_peer_compatible(&action.peer_hello));
 }
@@ -45,13 +48,15 @@ static void test_hello_builders_truthfully_advertise_permit_join(void)
     assert(gateway_link_decode_hello_payload(
         message.payload, message.payload_length, &hello) == GATEWAY_LINK_OK);
     assert(hello.role == GATEWAY_LINK_ROLE_C6_GATEWAY);
-    assert(hello.features == (GATEWAY_LINK_FEATURE_SNAPSHOT | GATEWAY_LINK_FEATURE_PERMIT_JOIN));
+    assert(hello.features == (GATEWAY_LINK_FEATURE_SNAPSHOT |
+        GATEWAY_LINK_FEATURE_PERMIT_JOIN | GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE));
 
     assert(gateway_link_make_hello_ack_message(&message));
     assert(message.type == GATEWAY_LINK_MSG_HELLO_ACK);
     assert(gateway_link_decode_hello_payload(
         message.payload, message.payload_length, &hello) == GATEWAY_LINK_OK);
-    assert(hello.features == (GATEWAY_LINK_FEATURE_SNAPSHOT | GATEWAY_LINK_FEATURE_PERMIT_JOIN));
+    assert(hello.features == (GATEWAY_LINK_FEATURE_SNAPSHOT |
+        GATEWAY_LINK_FEATURE_PERMIT_JOIN | GATEWAY_LINK_FEATURE_CAPABILITY_PROFILE));
 }
 
 static void test_ping_and_pong(void)

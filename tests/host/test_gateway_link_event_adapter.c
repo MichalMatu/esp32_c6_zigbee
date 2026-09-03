@@ -19,8 +19,11 @@ static void test_input_descriptor_event(void)
     gateway_event_t event = {0};
     event.kind = GATEWAY_EVENT_INPUT_AVAILABLE;
     event.input = scd41_input();
-    event.data.input_desc.capabilities = GATEWAY_INPUT_CAP_TEMPERATURE |
+    event.data.input_desc.profile.readable = GATEWAY_INPUT_CAP_TEMPERATURE |
         GATEWAY_INPUT_CAP_HUMIDITY | GATEWAY_INPUT_CAP_CO2;
+    event.data.input_desc.profile.reportable = GATEWAY_INPUT_CAP_TEMPERATURE;
+    event.data.input_desc.profile.configurable = GATEWAY_INPUT_CAP_TEMPERATURE;
+    strcpy(event.data.input_desc.manufacturer, "Sensirion");
     strcpy(event.data.input_desc.model, "SCD41");
 
     gateway_link_message_t message;
@@ -31,7 +34,10 @@ static void test_input_descriptor_event(void)
         message.payload, message.payload_length, &decoded) == GATEWAY_LINK_OK);
     assert(decoded.available);
     assert(strcmp(decoded.input.id, "scd4x:a12bef073b43") == 0);
-    assert(decoded.capabilities == 0x13U);
+    assert(decoded.profile.readable == 0x13U);
+    assert(decoded.profile.reportable == GATEWAY_INPUT_CAP_TEMPERATURE);
+    assert(decoded.profile.configurable == GATEWAY_INPUT_CAP_TEMPERATURE);
+    assert(strcmp(decoded.manufacturer, "Sensirion") == 0);
     assert(strcmp(decoded.model, "SCD41") == 0);
 
     event.kind = GATEWAY_EVENT_INPUT_UNAVAILABLE;

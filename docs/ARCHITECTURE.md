@@ -78,3 +78,8 @@ This direction should be revisited before implementation. Pin allocation, memory
 ## Growth rule
 
 Prefer extending the pure policy/state modules when adding supported clusters or device lifecycle behavior. Keep SDK-specific request/callback lifetime management in the gateway integration layer unless a future extraction creates a smaller coherent discovery API rather than merely moving functions between files.
+
+
+## Normalized capability access profile
+
+The application boundary uses `gateway_input_capability_profile_t`, not Zigbee cluster IDs. `readable` identifies normalized state/measurements C6 understands, `reportable` and `configurable` identify values backed by an explicit source policy implementation, and `commandable` identifies normalized writable state. Zigbee Simple Descriptor data remains internal evidence used to construct that profile. GatewayLink v2 transports the profile unchanged over either UART or I2C.

@@ -9,6 +9,13 @@ permissions:
   contents: read
 
 jobs:
+  source-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject embedded NUL bytes in text sources
+        run: python3 tests/host/test_no_embedded_nul.py
+
   host-zcl:
     runs-on: ubuntu-latest
     steps:
@@ -65,6 +72,7 @@ jobs:
             tests/host/test_gateway_zigbee_input.c \
             main/gateway_zigbee_input.c \
             main/gateway_zcl_value.c \
+            main/gateway_reporting_policy.c \
             main/gateway_inputs.c \
             -lm \
             -o /tmp/test_gateway_zigbee_input

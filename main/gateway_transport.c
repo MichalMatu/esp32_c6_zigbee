@@ -148,10 +148,16 @@ static void log_event(const gateway_event_t *event)
     {
         char input[80];
         format_input(&event->input, input, sizeof(input));
-        ESP_LOGI(TAG, "input %s %s model=%s capabilities=0x%08" PRIx32,
+        ESP_LOGI(TAG,
+                 "input %s %s manufacturer=%s model=%s read=0x%08" PRIx32
+                 " report=0x%08" PRIx32 " config=0x%08" PRIx32
+                 " command=0x%08" PRIx32,
                  event->kind == GATEWAY_EVENT_INPUT_AVAILABLE ? "available" : "unavailable",
-                 input, event->data.input_desc.model,
-                 (uint32_t)event->data.input_desc.capabilities);
+                 input, event->data.input_desc.manufacturer, event->data.input_desc.model,
+                 (uint32_t)event->data.input_desc.profile.readable,
+                 (uint32_t)event->data.input_desc.profile.reportable,
+                 (uint32_t)event->data.input_desc.profile.configurable,
+                 (uint32_t)event->data.input_desc.profile.commandable);
         break;
     }
     case GATEWAY_EVENT_MEASUREMENT:

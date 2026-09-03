@@ -89,8 +89,9 @@ typedef struct {
             uint16_t output_clusters[GATEWAY_MAX_DESCRIPTOR_CLUSTERS];
         } endpoint_desc;
         struct {
-            gateway_input_capabilities_t capabilities;
-            char model[24];
+            gateway_input_capability_profile_t profile;
+            char manufacturer[GATEWAY_INPUT_METADATA_MAX_BYTES];
+            char model[GATEWAY_INPUT_METADATA_MAX_BYTES];
         } input_desc;
         gateway_measurement_t measurement;
         struct {

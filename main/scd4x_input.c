@@ -53,7 +53,7 @@ static void publish_input_state(
     gateway_event_t event = gateway_event_make_input(
         available ? GATEWAY_EVENT_INPUT_AVAILABLE : GATEWAY_EVENT_INPUT_UNAVAILABLE,
         input);
-    event.data.input_desc.capabilities = SCD4X_CAPABILITIES;
+    event.data.input_desc.profile.readable = SCD4X_CAPABILITIES;
     if (model != NULL) {
         strncpy(
             event.data.input_desc.model,

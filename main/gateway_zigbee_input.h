@@ -6,7 +6,7 @@
 
 #include "gateway_inputs.h"
 
-gateway_input_capabilities_t gateway_zigbee_capabilities_from_clusters(
+gateway_input_capability_profile_t gateway_zigbee_capability_profile_from_clusters(
     const uint16_t *clusters, size_t count);
 
 bool gateway_zigbee_stable_input_id(

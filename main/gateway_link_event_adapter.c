@@ -16,8 +16,11 @@ bool gateway_link_message_from_event(
         gateway_link_input_descriptor_t descriptor = {
             .input = event->input,
             .available = event->kind == GATEWAY_EVENT_INPUT_AVAILABLE,
-            .capabilities = event->data.input_desc.capabilities,
+            .profile = event->data.input_desc.profile,
         };
+        strncpy(
+            descriptor.manufacturer, event->data.input_desc.manufacturer,
+            sizeof(descriptor.manufacturer) - 1U);
         strncpy(descriptor.model, event->data.input_desc.model, sizeof(descriptor.model) - 1U);
         message->type = GATEWAY_LINK_MSG_INPUT_DESCRIPTOR;
         return gateway_link_encode_input_descriptor_payload(

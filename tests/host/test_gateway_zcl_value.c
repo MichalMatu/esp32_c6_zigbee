@@ -78,6 +78,21 @@ static void test_boolean_values(void)
     assert(kind == GATEWAY_MEAS_OCCUPANCY);
 }
 
+static void test_attribute_capabilities(void)
+{
+    assert(gateway_zcl_capability_for_attribute(CLUSTER_POWER_CONFIG, 0x0020U) ==
+        GATEWAY_INPUT_CAP_BATTERY_VOLTAGE);
+    assert(gateway_zcl_capability_for_attribute(CLUSTER_POWER_CONFIG, 0x0021U) ==
+        GATEWAY_INPUT_CAP_BATTERY_PERCENT);
+    assert(gateway_zcl_capability_for_attribute(CLUSTER_ON_OFF, 0x0000U) ==
+        GATEWAY_INPUT_CAP_ON_OFF);
+    assert(gateway_zcl_capability_for_attribute(CLUSTER_TEMPERATURE, 0x0000U) ==
+        GATEWAY_INPUT_CAP_TEMPERATURE);
+    assert(gateway_zcl_capability_for_attribute(CLUSTER_HUMIDITY, 0x0000U) ==
+        GATEWAY_INPUT_CAP_HUMIDITY);
+    assert(gateway_zcl_capability_for_attribute(CLUSTER_POWER_CONFIG, 0xffffU) == 0U);
+}
+
 static void test_co2_and_invalid_input(void)
 {
     float co2_fraction = 0.0008f;
@@ -104,6 +119,7 @@ int main(void)
     test_temperature();
     test_humidity_and_battery();
     test_boolean_values();
+    test_attribute_capabilities();
     test_co2_and_invalid_input();
     puts("gateway_zcl_value host tests passed");
     return 0;

@@ -651,7 +651,7 @@ static void binding_callback(const ezb_zdp_bind_req_result_t *result, void *user
 static bool publish_generic_input(
     device_slot_t *slot, endpoint_state_t *state, bool available)
 {
-    if (slot == NULL || state == NULL || state->input_capabilities == 0U) {
+    if (slot == NULL || state == NULL || state->input_profile.readable == 0U) {
         return false;
     }
     gateway_input_id_t input;
@@ -664,7 +664,10 @@ static bool publish_generic_input(
         available ? GATEWAY_EVENT_INPUT_AVAILABLE : GATEWAY_EVENT_INPUT_UNAVAILABLE,
         &input);
     event.endpoint = state->endpoint;
-    event.data.input_desc.capabilities = state->input_capabilities;
+    event.data.input_desc.profile = state->input_profile;
+    strncpy(
+        event.data.input_desc.manufacturer, state->manufacturer,
+        sizeof(event.data.input_desc.manufacturer) - 1U);
     strncpy(
         event.data.input_desc.model, state->model,
         sizeof(event.data.input_desc.model) - 1U);
@@ -701,8 +704,8 @@ static void simple_callback(
 
     const ezb_af_simple_desc_t *desc = &result->rsp->desc;
     endpoint_state_t *input_state = endpoint_state(slot, desc->ep_id, true);
-    const gateway_input_capabilities_t capabilities =
-        gateway_zigbee_capabilities_from_clusters(
+    const gateway_input_capability_profile_t profile =
+        gateway_zigbee_capability_profile_from_clusters(
             desc->app_cluster_list, desc->app_input_cluster_count);
     if (!slot->device.ieee_valid) {
         ezb_extaddr_t resolved_ieee;
@@ -712,11 +715,11 @@ static void simple_callback(
             slot->device.ieee_valid = true;
         }
     }
-    if (input_state != NULL && input_state->input_announced && capabilities == 0U) {
+    if (input_state != NULL && input_state->input_announced && profile.readable == 0U) {
         (void)publish_generic_input(slot, input_state, false);
     }
     if (input_state != NULL) {
-        input_state->input_capabilities = capabilities;
+        input_state->input_profile = profile;
     }
 
     gateway_event_t event = gateway_event_make(GATEWAY_EVENT_ENDPOINT, &slot->device);
@@ -740,7 +743,7 @@ static void simple_callback(
             desc->app_cluster_list[desc->app_input_cluster_count + i];
     }
     gateway_event_publish(&event);
-    if (input_state != NULL && capabilities != 0U) {
+    if (input_state != NULL && profile.readable != 0U) {
         (void)publish_generic_input(slot, input_state, true);
     }
 

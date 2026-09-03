@@ -8,7 +8,7 @@
 #define LINK_CRC_BYTES 4U
 #define LINK_RAW_MAX_BYTES (LINK_HEADER_BYTES + GATEWAY_LINK_MAX_PAYLOAD + LINK_CRC_BYTES)
 
-_Static_assert(sizeof(double) == 8U, "GatewayLink v1 requires 64-bit IEEE-754 double");
+_Static_assert(sizeof(double) == 8U, "GatewayLink v2 requires 64-bit IEEE-754 double");
 
 static size_t bounded_string_length(const char *text, size_t limit)
 {
@@ -478,12 +478,35 @@ gateway_link_result_t gateway_link_encode_input_descriptor_payload(
     size_t used = 0U;
     gateway_link_result_t result = encode_input_ref(&descriptor->input, payload, capacity, &used);
     if (result != GATEWAY_LINK_OK) return result;
-    const size_t model_length = bounded_string_length(descriptor->model, GATEWAY_LINK_MODEL_MAX_BYTES);
-    if (model_length >= GATEWAY_LINK_MODEL_MAX_BYTES || model_length > 255U) return GATEWAY_LINK_INVALID_ARG;
-    if (used + 6U + model_length > capacity) return GATEWAY_LINK_BUFFER_TOO_SMALL;
+
+    const size_t manufacturer_length = bounded_string_length(
+        descriptor->manufacturer, GATEWAY_LINK_MANUFACTURER_MAX_BYTES);
+    const size_t model_length = bounded_string_length(
+        descriptor->model, GATEWAY_LINK_MODEL_MAX_BYTES);
+    if (manufacturer_length >= GATEWAY_LINK_MANUFACTURER_MAX_BYTES ||
+        model_length >= GATEWAY_LINK_MODEL_MAX_BYTES ||
+        manufacturer_length > 255U || model_length > 255U) {
+        return GATEWAY_LINK_INVALID_ARG;
+    }
+    if (used + 19U + manufacturer_length + model_length > capacity) {
+        return GATEWAY_LINK_BUFFER_TOO_SMALL;
+    }
+
     payload[used++] = descriptor->available ? 1U : 0U;
-    write_u32_le(&payload[used], descriptor->capabilities);
+    write_u32_le(&payload[used], descriptor->profile.readable);
     used += 4U;
+    write_u32_le(&payload[used], descriptor->profile.reportable);
+    used += 4U;
+    write_u32_le(&payload[used], descriptor->profile.configurable);
+    used += 4U;
+    write_u32_le(&payload[used], descriptor->profile.commandable);
+    used += 4U;
+
+    payload[used++] = (uint8_t)manufacturer_length;
+    if (manufacturer_length != 0U) {
+        memcpy(&payload[used], descriptor->manufacturer, manufacturer_length);
+        used += manufacturer_length;
+    }
     payload[used++] = (uint8_t)model_length;
     if (model_length != 0U) {
         memcpy(&payload[used], descriptor->model, model_length);
@@ -499,19 +522,40 @@ gateway_link_result_t gateway_link_decode_input_descriptor_payload(
     gateway_link_input_descriptor_t *descriptor)
 {
     if (payload == NULL || descriptor == NULL) return GATEWAY_LINK_INVALID_ARG;
+    memset(descriptor, 0, sizeof(*descriptor));
     size_t used = 0U;
     gateway_link_result_t result = decode_input_ref(payload, length, &descriptor->input, &used);
     if (result != GATEWAY_LINK_OK) return result;
-    if (used + 6U > length) return GATEWAY_LINK_MALFORMED;
+    if (used + 19U > length) return GATEWAY_LINK_MALFORMED;
     if (payload[used] > 1U) return GATEWAY_LINK_MALFORMED;
     descriptor->available = payload[used++] != 0U;
-    descriptor->capabilities = read_u32_le(&payload[used]);
+    descriptor->profile.readable = read_u32_le(&payload[used]);
     used += 4U;
+    descriptor->profile.reportable = read_u32_le(&payload[used]);
+    used += 4U;
+    descriptor->profile.configurable = read_u32_le(&payload[used]);
+    used += 4U;
+    descriptor->profile.commandable = read_u32_le(&payload[used]);
+    used += 4U;
+
+    const uint8_t manufacturer_length = payload[used++];
+    if (manufacturer_length >= GATEWAY_LINK_MANUFACTURER_MAX_BYTES ||
+        used + manufacturer_length + 1U > length) {
+        return GATEWAY_LINK_MALFORMED;
+    }
+    if (manufacturer_length != 0U) {
+        memcpy(descriptor->manufacturer, &payload[used], manufacturer_length);
+        used += manufacturer_length;
+    }
+    descriptor->manufacturer[manufacturer_length] = '\0';
+
     const uint8_t model_length = payload[used++];
     if (model_length >= GATEWAY_LINK_MODEL_MAX_BYTES || used + model_length != length) {
         return GATEWAY_LINK_MALFORMED;
     }
-    if (model_length != 0U) memcpy(descriptor->model, &payload[used], model_length);
+    if (model_length != 0U) {
+        memcpy(descriptor->model, &payload[used], model_length);
+    }
     descriptor->model[model_length] = '\0';
     return GATEWAY_LINK_OK;
 }

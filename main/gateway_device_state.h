@@ -8,7 +8,7 @@
 #define GATEWAY_MAX_DEVICES 16U
 #define GATEWAY_MAX_ENDPOINTS_PER_DEVICE 8U
 #define GATEWAY_INVALID_SHORT_ADDR 0xffffU
-#define GATEWAY_BASIC_TEXT_MAX_BYTES 24U
+#define GATEWAY_BASIC_TEXT_MAX_BYTES GATEWAY_INPUT_METADATA_MAX_BYTES
 #define GATEWAY_MAX_BINDING_STATES_PER_DEVICE 16U
 #define GATEWAY_MAX_REPORTING_STATES_PER_DEVICE 16U
 #define GATEWAY_CONFIG_STATUS_UNKNOWN 0xffU
@@ -42,7 +42,7 @@ typedef struct {
     uint8_t endpoint;
     basic_state_t basic_state;
     uint32_t basic_scheduled_at_ms;
-    gateway_input_capabilities_t input_capabilities;
+    gateway_input_capability_profile_t input_profile;
     char manufacturer[GATEWAY_BASIC_TEXT_MAX_BYTES];
     char model[GATEWAY_BASIC_TEXT_MAX_BYTES];
     bool input_announced;
