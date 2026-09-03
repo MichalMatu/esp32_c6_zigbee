@@ -1,0 +1,9 @@
+{
+  "event": "invalid_task_rejected",
+  "status": "failed",
+  "failure_reason": "invalid_task_file",
+  "updated_at": "2026-09-03T19:19:24.191686+00:00",
+  "task_id": "20260903-c6-phase5-ezbee-command-headers-v1",
+  "daemon_version": "4.15.0",
+  "pid": 13503
+}
