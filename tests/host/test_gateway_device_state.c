@@ -7,6 +7,37 @@
 static const uint8_t IEEE_A[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 static const uint8_t IEEE_B[8] = {8, 7, 6, 5, 4, 3, 2, 1};
 
+static void test_config_state(device_slot_t *slot)
+{
+    binding_state_t *first_binding = NULL;
+    for (uint16_t i = 0; i < GATEWAY_MAX_BINDING_STATES_PER_DEVICE; ++i) {
+        binding_state_t *state = gateway_device_binding_state(
+            slot, 1U, (uint16_t)(0x1000U + i), true);
+        assert(state != NULL);
+        assert(state->last_status == GATEWAY_CONFIG_STATUS_UNKNOWN);
+        if (i == 0U) {
+            first_binding = state;
+        }
+    }
+    assert(gateway_device_binding_state(slot, 1U, 0x1000U, false) == first_binding);
+    assert(gateway_device_binding_state(slot, 1U, 0x2000U, true) == NULL);
+
+    reporting_state_t *first_reporting = NULL;
+    for (uint16_t i = 0; i < GATEWAY_MAX_REPORTING_STATES_PER_DEVICE; ++i) {
+        reporting_state_t *state = gateway_device_reporting_state(
+            slot, 1U, 0x3000U, i, true);
+        assert(state != NULL);
+        assert(state->last_status == GATEWAY_CONFIG_STATUS_UNKNOWN);
+        if (i == 0U) {
+            first_reporting = state;
+        }
+    }
+    assert(gateway_device_reporting_state(
+        slot, 1U, 0x3000U, 0U, false) == first_reporting);
+    assert(gateway_device_reporting_state(
+        slot, 1U, 0x3000U, 0x4000U, true) == NULL);
+}
+
 static void test_basic_metadata(endpoint_state_t *state)
 {
     assert(state != NULL);
@@ -80,6 +111,7 @@ int main(void)
         assert(gateway_device_endpoint_state(a2, ep, false) == state);
     }
     test_basic_metadata(gateway_device_endpoint_state(a2, 1U, false));
+    test_config_state(a2);
     assert(gateway_device_endpoint_state(a2, 99U, true) == NULL);
     assert(gateway_device_endpoint_state(NULL, 1U, true) == NULL);
 

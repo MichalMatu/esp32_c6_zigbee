@@ -9,6 +9,9 @@
 #define GATEWAY_MAX_ENDPOINTS_PER_DEVICE 8U
 #define GATEWAY_INVALID_SHORT_ADDR 0xffffU
 #define GATEWAY_BASIC_TEXT_MAX_BYTES 24U
+#define GATEWAY_MAX_BINDING_STATES_PER_DEVICE 16U
+#define GATEWAY_MAX_REPORTING_STATES_PER_DEVICE 16U
+#define GATEWAY_CONFIG_STATUS_UNKNOWN 0xffU
 
 typedef enum { SLOT_EMPTY, SLOT_ACTIVE, SLOT_REJOIN_PENDING, SLOT_LEAVING } slot_state_t;
 typedef enum { BASIC_NOT_SCHEDULED, BASIC_SCHEDULED, BASIC_COMPLETE } basic_state_t;
@@ -16,14 +19,29 @@ typedef enum { BASIC_NOT_SCHEDULED, BASIC_SCHEDULED, BASIC_COMPLETE } basic_stat
 typedef struct {
     bool in_use;
     uint8_t endpoint;
+    uint16_t cluster_id;
+    bool requested;
+    bool configured;
+    uint8_t last_status;
+    uint32_t requested_at_ms;
+} binding_state_t;
+
+typedef struct {
+    bool in_use;
+    uint8_t endpoint;
+    uint16_t cluster_id;
+    uint16_t attribute_id;
+    bool requested;
+    bool configured;
+    uint8_t last_status;
+    uint32_t requested_at_ms;
+} reporting_state_t;
+
+typedef struct {
+    bool in_use;
+    uint8_t endpoint;
     basic_state_t basic_state;
     uint32_t basic_scheduled_at_ms;
-    uint8_t reporting_requested;
-    uint8_t reporting_configured;
-    uint32_t reporting_requested_at_ms;
-    uint8_t binding_requested;
-    uint8_t binding_configured;
-    uint32_t binding_requested_at_ms;
     gateway_input_capabilities_t input_capabilities;
     char manufacturer[GATEWAY_BASIC_TEXT_MAX_BYTES];
     char model[GATEWAY_BASIC_TEXT_MAX_BYTES];
@@ -38,6 +56,8 @@ typedef struct {
     uint16_t discovery_short_addr;
     uint8_t pending_jobs;
     uint8_t pending_requests;
+    binding_state_t bindings[GATEWAY_MAX_BINDING_STATES_PER_DEVICE];
+    reporting_state_t reporting[GATEWAY_MAX_REPORTING_STATES_PER_DEVICE];
     endpoint_state_t endpoints[GATEWAY_MAX_ENDPOINTS_PER_DEVICE];
 } device_slot_t;
 
@@ -61,5 +81,10 @@ void gateway_device_release_discovery(device_slot_t *slot, uint16_t short_addr);
 void gateway_device_reset_discovery(device_slot_t *slot);
 bool gateway_device_endpoint_update_basic(
     endpoint_state_t *state, const char *manufacturer, const char *model);
+binding_state_t *gateway_device_binding_state(
+    device_slot_t *slot, uint8_t endpoint, uint16_t cluster_id, bool create);
+reporting_state_t *gateway_device_reporting_state(
+    device_slot_t *slot, uint8_t endpoint, uint16_t cluster_id,
+    uint16_t attribute_id, bool create);
 endpoint_state_t *gateway_device_endpoint_state(
     device_slot_t *slot, uint8_t endpoint, bool create);

@@ -145,8 +145,9 @@ Do not add or solder the S3 yet. Keep UART as the known-working GatewayLink obse
 
 Implementation progress after the generic-coordinator audit:
 
-- Phase 1 hardens the normalized Zigbee boundary so IEEE+endpoint is the only external Zigbee input identity, preserves Basic manufacturer/model metadata in endpoint state, and refreshes the normalized input descriptor when model metadata becomes known.
-- The next implementation slice is the richer standard-ZCL capability/reporting state needed before frontend-driven Configure Reporting and writable commands.
+- Phase 1 is complete: IEEE+endpoint is the only normalized Zigbee input identity, Basic manufacturer/model metadata is retained, and input descriptors refresh when model metadata becomes known.
+- Phase 2 replaces the fixed reporting/binding bitmaps with bounded records keyed by endpoint/cluster/attribute so Configure Reporting state can scale beyond one hard-coded bit per supported cluster and preserve per-attribute result status.
+- The next implementation slice is normalized capability/configuration exposure through GatewayLink, followed by frontend-driven Configure Reporting and writable commands.
 
 Execution order:
 

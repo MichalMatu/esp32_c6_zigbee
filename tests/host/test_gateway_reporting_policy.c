@@ -12,7 +12,7 @@ int main(void)
 {
     gateway_reporting_spec_t spec;
 
-    assert(gateway_reporting_policy_reporting_mask(CLUSTER_TEMPERATURE) != 0U);
+    assert(gateway_reporting_policy_requires_binding(CLUSTER_TEMPERATURE));
     assert(gateway_reporting_policy_spec(CLUSTER_TEMPERATURE, &spec));
     assert(spec.attribute_id == 0x0000U);
     assert(spec.attribute_type == 0x29U);
@@ -33,11 +33,11 @@ int main(void)
     assert(spec.change_kind == GATEWAY_REPORTING_CHANGE_U8);
     assert(spec.reportable_change == 2);
 
-    assert(gateway_reporting_policy_reporting_mask(CLUSTER_POLL_CONTROL) == 0U);
-    assert(gateway_reporting_policy_binding_mask(CLUSTER_POLL_CONTROL) != 0U);
+    assert(gateway_reporting_policy_requires_binding(CLUSTER_HUMIDITY));
+    assert(gateway_reporting_policy_requires_binding(CLUSTER_POWER_CONFIG));
+    assert(gateway_reporting_policy_requires_binding(CLUSTER_POLL_CONTROL));
     assert(!gateway_reporting_policy_spec(CLUSTER_POLL_CONTROL, &spec));
-    assert(gateway_reporting_policy_reporting_mask(0xffffU) == 0U);
-    assert(gateway_reporting_policy_binding_mask(0xffffU) == 0U);
+    assert(!gateway_reporting_policy_requires_binding(0xffffU));
     assert(!gateway_reporting_policy_spec(0xffffU, &spec));
     assert(!gateway_reporting_policy_spec(CLUSTER_TEMPERATURE, NULL));
 

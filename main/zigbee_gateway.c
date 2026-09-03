@@ -220,39 +220,66 @@ static bool schedule_basic(device_slot_t *slot, uint8_t endpoint)
 static bool schedule_binding(
     device_slot_t *slot, uint8_t endpoint, uint16_t cluster)
 {
-    const uint8_t mask = gateway_reporting_policy_binding_mask(cluster);
+    if (!gateway_reporting_policy_requires_binding(cluster)) {
+        return false;
+    }
     endpoint_state_t *state = endpoint_state(slot, endpoint, true);
-    if (state == NULL || mask == 0U ||
-        (state->binding_requested & mask) != 0U ||
-        (state->binding_configured & mask) != 0U) {
+    if (state == NULL) {
+        return false;
+    }
+    binding_state_t *binding = gateway_device_binding_state(
+        slot, endpoint, cluster, true);
+    if (binding == NULL) {
+        gateway_event_warning(&slot->device, "binding state capacity exhausted");
+        return false;
+    }
+    if (binding->requested || binding->configured) {
         return false;
     }
     if (!queue_job(DISCOVERY_BIND_CLUSTER, slot, endpoint, cluster, 0U)) {
         gateway_event_warning(&slot->device, "binding queue full");
         return false;
     }
-    state->binding_requested |= mask;
-    state->binding_requested_at_ms = gateway_uptime_ms();
+    binding->requested = true;
+    binding->requested_at_ms = gateway_uptime_ms();
+    binding->last_status = GATEWAY_CONFIG_STATUS_UNKNOWN;
     return true;
 }
 
 static bool schedule_reporting(
     device_slot_t *slot, uint8_t endpoint, uint16_t cluster)
 {
-    const uint8_t mask = gateway_reporting_policy_reporting_mask(cluster);
+    gateway_reporting_spec_t spec;
+    if (!gateway_reporting_policy_spec(cluster, &spec)) {
+        return false;
+    }
     endpoint_state_t *state = endpoint_state(slot, endpoint, true);
-    if (state == NULL || mask == 0U ||
-        (state->binding_configured & mask) == 0U ||
-        (state->reporting_requested & mask) != 0U ||
-        (state->reporting_configured & mask) != 0U) {
+    if (state == NULL) {
+        return false;
+    }
+    if (gateway_reporting_policy_requires_binding(cluster)) {
+        binding_state_t *binding = gateway_device_binding_state(
+            slot, endpoint, cluster, false);
+        if (binding == NULL || !binding->configured) {
+            return false;
+        }
+    }
+    reporting_state_t *reporting = gateway_device_reporting_state(
+        slot, endpoint, cluster, spec.attribute_id, true);
+    if (reporting == NULL) {
+        gateway_event_warning(&slot->device, "reporting state capacity exhausted");
+        return false;
+    }
+    if (reporting->requested || reporting->configured) {
         return false;
     }
     if (!queue_job(DISCOVERY_CONFIG_REPORTING, slot, endpoint, cluster, 0U)) {
         gateway_event_warning(&slot->device, "reporting queue full");
         return false;
     }
-    state->reporting_requested |= mask;
-    state->reporting_requested_at_ms = gateway_uptime_ms();
+    reporting->requested = true;
+    reporting->requested_at_ms = gateway_uptime_ms();
+    reporting->last_status = GATEWAY_CONFIG_STATUS_UNKNOWN;
     return true;
 }
 
@@ -292,18 +319,26 @@ static void context_release(async_context_t *context)
 static void clear_pending(device_slot_t *slot, const discovery_job_t *job)
 {
     endpoint_state_t *state = endpoint_state(slot, job->endpoint, false);
-    if (state == NULL) {
-        return;
-    }
-    if (job->kind == DISCOVERY_READ_BASIC &&
+    if (job->kind == DISCOVERY_READ_BASIC && state != NULL &&
         state->basic_state == BASIC_SCHEDULED) {
         state->basic_state = BASIC_NOT_SCHEDULED;
     }
     if (job->kind == DISCOVERY_BIND_CLUSTER) {
-        state->binding_requested &= (uint8_t)~gateway_reporting_policy_binding_mask(job->cluster_id);
+        binding_state_t *binding = gateway_device_binding_state(
+            slot, job->endpoint, job->cluster_id, false);
+        if (binding != NULL) {
+            binding->requested = false;
+        }
     }
     if (job->kind == DISCOVERY_CONFIG_REPORTING) {
-        state->reporting_requested &= (uint8_t)~gateway_reporting_policy_reporting_mask(job->cluster_id);
+        gateway_reporting_spec_t spec;
+        if (gateway_reporting_policy_spec(job->cluster_id, &spec)) {
+            reporting_state_t *reporting = gateway_device_reporting_state(
+                slot, job->endpoint, job->cluster_id, spec.attribute_id, false);
+            if (reporting != NULL) {
+                reporting->requested = false;
+            }
+        }
     }
 }
 
@@ -469,18 +504,17 @@ static void publish_config_response(
     }
     gateway_device_id_t device = device_from_header(header);
     device_slot_t *slot = gateway_device_find_by_short(device.short_addr, false);
-    endpoint_state_t *state =
-        slot == NULL ? NULL : endpoint_state(slot, header->src_ep, false);
-    const uint8_t mask = gateway_reporting_policy_reporting_mask(header->cluster_id);
 
     for (ezb_zcl_config_report_rsp_variable_t *item = message->in.variables;
          item != NULL;
          item = item->next) {
-        if (state != NULL && (state->reporting_requested & mask) != 0U) {
-            state->reporting_requested &= (uint8_t)~mask;
-            if (item->status == EZB_ZCL_STATUS_SUCCESS) {
-                state->reporting_configured |= mask;
-            }
+        reporting_state_t *reporting = slot == NULL ? NULL :
+            gateway_device_reporting_state(
+                slot, header->src_ep, header->cluster_id, item->attr_id, false);
+        if (reporting != NULL) {
+            reporting->requested = false;
+            reporting->last_status = item->status;
+            reporting->configured = item->status == EZB_ZCL_STATUS_SUCCESS;
         }
         gateway_event_t event = gateway_event_make(
             GATEWAY_EVENT_REPORTING_CONFIG, &device
@@ -520,15 +554,21 @@ static void handle_check_in(ezb_zcl_poll_control_check_in_message_t *message)
                 GATEWAY_REQUEST_STALE_MS) {
             state->basic_state = BASIC_NOT_SCHEDULED;
         }
-        if (state->binding_requested != 0U &&
-            (uint32_t)(now_ms - state->binding_requested_at_ms) >=
+    }
+    for (size_t i = 0; i < GATEWAY_MAX_BINDING_STATES_PER_DEVICE; ++i) {
+        binding_state_t *binding = &slot->bindings[i];
+        if (binding->in_use && binding->requested &&
+            (uint32_t)(now_ms - binding->requested_at_ms) >=
                 GATEWAY_REQUEST_STALE_MS) {
-            state->binding_requested = 0U;
+            binding->requested = false;
         }
-        if (state->reporting_requested != 0U &&
-            (uint32_t)(now_ms - state->reporting_requested_at_ms) >=
+    }
+    for (size_t i = 0; i < GATEWAY_MAX_REPORTING_STATES_PER_DEVICE; ++i) {
+        reporting_state_t *reporting = &slot->reporting[i];
+        if (reporting->in_use && reporting->requested &&
+            (uint32_t)(now_ms - reporting->requested_at_ms) >=
                 GATEWAY_REQUEST_STALE_MS) {
-            state->reporting_requested = 0U;
+            reporting->requested = false;
         }
     }
 
@@ -575,16 +615,16 @@ static void binding_callback(const ezb_zdp_bind_req_result_t *result, void *user
         result->rsp->status : 0xffU;
 
     if (context != NULL && context->in_use && context_route(context, &slot)) {
-        endpoint_state_t *state = endpoint_state(
-            slot, context->endpoint, false
-        );
-        if (status == EZB_ZDP_STATUS_SUCCESS && state != NULL) {
-            const uint8_t mask = gateway_reporting_policy_binding_mask(context->cluster_id);
-            state->binding_requested &= (uint8_t)~mask;
-            state->binding_configured |= mask;
+        binding_state_t *binding = gateway_device_binding_state(
+            slot, context->endpoint, context->cluster_id, false);
+        if (binding != NULL) {
+            binding->last_status = status;
+        }
+        if (status == EZB_ZDP_STATUS_SUCCESS && binding != NULL) {
+            binding->requested = false;
+            binding->configured = true;
             schedule_reporting(slot, context->endpoint, context->cluster_id);
-        } else if (state != NULL) {
-            state->binding_requested |= gateway_reporting_policy_binding_mask(context->cluster_id);
+        } else if (binding != NULL) {
             retry_or_fail(
                 (discovery_job_t){
                     .kind = DISCOVERY_BIND_CLUSTER,
@@ -710,10 +750,13 @@ static void simple_callback(
         if (cluster == EZB_ZCL_CLUSTER_ID_BASIC) {
             basic = true;
         }
-        if (gateway_reporting_policy_binding_mask(cluster) != 0U) {
+        if (gateway_reporting_policy_requires_binding(cluster)) {
             schedule_binding(slot, desc->ep_id, cluster);
-        } else if (gateway_reporting_policy_reporting_mask(cluster) != 0U) {
-            schedule_reporting(slot, desc->ep_id, cluster);
+        } else {
+            gateway_reporting_spec_t spec;
+            if (gateway_reporting_policy_spec(cluster, &spec)) {
+                schedule_reporting(slot, desc->ep_id, cluster);
+            }
         }
     }
     if (basic) {

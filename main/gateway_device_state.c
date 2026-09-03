@@ -64,6 +64,8 @@ void gateway_device_maybe_reclaim(device_slot_t *slot)
 {
     if (slot != NULL && slot->state == SLOT_LEAVING &&
         slot->pending_jobs == 0U && slot->pending_requests == 0U) {
+        memset(slot->bindings, 0, sizeof(slot->bindings));
+        memset(slot->reporting, 0, sizeof(slot->reporting));
         memset(slot->endpoints, 0, sizeof(slot->endpoints));
         memset(&slot->device, 0, sizeof(slot->device));
         slot->device.short_addr = GATEWAY_INVALID_SHORT_ADDR;
@@ -177,6 +179,66 @@ bool gateway_device_endpoint_update_basic(
         changed = update_bounded_text(state->model, model) || changed;
     }
     return changed;
+}
+
+binding_state_t *gateway_device_binding_state(
+    device_slot_t *slot, uint8_t endpoint, uint16_t cluster_id, bool create)
+{
+    if (slot == NULL) {
+        return NULL;
+    }
+    binding_state_t *free_state = NULL;
+    for (size_t i = 0; i < GATEWAY_MAX_BINDING_STATES_PER_DEVICE; ++i) {
+        binding_state_t *state = &slot->bindings[i];
+        if (state->in_use && state->endpoint == endpoint &&
+            state->cluster_id == cluster_id) {
+            return state;
+        }
+        if (!state->in_use && free_state == NULL) {
+            free_state = state;
+        }
+    }
+    if (!create || free_state == NULL) {
+        return NULL;
+    }
+    *free_state = (binding_state_t){
+        .in_use = true,
+        .endpoint = endpoint,
+        .cluster_id = cluster_id,
+        .last_status = GATEWAY_CONFIG_STATUS_UNKNOWN,
+    };
+    return free_state;
+}
+
+reporting_state_t *gateway_device_reporting_state(
+    device_slot_t *slot, uint8_t endpoint, uint16_t cluster_id,
+    uint16_t attribute_id, bool create)
+{
+    if (slot == NULL) {
+        return NULL;
+    }
+    reporting_state_t *free_state = NULL;
+    for (size_t i = 0; i < GATEWAY_MAX_REPORTING_STATES_PER_DEVICE; ++i) {
+        reporting_state_t *state = &slot->reporting[i];
+        if (state->in_use && state->endpoint == endpoint &&
+            state->cluster_id == cluster_id && state->attribute_id == attribute_id) {
+            return state;
+        }
+        if (!state->in_use && free_state == NULL) {
+            free_state = state;
+        }
+    }
+    if (!create || free_state == NULL) {
+        return NULL;
+    }
+    *free_state = (reporting_state_t){
+        .in_use = true,
+        .endpoint = endpoint,
+        .cluster_id = cluster_id,
+        .attribute_id = attribute_id,
+        .last_status = GATEWAY_CONFIG_STATUS_UNKNOWN,
+    };
+    return free_state;
 }
 
 endpoint_state_t *gateway_device_endpoint_state(

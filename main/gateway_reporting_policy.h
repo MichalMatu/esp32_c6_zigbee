@@ -18,7 +18,6 @@ typedef struct {
     int32_t reportable_change;
 } gateway_reporting_spec_t;
 
-uint8_t gateway_reporting_policy_reporting_mask(uint16_t cluster_id);
-uint8_t gateway_reporting_policy_binding_mask(uint16_t cluster_id);
+bool gateway_reporting_policy_requires_binding(uint16_t cluster_id);
 bool gateway_reporting_policy_spec(
     uint16_t cluster_id, gateway_reporting_spec_t *out);
