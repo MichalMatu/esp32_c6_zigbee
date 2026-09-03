@@ -1,0 +1,77 @@
+{
+  "id": "20260903-c6-generic-zigbee-phase6-level-v2",
+  "status": "failed",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": true,
+  "started_at": "2026-09-03T20:02:56.140760+00:00",
+  "command_timeout": 3600,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\ngit fetch origin agent-control\ngit show origin/agent-control:.agent/scripts/20260903-c6-generic-zigbee-phase6-level-v2.sh > /tmp/c6-phase6-level-v2.sh\nbash /tmp/c6-phase6-level-v2.sh",
+      "exit_code": 1,
+      "output": "From https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            agent-control -> FETCH_HEAD\n   5f456ec..6815256  agent-control -> origin/agent-control\nSwitched to branch 'integration/c6-s3-i2c-20260903'\nYour branch is up to date with 'origin/integration/c6-s3-i2c-20260903'.\nHEAD is now at fe80910 Add normalized Zigbee OnOff commands\nFrom https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            agent-control -> FETCH_HEAD\n   6815256..df6a517  agent-control -> origin/agent-control\nmissing match in tests/host/test_gateway_zigbee_input.c: '        0x0006U,\\n'\n",
+      "elapsed_seconds": 3.667,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 4096,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 17.84,
+      "output_policy": "stream",
+      "captured_output_chars": 580,
+      "output_truncated": false,
+      "current_rss_mb": 17.84,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "failed",
+      "elapsed_seconds": 3.667
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": " M main/gateway_command_policy.c\n M main/gateway_command_policy.h\n M main/gateway_inputs.c\n M main/gateway_inputs.h\n M main/gateway_zcl_value.c\n M main/gateway_zigbee_input.c\n M tests/host/test_gateway_command_policy.c\n M tests/host/test_gateway_zcl_value.c\n",
+    "elapsed_seconds": 0.798
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "diff --git a/main/gateway_command_policy.c b/main/gateway_command_policy.c\nindex 634a526..ffdff5d 100644\n--- a/main/gateway_command_policy.c\n+++ b/main/gateway_command_policy.c\n@@ -3,6 +3,9 @@\n #include <string.h>\n \n #define ZCL_CLUSTER_ON_OFF 0x0006U\n+#define ZCL_CLUSTER_LEVEL_CONTROL 0x0008U\n+#define ZCL_LEVEL_MAX 254U\n+#define ZCL_TRANSITION_MAX 0xfffeU\n \n gateway_command_plan_result_t gateway_command_policy_plan(\n     gateway_command_kind_t kind,\n@@ -14,14 +17,27 @@ gateway_command_plan_result_t gateway_command_policy_plan(\n         return GATEWAY_COMMAND_PLAN_INVALID;\n     }\n     memset(out, 0, sizeof(*out));\n-    if (kind != GATEWAY_COMMAND_SET_ON_OFF) {\n-        return GATEWAY_COMMAND_PLAN_UNSUPPORTED;\n+    out->kind = kind;\n+    if (kind == GATEWAY_COMMAND_SET_ON_OFF) {\n+        if ((value != 0.0 && value != 1.0) || transition_ms != 0U) {\n+            return GATEWAY_COMMAND_PLAN_INVALID;\n+        }\n+        out->cluster_id = ZCL_CLUSTER_ON_OFF;\n+        out->capability = GATEWAY_INPUT_CAP_ON_OFF;\n+        out->target_on = value == 1.0;\n+        return GATEWAY_COMMAND_PLAN_OK;\n     }\n-    if ((value != 0.0 && value != 1.0) || transition_ms != 0U) {\n-        return GATEWAY_COMMAND_PLAN_INVALID;\n+    if (kind == GATEWAY_COMMAND_SET_LEVEL) {\n+        if (!(value >= 0.0 && value <= 100.0) ||\n+            transition_ms % 100U != 0U ||\n+            transition_ms / 100U > ZCL_TRANSITION_MAX) {\n+            return GATEWAY_COMMAND_PLAN_INVALID;\n+        }\n+        out->cluster_id = ZCL_CLUSTER_LEVEL_CONTROL;\n+        out->capability = GATEWAY_INPUT_CAP_LEVEL;\n+        out->level = (uint8_t)(value * (double)ZCL_LEVEL_MAX / 100.0 + 0.5);\n+        out->transition_time = (uint16_t)(transition_ms / 100U);\n+        return GATEWAY_COMMAND_PLAN_OK;\n     }\n-    out->cluster_id = ZCL_CLUSTER_ON_OFF;\n-    out->capability = GATEWAY_INPUT_CAP_ON_OFF;\n-    out->target_on = value == 1.0;\n-    return GATEWAY_COMMAND_PLAN_OK;\n+    return GATEWAY_COMMAND_PLAN_UNSUPPORTED;\n }\ndiff --git a/main/gateway_command_policy.h b/main/gateway_command_policy.h\nindex e22e22a..ea4409b 100644\n--- a/main/gateway_command_policy.h\n+++ b/main/gateway_command_policy.h\n@@ -14,7 +14,10 @@ typedef enum {\n typedef struct {\n     uint16_t cluster_id;\n     gateway_input_capabilities_t capability;\n+    gateway_command_kind_t kind;\n     bool target_on;\n+    uint8_t level;\n+    uint16_t transition_time;\n } gateway_command_plan_t;\n \n gateway_command_plan_result_t gateway_command_policy_plan(\ndiff --git a/main/gateway_inputs.c b/main/gateway_inputs.c\nindex 55ac23a..8f36938 100644\n--- a/main/gateway_inputs.c\n+++ b/main/gateway_inputs.c\n@@ -52,6 +52,7 @@ gateway_input_capabilities_t gateway_input_capability_for_measurement(\n         GATEWAY_INPUT_CAP_POWER,\n         GATEWAY_INPUT_CAP_ENERGY,\n         GATEWAY_INPUT_CAP_ON_OFF,\n+        GATEWAY_INPUT_CAP_LEVEL,\n     };\n     return kind < (sizeof(capabilities) / sizeof(capabilities[0])) ?\n         capabilities[kind] : 0U;\ndiff --git a/main/gateway_inputs.h b/main/gateway_inputs.h\nindex 332b1d3..6b20b7e 100644\n--- a/main/gateway_inputs.h\n+++ b/main/gateway_inputs.h\n@@ -30,10 +30,12 @@ typedef enum {\n     GATEWAY_MEAS_POWER,\n     GATEWAY_MEAS_ENERGY,\n     GATEWAY_MEAS_ON_OFF,\n+    GATEWAY_MEAS_LEVEL,\n } gateway_measurement_kind_t;\n \n typedef enum {\n     GATEWAY_COMMAND_SET_ON_OFF = 0,\n+    GATEWAY_COMMAND_SET_LEVEL = 1,\n } gateway_command_kind_t;\n \n typedef enum {\n@@ -64,6 +66,7 @@ typedef uint32_t gateway_input_capabilities_t;\n #define GATEWAY_INPUT_CAP_POWER           (1UL << 10)\n #define GATEWAY_INPUT_CAP_ENERGY          (1UL << 11)\n #define GATEWAY_INPUT_CAP_ON_OFF          (1UL << 12)\n+#define GATEWAY_INPUT_CAP_LEVEL           (1UL << 13)\n \n #define GATEWAY_INPUT_METADATA_MAX_BYTES 24U\n \ndiff --git a/main/gateway_zcl_value.c b/main/gateway_zcl_value.c\nindex 6cacd81..661fd1a 100644\n--- a/main/gateway_zcl_value.c\n+++ b/main/gateway_zcl_value.c\n@@ -9,6 +9,7 @@\n #else\n #define EZB_ZCL_CLUSTER_ID_POWER_CONFIG 0x0001U\n #define EZB_ZCL_CLUSTER_ID_ON_OFF 0x0006U\n+#define EZB_ZCL_CLUSTER_ID_LEVEL_CONTROL 0x0008U\n #define EZB_ZCL_CLUSTER_ID_ILLUMINANCE_MEASUREMENT 0x0400U\n #define EZB_ZCL_CLUSTER_ID_TEMPERATURE_MEASUREMENT 0x0402U\n #define EZB_ZCL_CLUSTER_ID_REL_HUMIDITY_MEASUREMENT 0x0405U\n@@ -25,6 +26,7 @@\n #define ZCL_ATTR_MEASURED_VALUE 0x0000U\n #define ZCL_ATTR_OCCUPANCY 0x0000U\n #define ZCL_ATTR_ON_OFF 0x0000U\n+#define ZCL_ATTR_CURRENT_LEVEL 0x0000U\n #define ZCL_ATTR_BATTERY_VOLTAGE 0x0020U\n #define ZCL_ATTR_BATTERY_PERCENT 0x0021U\n \n@@ -89,6 +91,9 @@ gateway_input_capabilities_t gateway_zcl_capabilities_for_server_cluster(\n     if (cluster == EZB_ZCL_CLUSTER_ID_ON_OFF) {\n         return GATEWAY_INPUT_CAP_ON_OFF;\n     }\n+    if (cluster == EZB_ZCL_CLUSTER_ID_LEVEL_CONTROL) {\n+        return GATEWAY_INPUT_CAP_LEVEL;\n+    }\n     if (cluster == EZB_ZCL_CLUSTER_ID_ILLUMINANCE_MEASUREMENT) {\n         return GATEWAY_INPUT_CAP_ILLUMINANCE;\n     }\n@@ -122,6 +127,10 @@ gateway_input_capabilities_t gateway_zcl_capability_for_attribute(\n     if (cluster == EZB_ZCL_CLUSTER_ID_ON_OFF && attribute == ZCL_ATTR_ON_OFF) {\n         return GATEWAY_INPUT_CAP_ON_OFF;\n     }\n+    if (cluster == EZB_ZCL_CLUSTER_ID_LEVEL_CONTROL &&\n+        attribute == ZCL_ATTR_CURRENT_LEVEL) {\n+        return GATEWAY_INPUT_CAP_LEVEL;\n+    }\n     if (attribute != ZCL_ATTR_MEASURED_VALUE) {\n         return 0U;\n     }\n@@ -223,5 +232,13 @@ bool gateway_zcl_normalize(uint16_t cluster,\n         *number = u8 != 0U;\n         return true;\n     }\n+    if (cluster == EZB_ZCL_CLUSTER_ID_LEVEL_CONTROL &&\n+        attribute == ZCL_ATTR_CURRENT_LEVEL &&\n+        read_u8(value, type, &u8) && u8 <= 254U) {\n+        *kind = GATEWAY_MEAS_LEVEL;\n+        *unit = GATEWAY_UNIT_PERCENT;\n+        *number = (double)u8 * 100.0 / 254.0;\n+        return true;\n+    }\n     return false;\n }\ndiff --git a/main/gateway_zigbee_input.c b/main/gateway_zigbee_input.c\nindex 030ad96..8511c4b 100644\n--- a/main/gateway_zigbee_input.c\n+++ b/main/gateway_zigbee_input.c\n@@ -6,6 +6,7 @@\n #include \"gateway_zcl_value.h\"\n \n #define ZCL_CLUSTER_ON_OFF 0x0006U\n+#define ZCL_CLUSTER_LEVEL_CONTROL 0x0008U\n \n gateway_input_capability_profile_t gateway_zigbee_capability_profile_from_clusters(\n     const uint16_t *clusters, size_t count)\n@@ -28,6 +29,9 @@ gateway_input_capability_profile_t gateway_zigbee_capability_profile_from_cluste\n         if (cluster == ZCL_CLUSTER_ON_OFF) {\n             profile.commandable |= GATEWAY_INPUT_CAP_ON_OFF;\n         }\n+        if (cluster == ZCL_CLUSTER_LEVEL_CONTROL) {\n+            profile.commandable |= GATEWAY_INPUT_CAP_LEVEL;\n+        }\n     }\n     return profile;\n }\ndiff --git a/tests/host/test_gateway_command_policy.c b/tests/host/test_gateway_command_policy.c\nindex fea10c6..d96ec95 100644\n--- a/tests/host/test_gateway_command_policy.c\n+++ b/tests/host/test_gateway_command_policy.c\n@@ -18,6 +18,28 @@ static void test_on_off_plan(void)\n     assert(!plan.target_on);\n }\n \n+static void test_level_plan(void)\n+{\n+    gateway_command_plan_t plan;\n+    assert(gateway_command_policy_plan(\n+        GATEWAY_COMMAND_SET_LEVEL, 50.0, 1200U, &plan) == GATEWAY_COMMAND_PLAN_OK);\n+    assert(plan.kind == GATEWAY_COMMAND_SET_LEVEL);\n+    assert(plan.cluster_id == 0x0008U);\n+    assert(plan.capability == GATEWAY_INPUT_CAP_LEVEL);\n+    assert(plan.level == 127U);\n+    assert(plan.transition_time == 12U);\n+\n+    assert(gateway_command_policy_plan(\n+        GATEWAY_COMMAND_SET_LEVEL, 100.0, 0U, &plan) == GATEWAY_COMMAND_PLAN_OK);\n+    assert(plan.level == 254U);\n+    assert(gateway_command_policy_plan(\n+        GATEWAY_COMMAND_SET_LEVEL, -1.0, 0U, &plan) == GATEWAY_COMMAND_PLAN_INVALID);\n+    assert(gateway_command_policy_plan(\n+        GATEWAY_COMMAND_SET_LEVEL, 101.0, 0U, &plan) == GATEWAY_COMMAND_PLAN_INVALID);\n+    assert(gateway_command_policy_plan(\n+        GATEWAY_COMMAND_SET_LEVEL, 50.0, 150U, &plan) == GATEWAY_COMMAND_PLAN_INVALID);\n+}\n+\n static void test_invalid_on_off_values(void)\n {\n     gateway_command_plan_t plan;\n@@ -36,6 +58,7 @@ static void test_invalid_on_off_values(void)\n int main(void)\n {\n     test_on_off_plan();\n+    test_level_plan();\n     test_invalid_on_off_values();\n     puts(\"gateway_command_policy host tests passed\");\n     return 0;\ndiff --git a/tests/host/test_gateway_zcl_value.c b/tests/host/test_gateway_zcl_value.c\nindex 3cf3f14..1750bf8 100644\n--- a/tests/host/test_gateway_zcl_value.c\n+++ b/tests/host/test_gateway_zcl_value.c\n@@ -7,6 +7,7 @@\n \n #define CLUSTER_POWER_CONFIG 0x0001U\n #define CLUSTER_ON_OFF 0x0006U\n+#define CLUSTER_LEVEL_CONTROL 0x0008U\n #define CLUSTER_ILLUMINANCE 0x0400U\n #define CLUSTER_TEMPERATURE 0x0402U\n #define CLUSTER_HUMIDITY 0x0405U\n@@ -78,6 +79,22 @@ static void test_boolean_values(void)\n     assert(kind == GATEWAY_MEAS_OCCUPANCY);\n }\n \n+static void test_level(void)\n+{\n+    uint8_t raw = 127U;\n+    gateway_measurement_kind_t kind;\n+    gateway_unit_t unit;\n+    double value;\n+    assert(gateway_zcl_normalize(\n+        CLUSTER_LEVEL_CONTROL, 0x0000U, TYPE_UINT8, &raw, &kind, &unit, &value));\n+    assert(kind == GATEWAY_MEAS_LEVEL);\n+    assert(unit == GATEWAY_UNIT_PERCENT);\n+    expect_close(value, 50.0);\n+    raw = 0xffU;\n+    assert(!gateway_zcl_normalize(\n+        CLUSTER_LEVEL_CONTROL, 0x0000U, TYPE_UINT8, &raw, &kind, &unit, &value));\n+}\n+\n static void test_attribute_capabilities(void)\n {\n     assert(gateway_zcl_capability_for_attribute(CLUSTER_POWER_CONFIG, 0x0020U) ==\n@@ -86,6 +103,8 @@ static void test_attribute_capabilities(void)\n         GATEWAY_INPUT_CAP_BATTERY_PERCENT);\n     assert(gateway_zcl_capability_for_attribute(CLUSTER_ON_OFF, 0x0000U) ==\n         GATEWAY_INPUT_CAP_ON_OFF);\n+    assert(gateway_zcl_capability_for_attribute(CLUSTER_LEVEL_CONTROL, 0x0000U) ==\n+        GATEWAY_INPUT_CAP_LEVEL);\n     assert(gateway_zcl_capability_for_attribute(CLUSTER_TEMPERATURE, 0x0000U) ==\n         GATEWAY_INPUT_CAP_TEMPERATURE);\n     assert(gateway_zcl_capability_for_attribute(CLUSTER_HUMIDITY, 0x0000U) ==\n@@ -119,6 +138,7 @@ int main(void)\n     test_temperature();\n     test_humidity_and_battery();\n     test_boolean_values();\n+    test_level();\n     test_attribute_capabilities();\n     test_co2_and_invalid_input();\n     puts(\"gateway_zcl_value host tests passed\");\n",
+    "elapsed_seconds": 0.065
+  },
+  "failure_reason": "command_failed",
+  "finished_at": "2026-09-03T20:03:02.969999+00:00",
+  "workspace_checkpoint": {
+    "version": 2,
+    "task_id": "20260903-c6-generic-zigbee-phase6-level-v2",
+    "reason": "task-exit",
+    "created_at": "2026-09-03T20:03:04.060181+00:00",
+    "base_head": "fe80910794c71eb67c792ca70e9f1803624a954f",
+    "work_branch": "integration/c6-s3-i2c-20260903",
+    "path": "/Users/michal/agent-workspace/repos/esp32-c6-zigbee/checkpoints/20260903-c6-generic-zigbee-phase6-level-v2/1788465783515966000-task-exit",
+    "tracked_patch": "tracked.patch",
+    "untracked_root": "untracked",
+    "untracked_files": [],
+    "tracked_patch_bytes": 10760,
+    "untracked_bytes": 0,
+    "total_bytes": 10760,
+    "status": " M main/gateway_command_policy.c\n M main/gateway_command_policy.h\n M main/gateway_inputs.c\n M main/gateway_inputs.h\n M main/gateway_zcl_value.c\n M main/gateway_zigbee_input.c\n M tests/host/test_gateway_command_policy.c\n M tests/host/test_gateway_zcl_value.c\n"
+  },
+  "task_digest": "0631df3c4e949e07a78ebb477aaeb8ff695e2ac814b533f3ac89f5782ebbb4e9",
+  "idle_timeout": 300,
+  "task_timeout": 5400,
+  "memory_limit_mb": 4096,
+  "attempt_id": "c237186b5f123194c1c4d1ef",
+  "daemon_version": "4.15.0"
+}
