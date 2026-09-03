@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-emulator-api-audit-v1",
+  "task_digest": "8fabdc4b885f256988bfec160dcec5fe716db38dc1d562581f85f2fa2f76fce9",
+  "idle_timeout": 180,
+  "task_timeout": 1200,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T20:18:35.399937+00:00",
+  "attempt_id": "9942e2ef3418ebb20c313bcb",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 75619,
+  "updated_at": "2026-09-03T20:18:35.400190+00:00",
+  "pid": 75619
+}
