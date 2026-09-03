@@ -98,3 +98,83 @@ git checkout c6-sonoff-stable-2026-09-02
 ```
 
 Do not move or recreate this tag onto a later commit. Future firmware changes should use a new commit and, after independent verification, a new stable tag.
+
+## GatewayLink baseline — 2026-09-03
+
+This baseline freezes the verified ESP32-C6 GatewayLink refactor before physical C6↔S3 I²C integration work.
+
+### Frozen firmware
+
+- firmware commit: `a4b1f629c1286d631ac208515b71aeeaa7c44b23`
+- annotated tag: `c6-gatewaylink-stable-2026-09-03`
+- source branch used for verification: `night/link-backend-refactor-20260903`
+- ESP-IDF: `v5.5.4`
+- target: ESP32-C6
+- default physical GatewayLink backend: UART1
+- selectable alternative backend present: I²C master mailbox
+
+The tag points to the firmware commit itself. This documentation is committed after the tag, so the recovery point cannot move when documentation changes. The earlier `c6-sonoff-stable-2026-09-02` tag remains untouched.
+
+### Verified scope
+
+The frozen firmware includes:
+
+- GatewayLink transport facade;
+- runtime ownership extracted from the UART backend;
+- link, queue, heap and stack observability plus `link status`;
+- selectable UART and I²C physical backends;
+- host coverage for the I²C mailbox, protocol, stream framing and virtual-S3 E2E path;
+- successful complete firmware builds for both default UART and alternate I²C configurations.
+
+The I²C backend is software-verified on the C6 side only. Physical C6↔S3 I²C communication has not yet been validated and is intentionally outside this frozen baseline. UART remains the known-working physical link.
+
+### Physical UART verification
+
+Physical C6 smoke validation task: `20260903-c6-uart-smoke-validate-v2`.
+
+The ESP32-C6 remained connected to the paired SONOFF SNZB-02D and local SCD4x. The S3 was absent, so `peer=0` and `rx=0` are expected. UART transmission, local sensing, Zigbee sensing and GatewayLink telemetry were all observed healthy.
+
+### 5 h 20 min soak
+
+Capture task: `20260903-c6-uart-soak-v1`. The four 80-minute capture chunks all completed successfully. The original task exhausted its total task budget before the final analysis command could start; this was a harness-budget outcome, not a firmware failure.
+
+Final read-only validation task: `20260903-c6-uart-soak-validate-v2`.
+
+Observed full-soak summary:
+
+```text
+C6 UART SOAK PASS
+local_measurements=12125
+sonoff_measurements=132
+status_samples=68
+first_link_status peer=0 tx=643 rx=0 invalid=0 queue=0/16 high=2 drop=0 short=0
+last_link_status  peer=0 tx=12901 rx=0 invalid=0 queue=0/16 high=2 drop=0 short=0
+first_resources min_heap=329212 tx_stack_hwm=2796 rx_stack_hwm=3128
+last_resources  min_heap=329212 tx_stack_hwm=2796 rx_stack_hwm=3128
+min_heap=329212
+tx_stack_hwm_min=2796
+rx_stack_hwm_min=3128
+```
+
+The final gate also found no Guru Meditation, abort, panic, watchdog, Zigbee leave-reset, Zigbee security failure, GatewayLink queue drops or gateway-event queue drops. Heap and task stack high-water values were unchanged between the first and last resource samples.
+
+### Next integration branch
+
+Further C6-side work for physical S3 integration starts from:
+
+`integration/c6-s3-i2c-20260903`
+
+That branch is created after this verification note is committed, while the immutable firmware recovery tag remains on `a4b1f629c1286d631ac208515b71aeeaa7c44b23`.
+
+The next bench milestone is physical C6↔S3 I²C validation, including coexistence with the existing local SCD4x on the shared C6 I²C bus and recovery when the S3 peer is absent or unpowered. S3-side implementation belongs in its own correctly bound repository context.
+
+### Recovery
+
+To restore the verified C6 firmware before S3 integration:
+
+```sh
+git fetch --tags
+git checkout c6-gatewaylink-stable-2026-09-03
+```
+
+Do not move or recreate this tag onto a later commit.
