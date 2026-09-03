@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260903-c6-prioritize-zigbee-lab-v1",
+  "task_digest": "b588e35f09913b3923f8bef735306310360f5246b5e7c7f05c39b1530676c76f",
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-03T15:05:55.426325+00:00",
+  "attempt_id": "453fd5c57d613d8e33dfa925",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 92875,
+  "updated_at": "2026-09-03T15:05:55.426621+00:00",
+  "pid": 92875
+}
