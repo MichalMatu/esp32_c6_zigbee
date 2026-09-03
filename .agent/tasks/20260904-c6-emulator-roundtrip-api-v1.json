@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-emulator-roundtrip-api-v1",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 4096,
+  "command_timeout": 900,
+  "idle_timeout": 180,
+  "task_timeout": 1200,
+  "commands": [
+    "set -euo pipefail\ngit fetch origin\ngit checkout integration/c6-s3-i2c-20260903\ngit reset --hard origin/integration/c6-s3-i2c-20260903\n[ \"$(git rev-parse HEAD)\" = \"6bb5022e3ea8185ce10f9497c9e557df46df4b4c\" ]\npython3 - <<'PY'\nfrom pathlib import Path\nfiles = [\n Path('tests/zigbee_device_emulator/managed_components/espressif__esp-zigbee-lib/include/ezbee/zcl/zcl_common.h'),\n Path('tests/zigbee_device_emulator/managed_components/espressif__esp-zigbee-lib/include/ezbee/zcl/zcl_core.h'),\n Path('tests/zigbee_device_emulator/managed_components/espressif__esp-zigbee-lib/include/ezbee/zcl/cluster/on_off.h'),\n Path('tests/zigbee_device_emulator/managed_components/espressif__esp-zigbee-lib/include/ezbee/zcl/cluster/level.h'),\n]\nneedles = [\n 'typedef struct ezb_zcl_message_info_s',\n 'typedef struct ezb_zcl_set_attr_value_message_s',\n 'EZB_ZCL_CORE_SET_ATTR_VALUE_CB_ID',\n 'typedef void (*ezb_zcl_core_action_handler_t',\n 'ezb_zcl_core_action_handler_register',\n 'ON_OFF', 'LEVEL', 'server',\n]\nfor p in files:\n    lines = p.read_text().splitlines()\n    print('===', p, '===')\n    emitted=set()\n    for i,line in enumerate(lines):\n        if any(n in line for n in needles):\n            lo=max(0,i-6); hi=min(len(lines),i+20)\n            if (lo,hi) in emitted: continue\n            emitted.add((lo,hi))\n            print('\\n'.join(f'{j+1}:{lines[j]}' for j in range(lo,hi)))\nprint('=== examples/set-attr callbacks ===')\nroot=Path('tests/zigbee_device_emulator/managed_components/espressif__esp-zigbee-lib')\nfor p in root.rglob('*'):\n    if not p.is_file() or p.suffix not in {'.c','.h','.cpp'}: continue\n    try: text=p.read_text(errors='ignore')\n    except Exception: continue\n    if 'EZB_ZCL_CORE_SET_ATTR_VALUE_CB_ID' in text or 'ezb_zcl_set_attr_value_message_t' in text:\n        print(p)\n        for i,l in enumerate(text.splitlines()):\n            if 'EZB_ZCL_CORE_SET_ATTR_VALUE_CB_ID' in l or 'ezb_zcl_set_attr_value_message_t' in l:\n                ls=text.splitlines(); lo=max(0,i-5); hi=min(len(ls),i+18)\n                print('\\n'.join(ls[lo:hi]))\nPY"
+  ]
+}
