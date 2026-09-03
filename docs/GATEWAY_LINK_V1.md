@@ -4,7 +4,7 @@ GatewayLink is the protocol-neutral MCU-to-MCU link between the ESP32-C6 input g
 
 ## Physical link reserved for the next stage
 
-The C6 application link uses UART1 at 460800 baud, 8-N-1, no flow control, with C6 TX on GPIO18 and C6 RX on GPIO19. GPIO0/GPIO1 remain the local I2C SCL/SDA pair used by SCD4x. The RX pin has an internal pull-up so an unconnected S3 does not create a floating UART input. TX uses a bounded queue and RX uses an incremental delimiter-resynchronizing decoder. The C6 currently implements HELLO/HELLO_ACK, PING/PONG and PERMIT_JOIN control in addition to descriptor/measurement TX. Snapshot is implemented as bounded descriptor replay; measurement-policy application is not advertised until its backing policy layer exists.
+The default C6 application-link backend uses UART1 at 460800 baud, 8-N-1, no flow control, with C6 TX on GPIO18 and C6 RX on GPIO19. GPIO0/GPIO1 remain the local I2C SCL/SDA pair used by SCD4x. The RX pin has an internal pull-up so an unconnected S3 does not create a floating UART input. The transport-independent GatewayLink runtime owns the bounded TX queue and incremental delimiter-resynchronizing decoder; the UART backend owns only physical driver I/O. The C6 currently implements HELLO/HELLO_ACK, PING/PONG and PERMIT_JOIN control in addition to descriptor/measurement TX. Snapshot is implemented as bounded descriptor replay; measurement-policy application is not advertised until its backing policy layer exists.
 
 ## Framing
 
