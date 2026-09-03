@@ -1,0 +1,21 @@
+menu "Second-C6 Zigbee emulator"
+
+choice EMULATOR_PROFILE
+    prompt "Emulated Zigbee profile"
+    default EMULATOR_PROFILE_MIXED
+
+config EMULATOR_PROFILE_TEMP_HUM
+    bool "Temperature + humidity"
+
+config EMULATOR_PROFILE_OCCUPANCY
+    bool "Occupancy"
+
+config EMULATOR_PROFILE_ONOFF_LEVEL
+    bool "On/Off + Level"
+
+config EMULATOR_PROFILE_MIXED
+    bool "Mixed multi-endpoint"
+
+endchoice
+
+endmenu
