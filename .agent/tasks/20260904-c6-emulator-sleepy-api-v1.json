@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-emulator-sleepy-api-v1",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 4096,
+  "command_timeout": 900,
+  "idle_timeout": 180,
+  "task_timeout": 1200,
+  "commands": [
+    "set -euo pipefail\ngit fetch origin\ngit checkout integration/c6-s3-i2c-20260903\ngit reset --hard origin/integration/c6-s3-i2c-20260903\n[ \"$(git rev-parse HEAD)\" = \"7d2616c4490691ff354f871e2f17d804a6d94162\" ]\npython3 - <<'PY'\nfrom pathlib import Path\nroot=Path('tests/zigbee_device_emulator/managed_components/espressif__esp-zigbee-lib/include/ezbee')\npatterns=['power_config','poll_control']\nfiles=[]\nfor p in root.rglob('*.h'):\n    if any(x in p.name for x in patterns): files.append(p)\nfor p in sorted(files):\n    print('===',p,'===')\n    lines=p.read_text(errors='ignore').splitlines()\n    needles=['server_config','create_cluster_desc','cluster_desc_add_attr','BATTERY','battery','POLL','poll','check_in','long_poll','short_poll']\n    emitted=set()\n    for i,line in enumerate(lines):\n        if any(n in line for n in needles):\n            lo=max(0,i-5); hi=min(len(lines),i+18)\n            if (lo,hi) in emitted: continue\n            emitted.add((lo,hi))\n            print('\\n'.join(f'{j+1}:{lines[j]}' for j in range(lo,hi)))\nprint('=== zed sleep/poll APIs ===')\nfor p in root.rglob('*.h'):\n    text=p.read_text(errors='ignore')\n    if any(n in text for n in ['keep_alive','poll_interval','sleep_now','ED_TIMEOUT','end_device_timeout']):\n        hits=[]\n        ls=text.splitlines()\n        for i,l in enumerate(ls):\n            if any(n in l for n in ['keep_alive','poll_interval','sleep_now','ED_TIMEOUT','end_device_timeout']):\n                hits.append(i)\n        if hits:\n            print('---',p,'---')\n            for i in hits[:12]:\n                lo=max(0,i-4); hi=min(len(ls),i+10)\n                print('\\n'.join(ls[lo:hi]))\nPY"
+  ]
+}
