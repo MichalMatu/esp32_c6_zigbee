@@ -1,0 +1,9 @@
+{
+  "event": "invalid_task_rejected",
+  "status": "failed",
+  "failure_reason": "invalid_task_file",
+  "updated_at": "2026-09-04T04:35:34.868436+00:00",
+  "task_id": "20260904-c6-ias-status-false-investigation-v16",
+  "daemon_version": "4.15.0",
+  "pid": 44570
+}
