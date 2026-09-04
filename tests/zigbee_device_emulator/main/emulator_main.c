@@ -695,7 +695,7 @@ static void zigbee_task(void *arg)
         ESP_LOGE(TAG, "lifecycle reboot task creation failed");
     }
 #endif
-#if CONFIG_EMULATOR_PROFILE_ONOFF_LEVEL || CONFIG_EMULATOR_PROFILE_MIXED
+#if CONFIG_EMULATOR_PROFILE_ONOFF_LEVEL || CONFIG_EMULATOR_PROFILE_MIXED || CONFIG_EMULATOR_PROFILE_IAS_CONTACT
     if (xTaskCreate(roundtrip_report_task, "emu_roundtrip", 3072, NULL, 4, NULL) != pdPASS) {
         ESP_LOGE(TAG, "roundtrip report task creation failed");
     }
