@@ -1,0 +1,59 @@
+{
+  "id": "20260904-c6-ias-zone-header-tiny-v5",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "started_at": "2026-09-04T03:57:22.252090+00:00",
+  "command_timeout": 120,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\ntest \"$(git rev-parse HEAD)\" = 3d3a38885fb458d7693eab39450dad8506d504f6\nsed -n '1,130p' managed_components/espressif__esp-zigbee-lib/include/ezbee/zcl/cluster/ias_zone.h\n",
+      "exit_code": 0,
+      "output": "/*\n * SPDX-FileCopyrightText: 2026 Espressif Systems (Shanghai) CO LTD\n *\n * SPDX-License-Identifier: Apache-2.0\n */\n\n#pragma once\n\n#include <ezbee/zcl/cluster/ias_zone_desc.h>\n\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n/**\n * @brief Values of the Enroll Response Code definition.\n */\ntypedef enum {\n    EZB_ZCL_IAS_ZONE_ENROLL_RESPONSE_CODE_SUCCESS        = 0x00, /*!< Success. */\n    EZB_ZCL_IAS_ZONE_ENROLL_RESPONSE_CODE_NOT_SUPPORTED  = 0x01, /*!< Not supported. */\n    EZB_ZCL_IAS_ZONE_ENROLL_RESPONSE_CODE_NOT_PERMITTED  = 0x02, /*!< No enroll permit. */\n    EZB_ZCL_IAS_ZONE_ENROLL_RESPONSE_CODE_TOO_MANY_ZONES = 0x03, /*!< Too many zones. */\n} ezb_zcl_ias_zone_enroll_rsp_code_t;\n\n/**\n * @brief Payload for IAS ZONE Enroll request command.\n */\ntypedef struct ezb_zcl_ias_zone_enroll_req_s {\n    uint16_t zone_type;  /*!< Zone type. */\n    uint16_t manuf_code; /*!< Manufacturer code. */\n} ezb_zcl_ias_zone_enroll_req_payload_t;\n\n/**\n * @brief Payload for IAS ZONE Enroll response command.\n */\ntypedef struct ezb_zcl_ias_zone_enroll_rsp_payload_s {\n    uint8_t enroll_rsp_code; /*!< The enroll response code. */\n    uint8_t zone_id;         /*!< The zone ID is the index of the table. */\n} ezb_zcl_ias_zone_enroll_rsp_payload_t;\n\n/**\n * @brief Payload for IAS ZONE Zone Status Change Notification command.\n * @note The Zone Status Change Notification command can be triggered by changing the value of the zone status attribute.\n */\ntypedef struct ezb_zcl_ias_zone_status_change_notif_payload_s {\n    uint16_t zone_status;   /*!< The zone status shall be the current value of the zone status attribute. */\n    uint8_t  extend_status; /*!< Extended status for additional info. */\n    uint8_t  zone_id;       /*!< The zone ID is the index of the table. */\n    uint16_t delay;         /*!< Delay in quarter-seconds. */\n} ezb_zcl_ias_zone_status_change_notif_payload_t;\n\n/**\n * @brief Payload for IAS ZONE Initiate Test Mode command.\n */\ntypedef struct ezb_zcl_ias_zone_initiate_test_mode_payload_s {\n    uint8_t duration;                       /*!< Duration of the test mode in seconds. */\n    uint8_t current_zone_sensitivity_level; /*!< Level of sensitivity for the current zone. */\n} ezb_zcl_ias_zone_initiate_test_mode_payload_t;\n\n/**\n * @brief Structure for IAS ZONE Enroll request command.\n */\ntypedef struct ezb_zcl_ias_zone_enroll_req_cmd_s {\n    ezb_zcl_cluster_cmd_ctrl_t            cmd_ctrl; /*!< Control information for the ZCL command. */\n    ezb_zcl_ias_zone_enroll_req_payload_t payload;  /*!< Payload for the Enroll request command. */\n} ezb_zcl_ias_zone_enroll_req_cmd_t;\n\n/**\n * @brief Structure for IAS ZONE Initiate Normal Operation Mode command.\n */\ntypedef struct ezb_zcl_ias_zone_initiate_normal_operation_mode_cmd_s {\n    ezb_zcl_cluster_cmd_ctrl_t cmd_ctrl; /*!< Control information for the ZCL command. */\n} ezb_zcl_ias_zone_initiate_normal_operation_mode_cmd_t;\n\n/**\n * @brief Structure for IAS ZONE Initiate Test Mode command.\n */\ntypedef struct ezb_zcl_ias_zone_initiate_test_mode_cmd_s {\n    ezb_zcl_cluster_cmd_ctrl_t                    cmd_ctrl; /*!< Control information for the ZCL command. */\n    ezb_zcl_ias_zone_initiate_test_mode_payload_t payload;  /*!< Payload for the Initiate Test Mode command. */\n} ezb_zcl_ias_zone_initiate_test_mode_cmd_t;\n\n/**\n * @brief Structure for IAS ZONE Enroll Response command.\n */\ntypedef struct ezb_zcl_ias_zone_enroll_rsp_cmd_s {\n    ezb_zcl_cluster_cmd_ctrl_t            cmd_ctrl; /*!< Control information for the ZCL command. */\n    ezb_zcl_ias_zone_enroll_rsp_payload_t payload;  /*!< Payload for the Enroll Response command. */\n} ezb_zcl_ias_zone_enroll_rsp_cmd_t;\n\n/**\n * @brief Message for IAS ZONE Enroll Request command message.\n */\ntypedef struct ezb_zcl_ias_zone_enroll_req_message_s {\n    ezb_zcl_message_info_t info; /*!< Basic information about the ZCL message. */\n    struct {\n        const ezb_zcl_cmd_hdr_t              *header;  /*!< Header of command */\n        ezb_zcl_ias_zone_enroll_req_payload_t payload; /*!< Payload for the Enroll Request command. */\n    } in;                                              /*!< Input: parsed fields from the request. */\n    struct {\n        ezb_zcl_status_t result; /*!< Status of processing in application. */\n    } out;                       /*!< Output: result to send back. */\n} ezb_zcl_ias_zone_enroll_req_message_t;\n\n/**\n * @brief Message for IAS ZONE Enroll Response command message.\n */\ntypedef struct ezb_zcl_ias_zone_enroll_rsp_message_s {\n    ezb_zcl_message_info_t info; /*!< Basic information about the ZCL message. */\n    struct {\n        const ezb_zcl_cmd_hdr_t *header;                /*!< ZCL command header information.\n                                                             See @ref ezb_zcl_cmd_hdr_s. */\n        ezb_zcl_ias_zone_enroll_rsp_payload_t payload; /*!< Payload for the Enroll Response command. */\n    } in;                                              /*!< Input: parsed fields from the request. */\n    struct {\n        ezb_zcl_status_t result; /*!< Status of processing in application. */\n    } out;                       /*!< Output: result to send back. */\n} ezb_zcl_ias_zone_enroll_rsp_message_t;\n\n/**\n * @brief Message for IAS ZONE Zone Status Change Notification command message.\n */\ntypedef struct ezb_zcl_ias_zone_status_change_notif_message_s {\n    ezb_zcl_message_info_t info; /*!< Basic information about the ZCL message. */\n    struct {\n        const ezb_zcl_cmd_hdr_t *header;                      /*!< ZCL command header information.\n                                                                 See @ref ezb_zcl_cmd_hdr_s. */\n        ezb_zcl_ias_zone_status_change_notif_payload_t payload; /*!< Payload for the Zone Status Change Notification command. */\n    } in;                                                       /*!< Input: parsed fields from the request. */\n    struct {\n",
+      "elapsed_seconds": 0.134,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 512,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": null,
+      "output_policy": "stream",
+      "captured_output_chars": 5864,
+      "output_truncated": false,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 0.134
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.073
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.069
+  },
+  "finished_at": "2026-09-04T03:57:23.913782+00:00",
+  "task_digest": "e4e9ce09fb2049ff6618ce971db6d9d2aa4d3d6c807c06f6ea5f9ae1dc573fe4",
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "attempt_id": "a9e924190ba6bab24fe4b6df",
+  "daemon_version": "4.15.0"
+}
