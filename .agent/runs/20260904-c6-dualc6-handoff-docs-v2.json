@@ -1,14 +1,13 @@
 {
-  "event": "task_started",
+  "event": "task_finished",
   "task_id": "20260904-c6-dualc6-handoff-docs-v2",
   "task_digest": "fe87e5c2f946eae5cb83a764fc4c74a7b904684fa0b9d758eef631d9210ffe14",
-  "idle_timeout": 180,
-  "task_timeout": 1200,
-  "memory_limit_mb": 2048,
-  "started_at": "2026-09-04T03:11:45.753698+00:00",
+  "status": "failed",
+  "failure_reason": "command_failed",
+  "finished_at": "2026-09-04T03:11:48.233380+00:00",
   "attempt_id": "f1efe4d0f2451626edf3967f",
   "daemon_version": "4.15.0",
   "daemon_pid": 80090,
-  "updated_at": "2026-09-04T03:11:45.754054+00:00",
+  "updated_at": "2026-09-04T03:11:48.469505+00:00",
   "pid": 80090
 }
