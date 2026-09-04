@@ -1,14 +1,13 @@
 {
-  "event": "task_started",
+  "event": "task_finished",
   "task_id": "20260904-c6-emulator-rom-state-v2",
   "task_digest": "bf275484c8b6b2308527e6c8ba8039fb51f2fdcc4576c2baf8348224bdc5dfd7",
-  "idle_timeout": 120,
-  "task_timeout": 300,
-  "memory_limit_mb": 512,
-  "started_at": "2026-09-04T02:08:29.657049+00:00",
+  "status": "done",
+  "failure_reason": null,
+  "finished_at": "2026-09-04T02:08:32.618625+00:00",
   "attempt_id": "02cde8160a123bf168f9f15a",
   "daemon_version": "4.15.0",
   "daemon_pid": 35635,
-  "updated_at": "2026-09-04T02:08:29.657227+00:00",
+  "updated_at": "2026-09-04T02:08:32.874258+00:00",
   "pid": 35635
 }
