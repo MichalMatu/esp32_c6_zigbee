@@ -1,0 +1,61 @@
+{
+  "id": "20260904-c6-migration-readiness-v49",
+  "status": "failed",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": true,
+  "started_at": "2026-09-04T17:02:27.082157+00:00",
+  "command_timeout": 7200,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\ngit fetch origin agent-control\ngit show FETCH_HEAD:.agent/scripts/20260904-c6-migration-readiness-v49.sh > /tmp/c6_migration_readiness_v49.sh\nchmod +x /tmp/c6_migration_readiness_v49.sh\n/tmp/c6_migration_readiness_v49.sh",
+      "exit_code": 128,
+      "output": "From https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            agent-control -> FETCH_HEAD\n   d613614..6178af0  agent-control -> origin/agent-control\nfatal: not a git repository (or any of the parent directories): .git\n",
+      "elapsed_seconds": 1.635,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 4096,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 3.81,
+      "output_policy": "stream",
+      "captured_output_chars": 228,
+      "output_truncated": false,
+      "current_rss_mb": 3.81,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "failed",
+      "elapsed_seconds": 1.635
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.103
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.09
+  },
+  "failure_reason": "command_failed",
+  "finished_at": "2026-09-04T17:02:30.308123+00:00",
+  "task_digest": "0c30281f9c897ddaa42b71f2038232310fc52d356bc74b8a5ccb2bd1476e5d36",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "attempt_id": "c3f369e7bf17bcff36ad3962",
+  "daemon_version": "4.15.0"
+}
