@@ -1,9 +1,0 @@
-{
-  "event": "invalid_task_rejected",
-  "status": "failed",
-  "failure_reason": "invalid_task_file",
-  "updated_at": "2026-09-04T03:57:49.650674+00:00",
-  "task_id": "20260904-c6-ias-zone-notif-api-v5",
-  "daemon_version": "4.15.0",
-  "pid": 83050
-}
