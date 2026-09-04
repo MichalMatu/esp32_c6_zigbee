@@ -31,6 +31,8 @@
 #define ZCL_ATTR_CURRENT_LEVEL 0x0000U
 #define ZCL_ATTR_BATTERY_VOLTAGE 0x0020U
 #define ZCL_ATTR_BATTERY_PERCENT 0x0021U
+#define ZCL_IAS_ZONE_TYPE_CONTACT_SWITCH 0x0015U
+#define ZCL_IAS_ZONE_STATUS_ALARM1 0x0001U
 
 uint16_t gateway_zcl_attr_size(uint8_t type, const void *value)
 {
@@ -80,6 +82,22 @@ static bool read_float(const void *value, uint8_t type, float *out)
         return false;
     }
     memcpy(out, value, sizeof(*out));
+    return true;
+}
+
+bool gateway_zcl_normalize_ias_contact(
+    uint16_t zone_type, uint16_t zone_status,
+    gateway_measurement_kind_t *kind,
+    gateway_unit_t *unit,
+    double *number)
+{
+    if (kind == NULL || unit == NULL || number == NULL ||
+        zone_type != ZCL_IAS_ZONE_TYPE_CONTACT_SWITCH) {
+        return false;
+    }
+    *kind = GATEWAY_MEAS_CONTACT_OPEN;
+    *unit = GATEWAY_UNIT_BOOLEAN;
+    *number = (zone_status & ZCL_IAS_ZONE_STATUS_ALARM1) != 0U;
     return true;
 }
 

@@ -15,6 +15,8 @@
 #include <ezbee/secur.h>
 #include <ezbee/zcl/cluster/on_off.h>
 #include <ezbee/zcl/cluster/level.h>
+#include <ezbee/zcl/cluster/ias_zone.h>
+#include <ezbee/zcl/cluster/ias_zone_desc.h>
 #include <ezbee/zcl/cluster/poll_control.h>
 #include <ezbee/zcl/zcl_core.h>
 #include <ezbee/zcl/zcl_general_cmd.h>
@@ -45,11 +47,16 @@
 
 #define ZCL_ATTR_BASIC_MANUFACTURER_NAME 0x0004U
 #define ZCL_ATTR_BASIC_MODEL_IDENTIFIER 0x0005U
+#define ZCL_CLUSTER_IAS_ZONE 0x0500U
+#define ZCL_ATTR_IAS_ZONE_TYPE 0x0001U
+#define ZCL_ATTR_IAS_ZONE_STATUS 0x0002U
+#define ZCL_IAS_ZONE_TYPE_CONTACT_SWITCH 0x0015U
 
 typedef enum {
     DISCOVERY_ACTIVE_ENDPOINTS,
     DISCOVERY_SIMPLE_DESCRIPTOR,
     DISCOVERY_READ_BASIC,
+    DISCOVERY_READ_IAS_ZONE_TYPE,
     DISCOVERY_BIND_CLUSTER,
     DISCOVERY_CONFIG_REPORTING,
     DISCOVERY_EXTERNAL_REPORTING,
@@ -270,6 +277,24 @@ static bool schedule_basic(device_slot_t *slot, uint8_t endpoint)
     return true;
 }
 
+static bool schedule_ias_zone_type(device_slot_t *slot, uint8_t endpoint)
+{
+    endpoint_state_t *state = endpoint_state(slot, endpoint, true);
+    if (state == NULL || state->ias_zone_type_known ||
+        state->ias_zone_type_read_requested) {
+        return false;
+    }
+    if (!queue_job(
+            DISCOVERY_READ_IAS_ZONE_TYPE, slot, endpoint,
+            ZCL_CLUSTER_IAS_ZONE, 0U)) {
+        gateway_event_warning(&slot->device, "IAS ZoneType read queue full");
+        return false;
+    }
+    state->ias_zone_type_read_requested = true;
+    state->ias_zone_type_requested_at_ms = gateway_uptime_ms();
+    return true;
+}
+
 static bool schedule_binding(
     device_slot_t *slot, uint8_t endpoint, uint16_t cluster)
 {
@@ -376,6 +401,9 @@ static void clear_pending(device_slot_t *slot, const discovery_job_t *job)
         state->basic_state == BASIC_SCHEDULED) {
         state->basic_state = BASIC_NOT_SCHEDULED;
     }
+    if (job->kind == DISCOVERY_READ_IAS_ZONE_TYPE && state != NULL) {
+        state->ias_zone_type_read_requested = false;
+    }
     if (job->kind == DISCOVERY_BIND_CLUSTER) {
         binding_state_t *binding = gateway_device_binding_state(
             slot, job->endpoint, job->cluster_id, false);
@@ -467,6 +495,131 @@ static void retry_or_fail(discovery_job_t job, const char *message)
     gateway_device_maybe_reclaim(slot);
 }
 
+
+static bool publish_ias_contact_measurement(
+    device_slot_t *slot, endpoint_state_t *state, uint16_t zone_status)
+{
+    if (slot == NULL || state == NULL || !state->ias_zone_type_known) {
+        return false;
+    }
+    gateway_measurement_kind_t kind;
+    gateway_unit_t unit;
+    double value;
+    if (!gateway_zcl_normalize_ias_contact(
+            state->ias_zone_type, zone_status, &kind, &unit, &value)) {
+        return false;
+    }
+    gateway_input_id_t input = {0};
+    if (!gateway_zigbee_stable_input_id(
+            slot->device.ieee, slot->device.ieee_valid,
+            state->endpoint, &input)) {
+        return false;
+    }
+    gateway_event_t event = gateway_event_make_input(
+        GATEWAY_EVENT_MEASUREMENT, &input);
+    event.endpoint = state->endpoint;
+    event.data.measurement = (gateway_measurement_t){
+        .kind = kind,
+        .unit = unit,
+        .value = value,
+    };
+    return gateway_event_publish(&event);
+}
+
+static void apply_ias_zone_type(
+    device_slot_t *slot, endpoint_state_t *state, uint16_t zone_type)
+{
+    if (slot == NULL || state == NULL) {
+        return;
+    }
+    const gateway_input_capabilities_t old_readable = state->input_profile.readable;
+    gateway_input_capabilities_t new_readable =
+        old_readable & ~GATEWAY_INPUT_CAP_CONTACT_OPEN;
+    if (zone_type == ZCL_IAS_ZONE_TYPE_CONTACT_SWITCH) {
+        new_readable |= GATEWAY_INPUT_CAP_CONTACT_OPEN;
+    }
+
+    if (state->input_announced && old_readable != 0U && new_readable == 0U) {
+        (void)publish_generic_input(slot, state, false);
+    }
+    state->ias_zone_type = zone_type;
+    state->ias_zone_type_known = true;
+    state->ias_zone_type_read_requested = false;
+    state->input_profile.readable = new_readable;
+
+    if (new_readable != 0U &&
+        (!state->input_announced || new_readable != old_readable)) {
+        (void)publish_generic_input(slot, state, true);
+    }
+    if (state->ias_zone_status_valid) {
+        (void)publish_ias_contact_measurement(
+            slot, state, state->ias_zone_status);
+    }
+}
+
+static void publish_ias_zone_type_read(
+    const ezb_zcl_cmd_read_attr_rsp_message_t *message)
+{
+    const ezb_zcl_cmd_hdr_t *header = message->in.header;
+    if (header == NULL || message->info.dst_ep != GATEWAY_ENDPOINT ||
+        header->cluster_id != ZCL_CLUSTER_IAS_ZONE) {
+        return;
+    }
+    gateway_device_id_t device = device_from_header(header);
+    device_slot_t *slot = device.ieee_valid ?
+        gateway_device_find_by_ieee(device.ieee, false) :
+        gateway_device_find_by_short(device.short_addr, false);
+    endpoint_state_t *state =
+        slot == NULL ? NULL : endpoint_state(slot, header->src_ep, false);
+    if (state == NULL) {
+        return;
+    }
+
+    bool seen = false;
+    for (ezb_zcl_read_attr_rsp_variable_t *item = message->in.variables;
+         item != NULL; item = item->next) {
+        if (item->attr_id != ZCL_ATTR_IAS_ZONE_TYPE) {
+            continue;
+        }
+        seen = true;
+        if (item->status == EZB_ZCL_STATUS_SUCCESS &&
+            item->attr_type == EZB_ZCL_ATTR_TYPE_UINT16 &&
+            item->attr_value != NULL) {
+            uint16_t zone_type = 0U;
+            memcpy(&zone_type, item->attr_value, sizeof(zone_type));
+            apply_ias_zone_type(slot, state, zone_type);
+            return;
+        }
+    }
+    if (seen) {
+        state->ias_zone_type_read_requested = false;
+        gateway_event_warning(&slot->device, "IAS ZoneType read failed");
+    }
+}
+
+static void handle_ias_zone_status_change(
+    ezb_zcl_ias_zone_status_change_notif_message_t *message)
+{
+    if (message == NULL) {
+        return;
+    }
+    message->out.result = EZB_ZCL_STATUS_SUCCESS;
+    const ezb_zcl_cmd_hdr_t *header = message->in.header;
+    if (header == NULL || message->info.dst_ep != GATEWAY_ENDPOINT) {
+        return;
+    }
+    device_slot_t *slot = recover_report_source(header);
+    endpoint_state_t *state =
+        slot == NULL ? NULL : endpoint_state(slot, header->src_ep, false);
+    if (state == NULL) {
+        return;
+    }
+    state->ias_zone_status = message->in.payload.zone_status;
+    state->ias_zone_status_valid = true;
+    (void)publish_ias_contact_measurement(
+        slot, state, message->in.payload.zone_status);
+}
+
 static void publish_report(const ezb_zcl_cmd_report_attr_message_t *message)
 {
     const ezb_zcl_cmd_hdr_t *header = message->in.header;
@@ -487,7 +640,23 @@ static void publish_report(const ezb_zcl_cmd_report_attr_message_t *message)
         gateway_measurement_kind_t kind;
         gateway_unit_t unit;
         double value;
-        if (stable_input && gateway_zcl_normalize(
+        bool handled = false;
+        if (header->cluster_id == ZCL_CLUSTER_IAS_ZONE &&
+            item->attr_id == ZCL_ATTR_IAS_ZONE_STATUS &&
+            item->attr_type == EZB_ZCL_ATTR_TYPE_UINT16 &&
+            item->attr_value != NULL && slot != NULL) {
+            endpoint_state_t *state = endpoint_state(
+                slot, header->src_ep, false);
+            if (state != NULL) {
+                uint16_t zone_status = 0U;
+                memcpy(&zone_status, item->attr_value, sizeof(zone_status));
+                state->ias_zone_status = zone_status;
+                state->ias_zone_status_valid = true;
+                handled = publish_ias_contact_measurement(
+                    slot, state, zone_status);
+            }
+        }
+        if (!handled && stable_input && gateway_zcl_normalize(
                 header->cluster_id,
                 item->attr_id,
                 item->attr_type,
@@ -504,7 +673,9 @@ static void publish_report(const ezb_zcl_cmd_report_attr_message_t *message)
                 .value = value,
             };
             gateway_event_publish(&event);
-        } else {
+            handled = true;
+        }
+        if (!handled) {
             gateway_event_t event = gateway_event_make(
                 GATEWAY_EVENT_RAW_ATTRIBUTE, &device
             );
@@ -663,6 +834,11 @@ static void handle_check_in(ezb_zcl_poll_control_check_in_message_t *message)
                 GATEWAY_REQUEST_STALE_MS) {
             state->basic_state = BASIC_NOT_SCHEDULED;
         }
+        if (state->ias_zone_type_read_requested &&
+            (uint32_t)(now_ms - state->ias_zone_type_requested_at_ms) >=
+                GATEWAY_REQUEST_STALE_MS) {
+            state->ias_zone_type_read_requested = false;
+        }
     }
     for (size_t i = 0; i < GATEWAY_MAX_BINDING_STATES_PER_DEVICE; ++i) {
         binding_state_t *binding = &slot->bindings[i];
@@ -706,6 +882,9 @@ static void zcl_core_action_handler(
         publish_report(message);
     } else if (callback_id == EZB_ZCL_CORE_READ_ATTR_RSP_CB_ID) {
         publish_basic_read(message);
+        publish_ias_zone_type_read(message);
+    } else if (callback_id == EZB_ZCL_CORE_IAS_ZONE_STATUS_CHANGE_NOTIF_CB_ID) {
+        handle_ias_zone_status_change(message);
     } else if (callback_id == EZB_ZCL_CORE_CONFIG_REPORT_RSP_CB_ID) {
         publish_config_response(message);
     } else if (callback_id == EZB_ZCL_CORE_POLL_CONTROL_CHECK_IN_CB_ID) {
@@ -821,9 +1000,13 @@ static void simple_callback(
 
     const ezb_af_simple_desc_t *desc = &result->rsp->desc;
     endpoint_state_t *input_state = endpoint_state(slot, desc->ep_id, true);
-    const gateway_input_capability_profile_t profile =
+    gateway_input_capability_profile_t profile =
         gateway_zigbee_capability_profile_from_clusters(
             desc->app_cluster_list, desc->app_input_cluster_count);
+    if (input_state != NULL && input_state->ias_zone_type_known &&
+        input_state->ias_zone_type == ZCL_IAS_ZONE_TYPE_CONTACT_SWITCH) {
+        profile.readable |= GATEWAY_INPUT_CAP_CONTACT_OPEN;
+    }
     if (!slot->device.ieee_valid) {
         ezb_extaddr_t resolved_ieee;
         if (ezb_address_extended_by_short(slot->device.short_addr, &resolved_ieee) ==
@@ -865,10 +1048,14 @@ static void simple_callback(
     }
 
     bool basic = false;
+    bool ias_zone = false;
     for (uint8_t i = 0; i < desc->app_input_cluster_count; ++i) {
         const uint16_t cluster = desc->app_cluster_list[i];
         if (cluster == EZB_ZCL_CLUSTER_ID_BASIC) {
             basic = true;
+        }
+        if (cluster == ZCL_CLUSTER_IAS_ZONE) {
+            ias_zone = true;
         }
         if (gateway_reporting_policy_requires_binding(cluster)) {
             schedule_binding(slot, desc->ep_id, cluster);
@@ -881,6 +1068,9 @@ static void simple_callback(
     }
     if (basic) {
         schedule_basic(slot, desc->ep_id);
+    }
+    if (ias_zone) {
+        (void)schedule_ias_zone_type(slot, desc->ep_id);
     }
     context_release(context);
 }
@@ -979,6 +1169,22 @@ static bool submit_basic(device_slot_t *slot, const discovery_job_t *job)
             .manuf_code = EZB_ZCL_STD_MANUF_CODE,
         },
         .payload = {.attr_number = 2U, .attr_field = attrs},
+    };
+    return ezb_zcl_read_attr_cmd_req(&request) == EZB_ERR_NONE;
+}
+
+static bool submit_ias_zone_type(device_slot_t *slot, const discovery_job_t *job)
+{
+    uint16_t attrs[] = {ZCL_ATTR_IAS_ZONE_TYPE};
+    const ezb_zcl_read_attr_cmd_t request = {
+        .cmd_ctrl = {
+            .dst_addr = EZB_ADDRESS_SHORT(slot->device.short_addr),
+            .dst_ep = job->endpoint,
+            .src_ep = GATEWAY_ENDPOINT,
+            .cluster_id = ZCL_CLUSTER_IAS_ZONE,
+            .manuf_code = EZB_ZCL_STD_MANUF_CODE,
+        },
+        .payload = {.attr_number = 1U, .attr_field = attrs},
     };
     return ezb_zcl_read_attr_cmd_req(&request) == EZB_ERR_NONE;
 }
@@ -1340,6 +1546,7 @@ static void discovery_task(void *arg)
             job.kind == DISCOVERY_ACTIVE_ENDPOINTS ? submit_active(slot, &job) :
             job.kind == DISCOVERY_SIMPLE_DESCRIPTOR ? submit_simple(slot, &job) :
             job.kind == DISCOVERY_READ_BASIC ? submit_basic(slot, &job) :
+            job.kind == DISCOVERY_READ_IAS_ZONE_TYPE ? submit_ias_zone_type(slot, &job) :
             job.kind == DISCOVERY_BIND_CLUSTER ? submit_binding(slot, &job) :
             submit_reporting(slot, &job);
         esp_zigbee_lock_release();
@@ -1615,8 +1822,12 @@ static void zigbee_task(void *arg)
     };
     ezb_af_device_desc_t device = ezb_af_create_device_desc();
     ezb_af_ep_desc_t endpoint = ezb_af_create_gateway_endpoint(&endpoint_config);
+    ezb_zcl_cluster_desc_t ias_zone_client = ezb_zcl_ias_zone_create_cluster_desc(
+        NULL, EZB_ZCL_CLUSTER_CLIENT);
     if (device == EZB_INVALID_AF_DEVICE_DESC ||
         endpoint == EZB_INVALID_AF_EP_DESC ||
+        ias_zone_client == EZB_INVALID_ZCL_CLUSTER_DESC ||
+        ezb_af_endpoint_add_cluster_desc(endpoint, ias_zone_client) != EZB_ERR_NONE ||
         ezb_af_device_add_endpoint_desc(device, endpoint) != EZB_ERR_NONE ||
         ezb_af_device_desc_register(device) != EZB_ERR_NONE) {
         fail_zigbee_task("gateway endpoint registration failed");

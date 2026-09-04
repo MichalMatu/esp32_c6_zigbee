@@ -48,6 +48,12 @@ typedef struct {
     char manufacturer[GATEWAY_BASIC_TEXT_MAX_BYTES];
     char model[GATEWAY_BASIC_TEXT_MAX_BYTES];
     bool input_announced;
+    bool ias_zone_type_known;
+    bool ias_zone_type_read_requested;
+    bool ias_zone_status_valid;
+    uint16_t ias_zone_type;
+    uint16_t ias_zone_status;
+    uint32_t ias_zone_type_requested_at_ms;
 } endpoint_state_t;
 
 typedef struct {

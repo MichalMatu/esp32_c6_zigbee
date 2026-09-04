@@ -95,6 +95,23 @@ static void test_level(void)
         CLUSTER_LEVEL_CONTROL, 0x0000U, TYPE_UINT8, &raw, &kind, &unit, &value));
 }
 
+static void test_ias_contact(void)
+{
+    gateway_measurement_kind_t kind;
+    gateway_unit_t unit;
+    double value;
+    assert(gateway_zcl_normalize_ias_contact(
+        0x0015U, 0x0000U, &kind, &unit, &value));
+    assert(kind == GATEWAY_MEAS_CONTACT_OPEN);
+    assert(unit == GATEWAY_UNIT_BOOLEAN);
+    expect_close(value, 0.0);
+    assert(gateway_zcl_normalize_ias_contact(
+        0x0015U, 0x0001U, &kind, &unit, &value));
+    expect_close(value, 1.0);
+    assert(!gateway_zcl_normalize_ias_contact(
+        0x0028U, 0x0001U, &kind, &unit, &value));
+}
+
 static void test_attribute_capabilities(void)
 {
     assert(gateway_zcl_capability_for_attribute(CLUSTER_POWER_CONFIG, 0x0020U) ==
@@ -139,6 +156,7 @@ int main(void)
     test_humidity_and_battery();
     test_boolean_values();
     test_level();
+    test_ias_contact();
     test_attribute_capabilities();
     test_co2_and_invalid_input();
     puts("gateway_zcl_value host tests passed");

@@ -31,6 +31,7 @@ typedef enum {
     GATEWAY_MEAS_ENERGY,
     GATEWAY_MEAS_ON_OFF,
     GATEWAY_MEAS_LEVEL,
+    GATEWAY_MEAS_CONTACT_OPEN,
 } gateway_measurement_kind_t;
 
 typedef enum {
@@ -67,6 +68,7 @@ typedef uint32_t gateway_input_capabilities_t;
 #define GATEWAY_INPUT_CAP_ENERGY          (1UL << 11)
 #define GATEWAY_INPUT_CAP_ON_OFF          (1UL << 12)
 #define GATEWAY_INPUT_CAP_LEVEL           (1UL << 13)
+#define GATEWAY_INPUT_CAP_CONTACT_OPEN    (1UL << 14)
 
 #define GATEWAY_INPUT_METADATA_MAX_BYTES 24U
 

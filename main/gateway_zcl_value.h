@@ -25,6 +25,12 @@ bool gateway_zcl_normalize(uint16_t cluster,
                            gateway_unit_t *unit,
                            double *number);
 
+bool gateway_zcl_normalize_ias_contact(
+    uint16_t zone_type, uint16_t zone_status,
+    gateway_measurement_kind_t *kind,
+    gateway_unit_t *unit,
+    double *number);
+
 #ifdef __cplusplus
 }
 #endif

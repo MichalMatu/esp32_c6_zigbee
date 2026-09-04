@@ -42,6 +42,8 @@ static void test_capability_mapping(void)
            GATEWAY_INPUT_CAP_HUMIDITY);
     assert(gateway_input_capability_for_measurement(GATEWAY_MEAS_CO2) ==
            GATEWAY_INPUT_CAP_CO2);
+    assert(gateway_input_capability_for_measurement(GATEWAY_MEAS_CONTACT_OPEN) ==
+           GATEWAY_INPUT_CAP_CONTACT_OPEN);
     assert(gateway_input_capability_for_measurement((gateway_measurement_kind_t)255) == 0U);
 }
 

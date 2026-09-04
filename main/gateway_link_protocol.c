@@ -326,6 +326,7 @@ static gateway_link_result_t measurement_kind_to_wire(gateway_measurement_kind_t
     case GATEWAY_MEAS_ENERGY: *wire = 12U; break;
     case GATEWAY_MEAS_ON_OFF: *wire = 13U; break;
     case GATEWAY_MEAS_LEVEL: *wire = 14U; break;
+    case GATEWAY_MEAS_CONTACT_OPEN: *wire = 15U; break;
     default: return GATEWAY_LINK_UNSUPPORTED_VALUE;
     }
     return GATEWAY_LINK_OK;
@@ -349,6 +350,7 @@ static gateway_link_result_t measurement_kind_from_wire(uint8_t wire, gateway_me
     case 12U: *kind = GATEWAY_MEAS_ENERGY; break;
     case 13U: *kind = GATEWAY_MEAS_ON_OFF; break;
     case 14U: *kind = GATEWAY_MEAS_LEVEL; break;
+    case 15U: *kind = GATEWAY_MEAS_CONTACT_OPEN; break;
     default: return GATEWAY_LINK_UNSUPPORTED_VALUE;
     }
     return GATEWAY_LINK_OK;

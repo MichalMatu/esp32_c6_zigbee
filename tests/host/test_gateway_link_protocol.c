@@ -150,6 +150,30 @@ static void test_scd41_measurement_round_trip(void)
     assert(decoded.quality == GATEWAY_LINK_QUALITY_VALID);
 }
 
+static void test_contact_measurement_round_trip(void)
+{
+    gateway_link_measurement_t measurement = {0};
+    measurement.input.source = GATEWAY_SOURCE_ZIGBEE;
+    measurement.input.channel = 1U;
+    strcpy(measurement.input.id, "zigbee:00124b00aabbccdd");
+    measurement.uptime_ms = 77U;
+    measurement.measurement.kind = GATEWAY_MEAS_CONTACT_OPEN;
+    measurement.measurement.unit = GATEWAY_UNIT_BOOLEAN;
+    measurement.measurement.value = 1.0;
+    measurement.quality = GATEWAY_LINK_QUALITY_VALID;
+
+    uint8_t payload[GATEWAY_LINK_MAX_PAYLOAD];
+    uint16_t length = 0U;
+    assert(gateway_link_encode_measurement_payload(
+        &measurement, payload, sizeof(payload), &length) == GATEWAY_LINK_OK);
+    gateway_link_measurement_t decoded = {0};
+    assert(gateway_link_decode_measurement_payload(
+        payload, length, &decoded) == GATEWAY_LINK_OK);
+    assert(decoded.measurement.kind == GATEWAY_MEAS_CONTACT_OPEN);
+    assert(decoded.measurement.unit == GATEWAY_UNIT_BOOLEAN);
+    assert(decoded.measurement.value == 1.0);
+}
+
 static void test_measurement_policy_round_trip(void)
 {
     gateway_link_measurement_policy_t policy = {0};
@@ -265,6 +289,7 @@ int main(void)
     test_hello_round_trip();
     test_scd41_descriptor_round_trip();
     test_scd41_measurement_round_trip();
+    test_contact_measurement_round_trip();
     test_measurement_policy_round_trip();
     test_command_round_trip();
     test_level_command_wire();
