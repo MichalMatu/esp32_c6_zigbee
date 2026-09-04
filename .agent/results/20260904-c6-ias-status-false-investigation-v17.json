@@ -1,0 +1,9 @@
+{
+  "id": "20260904-c6-ias-status-false-investigation-v17",
+  "status": "failed",
+  "failure_reason": "invalid_task_file",
+  "started_at": null,
+  "finished_at": "2026-09-04T04:45:33.687597+00:00",
+  "daemon_version": "4.15.0",
+  "error": "ValueError: resources must be declared explicitly"
+}
