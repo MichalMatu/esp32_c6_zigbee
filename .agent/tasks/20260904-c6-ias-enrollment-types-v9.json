@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-ias-enrollment-types-v9",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 512,
+  "command_timeout": 120,
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "commands": [
+    "set -euo pipefail\ntest \"$(git rev-parse HEAD)\" = 3d3a38885fb458d7693eab39450dad8506d504f6\npython3 - <<'PY'\nfrom pathlib import Path\nroot=Path('managed_components/espressif__esp-zigbee-lib/include/ezbee')\nfor p in sorted(root.rglob('*')):\n    if not p.is_file(): continue\n    lines=p.read_text(errors='ignore').splitlines()\n    for i,line in enumerate(lines):\n        low=line.lower()\n        if ('0xf0' in low or 'ieee' in low or 'eui64' in low or 'enroll_req_message_s' in low or 'enroll_rsp_cmd_s' in low):\n            if 'attr' in low or 'type' in low or 'ias_zone' in str(p).lower() or 'enroll' in low:\n                print('===',p, i+1,'===')\n                for j in range(max(0,i-10),min(len(lines),i+24)): print(f'{j+1:4d}: {lines[j]}')\n                print()\nPY\n"
+  ]
+}
