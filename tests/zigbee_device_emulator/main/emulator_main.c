@@ -635,6 +635,7 @@ void app_main(void)
         err = nvs_flash_init();
     }
     ESP_ERROR_CHECK(err);
+    ESP_ERROR_CHECK(nvs_flash_init_partition("zb_storage"));
     if (xTaskCreate(zigbee_task, "emu_zigbee", 6144, NULL, 5, NULL) != pdPASS) {
         ESP_LOGE(TAG, "zigbee task creation failed");
     }
