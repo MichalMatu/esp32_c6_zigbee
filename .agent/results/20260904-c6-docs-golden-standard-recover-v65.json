@@ -1,0 +1,60 @@
+{
+  "id": "20260904-c6-docs-golden-standard-recover-v65",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": true,
+  "started_at": "2026-09-04T20:57:08.859699+00:00",
+  "command_timeout": 3600,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\ngit fetch origin agent-control\ngit show FETCH_HEAD:.agent/scripts/20260904-c6-docs-golden-standard-recover-v65.sh > /tmp/c6_docs_golden_standard_recover_v65.sh\nchmod +x /tmp/c6_docs_golden_standard_recover_v65.sh\n/tmp/c6_docs_golden_standard_recover_v65.sh",
+      "exit_code": 0,
+      "output": "From https://github.com/MichalMatu/esp32_c6_zigbee\n * branch              agent-control -> FETCH_HEAD\n   e719c2cb..7df61125  agent-control -> origin/agent-control\nFrom https://github.com/MichalMatu/esp32_c6_zigbee\n * branch              main       -> FETCH_HEAD\nSwitched to and reset branch 'main'\nbranch 'main' set up to track 'origin/main'.\nYour branch is up to date with 'origin/main'.\nHEAD is now at 067fa6f7 Finalize C6 LiteGraph migration freeze\nLANGUAGE_AUDIT=PASS\nMARKDOWN_UX_AUDIT=PASS\nCONTINUATION_CURRENTNESS=PASS\n[migration] root=/Users/michal/agent-workspace/repos/esp32-c6-zigbee/work\n[migration] manifest PASS\n[host] source-hygiene\ntext source NUL scan passed\n[host] discovery-claim-source\ndiscovery claim source invariant: PASS\n[host] zcl\ngateway_zcl_value host tests passed\n[host] device-state\ngateway_device_state host tests passed\n[host] inputs\ngateway_inputs host tests passed\n[host] zigbee-input\ngateway_zigbee_input host tests passed\n[host] command-policy\ngateway_command_policy host tests passed\n[host] link-protocol\ngateway_link_protocol host tests passed\n[host] link-event-adapter\ngateway_link_event_adapter host tests passed\n[host] link-stream\ngateway_link_stream host tests passed\n[host] link-snapshot-cache\ngateway_link_snapshot_cache host tests passed\n[host] link-control\ngateway_link_control host tests passed\n[host] link-e2e\ngateway_link virtual S3 E2E host tests passed\n[host] reporting-policy\ngateway_reporting_policy host tests passed\n[host] i2c-mailbox\ngateway_i2c_mailbox host tests passed\n[host] all tests passed\n[migration] readiness PASS\n[main 5b45f314] Polish English documentation UX\n 10 files changed, 204 insertions(+), 473 deletions(-)\nTo https://github.com/MichalMatu/esp32_c6_zigbee.git\n   067fa6f7..5b45f314  HEAD -> main\nDOCS_GOLDEN_STANDARD=PASS\nDOCS_HEAD=5b45f31412c03c11aff603c7762fd6c3d7f68194\nFIRMWARE_RUNTIME_UNCHANGED=TRUE\n",
+      "elapsed_seconds": 9.951,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 2048,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 18.44,
+      "output_policy": "stream",
+      "captured_output_chars": 1878,
+      "output_truncated": false,
+      "current_rss_mb": 16.36,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 9.951
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.076
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.074
+  },
+  "finished_at": "2026-09-04T20:57:20.362470+00:00",
+  "task_digest": "4d71a1a16cc9ee57ea6734b34dc6581519a1db8011a8651be4ec3950fc43e538",
+  "idle_timeout": 600,
+  "task_timeout": 5400,
+  "memory_limit_mb": 2048,
+  "attempt_id": "9af5e7a78ecb1c08c7878fe7",
+  "daemon_version": "4.15.0"
+}
