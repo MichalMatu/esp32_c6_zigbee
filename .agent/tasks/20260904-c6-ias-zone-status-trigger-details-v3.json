@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-ias-zone-status-trigger-details-v3",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 1024,
+  "command_timeout": 600,
+  "idle_timeout": 180,
+  "task_timeout": 900,
+  "commands": [
+    "set -euo pipefail\nEXPECTED=3d3a38885fb458d7693eab39450dad8506d504f6\ntest \"$(git rev-parse HEAD)\" = \"$EXPECTED\"\nROOT=managed_components/espressif__esp-zigbee-lib/include\n\necho '=== FULL EZB IAS ZONE HEADER ==='\ncat \"$ROOT/ezbee/zcl/cluster/ias_zone.h\"\n\necho '=== FULL EZB IAS ZONE DESC HEADER ==='\ncat \"$ROOT/ezbee/zcl/cluster/ias_zone_desc.h\"\n\necho '=== COMPAT IAS HEADER RELEVANT 75-220 ==='\nsed -n '75,220p' \"$ROOT/compat/zcl/esp_zigbee_zcl_ias_zone.h\"\n\necho '=== ALL STATUS CHANGE SYMBOLS WITH FILE+LINE ==='\ngrep -RniE 'status[_ ]change|STATUS_CHANGE|zone_status|ZONE_STATUS' \"$ROOT\" 2>/dev/null | grep -Ei 'ias|zone' | head -300\n\necho '=== ALL IAS EXPORTED DECLARATIONS ==='\ngrep -RniE '^[[:space:]]*(esp_err_t|esp_zb_zcl_status_t|ezb_zcl_status_t|bool|void|uint[0-9]+_t)[[:space:]*]+(esp_zb|ezb)_[A-Za-z0-9_]*(ias|zone)[A-Za-z0-9_]*[[:space:]]*\\(' \"$ROOT\" 2>/dev/null | head -300 || true\n\necho '=== COMMAND API HEADERS CONTAINING IAS ==='\nfor H in $(grep -RIlE 'IAS_ZONE|ias_zone' \"$ROOT\" 2>/dev/null | grep -Ei 'command|cmd|zcl_command|zcl_common|ias_zone' | sort -u); do\n  echo --- $H\n  grep -nE -B12 -A35 'IAS_ZONE|ias_zone|status_change|STATUS_CHANGE' \"$H\" | head -260 || true\ndone\n\necho '=== EMULATOR PROFILE CONFIG / JOIN CALLBACK CONTEXT ==='\npython3 - <<'PY'\nfrom pathlib import Path\np=Path('tests/zigbee_device_emulator/main/emulator_main.c')\nlines=p.read_text().splitlines()\nfor needle in ['add_ias_contact_endpoint', 'initialize_ias_contact_attributes', 'network steering status', 'ESP_ZB_BDB_SIGNAL_STEERING', 'set_server_attr']:\n    print('###',needle)\n    for i,l in enumerate(lines):\n        if needle.lower() in l.lower():\n            for n in range(max(0,i-35),min(len(lines),i+100)): print(f'{n+1:5d}: {lines[n]}')\n            print()\nPY\n"
+  ]
+}
