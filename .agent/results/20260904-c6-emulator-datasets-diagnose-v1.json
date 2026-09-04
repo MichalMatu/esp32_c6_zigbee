@@ -1,0 +1,61 @@
+{
+  "id": "20260904-c6-emulator-datasets-diagnose-v1",
+  "status": "failed",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-09-04T02:19:51.883639+00:00",
+  "command_timeout": 900,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail; EXPECTED=85869b350d77d244993812bfec3787e2a9e38e58; BRANCH=integration/c6-s3-i2c-20260903; git fetch origin \"$BRANCH\"; git checkout --detach \"$EXPECTED\"; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; . ~/esp/esp-idf-v5.5.4/export.sh >/dev/null; cd tests/zigbee_device_emulator; test -f build/zigbee_device_emulator.elf || { echo MISSING_ELF; exit 2; }; ELF=build/zigbee_device_emulator.elf; echo '=== PARTITIONS ==='; cat partitions.csv; echo '=== STORAGE CONFIG ==='; grep -E 'CONFIG_(NVS|ZB|ESP_ZIGBEE|PARTITION_TABLE|ESPTOOLPY)' sdkconfig | head -200 || true; echo '=== DATASETS SYMBOL ==='; riscv32-esp-elf-nm -n -C \"$ELF\" | grep -E 'ezb_plat_datasets_init|esp_zigbee_set_storage_name|nvs_flash_init_partition|nvs_open_from_partition|nvs_open|abort|esp_system_abort'; echo '=== DISASSEMBLY DATASETS ==='; riscv32-esp-elf-objdump -d -C --start-address=0x42030daa --stop-address=0x42030de0 \"$ELF\"; echo '=== STRINGS AROUND STORAGE ==='; strings \"$ELF\" | grep -Ei 'zb_storage|dataset|nvs|partition|storage' | head -200",
+      "exit_code": 2,
+      "output": "From https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            integration/c6-s3-i2c-20260903 -> FETCH_HEAD\nHEAD is now at 85869b3 Add ZoneType-aware IAS contact inputs\nActivating ESP-IDF 5.5\nSetting IDF_PATH to '/Users/michal/esp/esp-idf'.\n* Checking python version ... 3.13.9\n* Checking python dependencies ... OK\n* Deactivating the current ESP-IDF environment (if any) ... OK\n* Establishing a new ESP-IDF environment ... OK\n* Identifying shell ... bash\n* Detecting outdated tools in system ... OK - no outdated tools found\n* Shell completion ... Autocompletion code generated\nMISSING_ELF\n",
+      "elapsed_seconds": 2.486,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 2048,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 88.41,
+      "output_policy": "stream",
+      "captured_output_chars": 600,
+      "output_truncated": false,
+      "current_rss_mb": 88.41,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "failed",
+      "elapsed_seconds": 2.486
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.071
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.067
+  },
+  "failure_reason": "command_failed",
+  "finished_at": "2026-09-04T02:19:56.178196+00:00",
+  "task_digest": "ce208345fbe93cf429b7a9d5aaa31363ddb908d2bdd9c456b77f180dbd2eda56",
+  "idle_timeout": 300,
+  "task_timeout": 1200,
+  "memory_limit_mb": 2048,
+  "attempt_id": "101c12a6fcfaf62ddae7ae54",
+  "daemon_version": "4.15.0"
+}
