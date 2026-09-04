@@ -2,8 +2,8 @@
   "version": 1,
   "daemon_version": "4.15.0",
   "state": "idle",
-  "pid": 40951,
-  "updated_at": "2026-09-04T00:36:54.387712+00:00",
+  "pid": 44149,
+  "updated_at": "2026-09-04T00:42:01.738649+00:00",
   "self_revision": "d8f95a8b6e9fa4addb2367285c66a82d045a24be",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -23,8 +23,7 @@
   "default_branch": "main",
   "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 40951,
+  "worker_pid": 44149,
   "supervisor_pid": 83251,
-  "last_task_id": "20260904-c6-usb-second-detect-v1",
   "execution_variant": "parallel"
 }
