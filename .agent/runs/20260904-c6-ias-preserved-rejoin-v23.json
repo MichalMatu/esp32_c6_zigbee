@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-ias-preserved-rejoin-v23",
+  "task_digest": "fdf5b28ee778930d147cb597d8e126e9fd56fab20bd66e2a6639d5017c2125a1",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T05:48:35.512868+00:00",
+  "attempt_id": "2343725470bc0c64da3a280b",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 22474,
+  "updated_at": "2026-09-04T05:48:35.512914+00:00",
+  "pid": 22474
+}
