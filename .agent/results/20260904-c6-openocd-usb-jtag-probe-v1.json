@@ -1,0 +1,12 @@
+{
+  "id": "20260904-c6-openocd-usb-jtag-probe-v1",
+  "status": "failed",
+  "failure_reason": "daemon_exception",
+  "task_digest": "389bed1b0ee02488545069d23c5550db4e6b63cae1c58f493014730359a70b64",
+  "started_at": "2026-09-04T01:27:54.387005+00:00",
+  "finished_at": "2026-09-04T01:27:54.785912+00:00",
+  "error": "ValueError: invalid work_branch: 'integration/c6-s3-i2c-20260903'",
+  "traceback": "Traceback (most recent call last):\n  File \"/Users/michal/local-agent/agentd.py\", line 1189, in execute_task\n    result = runtime.process_task(task, progress=progress)\n  File \"/Users/michal/local-agent/agent_runtime.py\", line 622, in process_task\n    result = self.core.process_task(task, command_runner=self.run_command)\n  File \"/Users/michal/local-agent/agent_core.py\", line 927, in process_task\n    prepare_work(branch, task_id=task_id)\n    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/michal/local-agent/agent_core.py\", line 516, in prepare_work\n    branch = validate_branch(branch)\n  File \"/Users/michal/local-agent/agent_core.py\", line 255, in validate_branch\n    raise ValueError(f\"invalid work_branch: {branch!r}\")\nValueError: invalid work_branch: 'integration/c6-s3-i2c-20260903'\n",
+  "attempt_id": "81bd77979a0231a563c4caef",
+  "daemon_version": "4.15.0"
+}
