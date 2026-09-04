@@ -1,0 +1,142 @@
+{
+  "id": "20260904-c6-final-critical-reaudit-recover-v59",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": true,
+  "started_at": "2026-09-04T20:18:43.996688+00:00",
+  "command_timeout": 7200,
+  "edits": {},
+  "commands": [
+    {
+      "command": "git fetch origin agent-control",
+      "exit_code": 0,
+      "output": "From https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            agent-control -> FETCH_HEAD\n   dd5e5f7..db83182  agent-control -> origin/agent-control\n",
+      "elapsed_seconds": 1.112,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 4096,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 1.23,
+      "output_policy": "stream",
+      "captured_output_chars": 159,
+      "output_truncated": false,
+      "current_rss_mb": 1.23,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 4,
+      "stage_phase": "commands"
+    },
+    {
+      "command": "git show FETCH_HEAD:.agent/scripts/20260904-c6-final-critical-reaudit-recover-v59.sh > /tmp/c6_final_critical_reaudit_recover_v59.sh",
+      "exit_code": 0,
+      "output": "",
+      "elapsed_seconds": 0.399,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 4096,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": null,
+      "output_policy": "stream",
+      "captured_output_chars": 0,
+      "output_truncated": false,
+      "stage_name": "command-2",
+      "stage_index": 2,
+      "stage_total": 4,
+      "stage_phase": "commands"
+    },
+    {
+      "command": "chmod +x /tmp/c6_final_critical_reaudit_recover_v59.sh",
+      "exit_code": 0,
+      "output": "",
+      "elapsed_seconds": 0.368,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 4096,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": null,
+      "output_policy": "stream",
+      "captured_output_chars": 0,
+      "output_truncated": false,
+      "stage_name": "command-3",
+      "stage_index": 3,
+      "stage_total": 4,
+      "stage_phase": "commands"
+    },
+    {
+      "command": "/tmp/c6_final_critical_reaudit_recover_v59.sh",
+      "exit_code": 0,
+      "output": "From https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            integration/c6-s3-i2c-20260903 -> FETCH_HEAD\nSwitched to and reset branch 'integration/c6-s3-i2c-20260903'\nbranch 'integration/c6-s3-i2c-20260903' set up to track 'origin/integration/c6-s3-i2c-20260903'.\nYour branch is up to date with 'origin/integration/c6-s3-i2c-20260903'.\nHEAD is now at 5ce963d Prepare C6 module for LiteGraph migration\n=== FINAL REAUDIT V59: repository + manifest + active-contract audit ===\nmanifest_and_active_contract=PASS\nACTIVE_GATEWAYLINK_V2_ONLY=PASS\nSHELLCHECK=PASS\nCPPCHECK=PASS\n=== FINAL REAUDIT V59: canonical software gates ===\n[migration] root=/Users/michal/agent-workspace/repos/esp32-c6-zigbee/work\n[migration] manifest PASS\n[host] source-hygiene\ntext source NUL scan passed\n[host] discovery-claim-source\ndiscovery claim source invariant: PASS\n[host] zcl\ngateway_zcl_value host tests passed\n[host] device-state\ngateway_device_state host tests passed\n[host] inputs\ngateway_inputs host tests passed\n[host] zigbee-input\ngateway_zigbee_input host tests passed\n[host] command-policy\ngateway_command_policy host tests passed\n[host] link-protocol\ngateway_link_protocol host tests passed\n[host] link-event-adapter\ngateway_link_event_adapter host tests passed\n[host] link-stream\ngateway_link_stream host tests passed\n[host] link-snapshot-cache\ngateway_link_snapshot_cache host tests passed\n[host] link-control\ngateway_link_control host tests passed\n[host] link-e2e\ngateway_link virtual S3 E2E host tests passed\n[host] reporting-policy\ngateway_reporting_policy host tests passed\n[host] i2c-mailbox\ngateway_i2c_mailbox host tests passed\n[host] all tests passed\n[migration] readiness PASS\n[host] source-hygiene\ntext source NUL scan passed\n[host] discovery-claim-source\ndiscovery claim source invariant: PASS\n[host] zcl\ngateway_zcl_value host tests passed\n[host] device-state\ngateway_device_state host tests passed\n[host] inputs\ngateway_inputs host tests passed\n[host] zigbee-input\ngateway_zigbee_input host tests passed\n[host] command-policy\ngateway_command_policy host tests passed\n[host] link-protocol\ngateway_link_protocol host tests passed\n[host] link-event-adapter\ngateway_link_event_adapter host tests passed\n[host] link-stream\ngateway_link_stream host tests passed\n[host] link-snapshot-cache\ngateway_link_snapshot_cache host tests passed\n[host] link-control\ngateway_link_control host tests passed\n[host] link-e2e\ngateway_link virtual S3 E2E host tests passed\n[host] reporting-policy\ngateway_reporting_policy host tests passed\n[host] i2c-mailbox\ngateway_i2c_mailbox host tests passed\n[host] all tests passed\nActivating ESP-IDF 5.5\nSetting IDF_PATH to '/Users/michal/esp/esp-idf'.\n* Checking python version ... 3.13.9\n* Checking python dependencies ... OK\n* Deactivating the current ESP-IDF environment (if any) ... OK\n* Establishing a new ESP-IDF environment ... OK\n* Identifying shell ... bash\n* Detecting outdated tools in system ... OK - no outdated tools found\n* Shell completion ... Autocompletion code generated\n=== FINAL REAUDIT V59: UART build ===\nUART_BUILD=PASS\n=== FINAL REAUDIT V59: I2C build ===\nI2C_BUILD=PASS\n=== FINAL REAUDIT V59: emulator build ===\nEMULATOR_BUILD=PASS\n[migration] root=/Users/michal/agent-workspace/repos/esp32-c6-zigbee/work\n[migration] manifest PASS\n[host] source-hygiene\ntext source NUL scan passed\n[host] discovery-claim-source\ndiscovery claim source invariant: PASS\n[host] zcl\ngateway_zcl_value host tests passed\n[host] device-state\ngateway_device_state host tests passed\n[host] inputs\ngateway_inputs host tests passed\n[host] zigbee-input\ngateway_zigbee_input host tests passed\n[host] command-policy\ngateway_command_policy host tests passed\n[host] link-protocol\ngateway_link_protocol host tests passed\n[host] link-event-adapter\ngateway_link_event_adapter host tests passed\n[host] link-stream\ngateway_link_stream host tests passed\n[host] link-snapshot-cache\ngateway_link_snapshot_cache host tests passed\n[host] link-control\ngateway_link_control host tests passed\n[host] link-e2e\ngateway_link virtual S3 E2E host tests passed\n[host] reporting-policy\ngateway_reporting_policy host tests passed\n[host] i2c-mailbox\ngateway_i2c_mailbox host tests passed\n[host] all tests passed\n[migration] readiness PASS\n[integration/c6-s3-i2c-20260903 067fa6f] Finalize C6 LiteGraph migration freeze\n 6 files changed, 107 insertions(+), 3 deletions(-)\n create mode 100644 docs/FINAL_REAUDIT_2026-09-04.md\nTo https://github.com/MichalMatu/esp32_c6_zigbee.git\n   5ce963d..067fa6f  HEAD -> integration/c6-s3-i2c-20260903\nFINAL_REAUDIT_SOFTWARE=PASS\nFINAL_FREEZE_HEAD=067fa6f744f5e28233eb5b267edd7d6daa262c2c\nHARDWARE_PROVEN_RUNTIME_SOURCE=5ce963d6ee3b03b9b788f9d02bd9acb4910acead\n",
+      "elapsed_seconds": 120.084,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 4096,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 161.08,
+      "output_policy": "stream",
+      "captured_output_chars": 4698,
+      "output_truncated": false,
+      "current_rss_mb": 25.45,
+      "stage_name": "command-4",
+      "stage_index": 4,
+      "stage_total": 4,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 4,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 1.112
+    },
+    {
+      "stage_name": "command-2",
+      "stage_index": 2,
+      "stage_total": 4,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 0.399
+    },
+    {
+      "stage_name": "command-3",
+      "stage_index": 3,
+      "stage_total": 4,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 0.368
+    },
+    {
+      "stage_name": "command-4",
+      "stage_index": 4,
+      "stage_total": 4,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 120.084
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.075
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.065
+  },
+  "finished_at": "2026-09-04T20:20:47.500690+00:00",
+  "task_digest": "d734faa6c124dee2f99c4882572bad262a76fda74ef00c452c09ad3d2e7248a6",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "attempt_id": "e17ab13ec78a3abfcb0eac92",
+  "daemon_version": "4.15.0"
+}
