@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-migration-readiness-recover-v54",
+  "task_digest": "7b087d101ba797b3231a3ddb47c0c4e6c34c61506ac7e25b93176805e72498ca",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T19:41:35.539435+00:00",
+  "attempt_id": "4202c66a3d9469522760ae1c",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 81861,
+  "updated_at": "2026-09-04T19:41:35.539570+00:00",
+  "pid": 81861
+}
