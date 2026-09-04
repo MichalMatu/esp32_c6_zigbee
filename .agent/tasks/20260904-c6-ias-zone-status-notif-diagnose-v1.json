@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-ias-zone-status-notif-diagnose-v1",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 2048,
+  "command_timeout": 900,
+  "idle_timeout": 180,
+  "task_timeout": 1200,
+  "commands": [
+    "set -euo pipefail\nEXPECTED=3d3a38885fb458d7693eab39450dad8506d504f6\nBRANCH=integration/c6-s3-i2c-20260903\ngit fetch origin \"$BRANCH\"\ntest \"$(git rev-parse origin/$BRANCH)\" = \"$EXPECTED\"\ngit checkout --detach \"$EXPECTED\"\ntest \"$(git rev-parse HEAD)\" = \"$EXPECTED\"\necho SOURCE_HEAD=$(git rev-parse HEAD)\n\n. ~/esp/esp-idf-v5.5.4/export.sh >/dev/null\n# Ensure managed component headers exist locally without changing tracked source.\nidf.py reconfigure >/dev/null\n\necho '=== IAS HEADERS ==='\nfor H in $(find managed_components/espressif__esp-zigbee-lib/include -type f | grep -Ei 'ias.*zone|zone.*ias' | sort); do\n  echo --- $H\n  cat \"$H\"\ndone\n\necho '=== IAS STATUS CHANGE API SYMBOLS ==='\ngrep -RniE -B30 -A100 'zone_status_change|status_change_notif|ZONE_STATUS_CHANGE|ias_zone.*notif|notif.*ias_zone|zone status change' managed_components/espressif__esp-zigbee-lib/include 2>/dev/null || true\n\necho '=== IAS COMMAND REQUEST STRUCTS/FUNCTIONS ==='\ngrep -RniE -B25 -A100 'ias_zone.*cmd|ias.*zone.*req|status_change.*req|change_notif.*req' managed_components/espressif__esp-zigbee-lib/include 2>/dev/null || true\n\necho '=== REPO USAGES/EXAMPLES ==='\ngrep -RniE -B40 -A120 'zone_status_change|status_change_notif|ZONE_STATUS_CHANGE|ias_zone.*notif|cluster=0x0500|IAS.*ZoneStatus' . --exclude-dir=.git --exclude-dir=build --exclude-dir=managed_components 2>/dev/null | head -1400 || true\n\necho '=== EMULATOR IAS WRITE/REPORT CONTEXT ==='\npython3 - <<'PY'\nfrom pathlib import Path\np=Path('tests/zigbee_device_emulator/main/emulator_main.c')\nlines=p.read_text().splitlines()\nfor needle in ['set_server_attr', 'request_report', 'tick_ias_contact', 'initialize_ias_contact_attributes', 'add_ias_contact_endpoint']:\n    print('###', needle)\n    for i,l in enumerate(lines):\n        if needle in l:\n            for n in range(max(0,i-45), min(len(lines),i+130)):\n                print(f'{n+1:5d}: {lines[n]}')\n            print()\nPY\n\necho '=== COORDINATOR IAS NOTIFICATION CALLBACK ==='\npython3 - <<'PY'\nfrom pathlib import Path\np=Path('main/zigbee_gateway.c')\nlines=p.read_text().splitlines()\nfor needle in ['IAS_ZONE_STATUS_CHANGE_NOTIF', 'handle_ias_zone_status', 'publish_ias_contact_measurement']:\n    print('###', needle)\n    for i,l in enumerate(lines):\n        if needle.lower() in l.lower():\n            for n in range(max(0,i-40), min(len(lines),i+120)):\n                print(f'{n+1:5d}: {lines[n]}')\n            print()\nPY\n\ngit status --short\n"
+  ]
+}
