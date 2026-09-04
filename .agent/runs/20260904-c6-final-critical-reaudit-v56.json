@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-final-critical-reaudit-v56",
+  "task_digest": "f813a477dc6ec0b237c9d7b0ce3c0df4720e828d4223aef9e2b511fe1040112b",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T20:00:58.405222+00:00",
+  "attempt_id": "af555f4b4af73cd5205bdff4",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 25522,
+  "updated_at": "2026-09-04T20:00:58.405336+00:00",
+  "pid": 25522
+}
