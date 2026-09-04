@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-export-admin-finalize-v67",
+  "task_digest": "9832e67ba425c81d0ceecfcd1c25bd135475c8fb4c29d64d047f59ee88c61f75",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T21:17:24.263129+00:00",
+  "attempt_id": "2d4a85efa68adeda3ace39fc",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 1975,
+  "updated_at": "2026-09-04T21:17:24.263261+00:00",
+  "pid": 1975
+}
