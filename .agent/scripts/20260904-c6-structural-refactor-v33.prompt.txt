@@ -1,0 +1,17 @@
+Audit and refactor MichalMatu/esp32_c6_zigbee on integration/c6-s3-i2c-20260903 starting exactly at 5bde32fba74dce2e7e9fba07884209efee8fb026. This is behavior-preserving cleanup/debugging before physical S3 integration, not a new feature milestone.
+
+Read AGENTS.md, README.md, docs/CONTINUATION.md, docs/VERIFIED_BASELINE.md, docs/ARCHITECTURE.md, docs/GATEWAY_LINK_V2.md and relevant code/tests before editing. Preserve ESP-IDF v5.5.4, esp-zigbee-lib v2.0.4, IEEE-first identity, bounded callbacks/queues, SCD4x shared I2C, C6-master I2C GatewayLink backend, UART fallback, and all frozen Zigbee behavior. No hardware operations and no S3 repository changes.
+
+The active branch implements GatewayLink protocol v2. There is intentionally no v1 compatibility shim because no S3 peer is deployed. GATEWAY_LINK_V1.md is historical recovery documentation only. Fix active docs that incorrectly point new development at v1; GATEWAY_LINK_V2.md is the current contract.
+
+Do a genuine repository-wide architecture/code/docs audit and apply evidence-based improvements, avoiding style-only churn. In particular:
+- main/zigbee_gateway.c is ~73.7 KB/~2000 lines and mixes queue/job machinery, discovery, ZDO/ZCL callbacks, IAS, external policy/commands, lifecycle/app signals, stack startup, and public API. Split it into cohesive internal modules with explicit ownership and small internal interfaces while preserving the public API.
+- main/gateway_link_protocol.c is ~30 KB. Split frame/COBS/CRC from payload codecs only if that creates a real cohesive boundary while preserving the public protocol API and tests.
+- emulator_main.c is ~28 KB; split only if low-risk and cohesive. Production code has priority.
+- main/ is flat. Improve directory organization only if it materially clarifies ownership; do not create gratuitous component proliferation.
+- Audit handle_check_in(): it queues DISCOVERY_ACTIVE_ENDPOINTS directly instead of using the per-route discovery claim path. Determine if repeated check-ins can violate the no-duplicate-discovery invariant. If yes, fix it and add regression coverage in host-testable state/policy code where practical.
+- Reconcile README/ARCHITECTURE/CONTINUATION with actual v2 code and current S3-I2C milestone.
+
+Improve verification ergonomics. If CI duplicates host-test compile commands, add one canonical strict host-test runner and make CI call it without reducing coverage or warning flags.
+
+Before finishing, run relevant narrow tests. Leave the complete intended diff uncommitted. Do not commit or push. Final response should briefly list real bugs fixed, modules split/moved, tests/tooling changes, docs corrected, and anything deliberately left unsplit with reason.
