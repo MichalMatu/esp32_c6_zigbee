@@ -1,0 +1,161 @@
+{
+  "id": "20260904-c6-final-critical-reaudit-recover-v58",
+  "status": "failed",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": true,
+  "started_at": "2026-09-04T20:15:10.462282+00:00",
+  "command_timeout": 7200,
+  "edits": {},
+  "commands": [
+    {
+      "command": "git fetch origin agent-control",
+      "exit_code": 0,
+      "output": "From https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            agent-control -> FETCH_HEAD\n   c8a89d9..dd5e5f7  agent-control -> origin/agent-control\n",
+      "elapsed_seconds": 1.079,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 4096,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 1.16,
+      "output_policy": "stream",
+      "captured_output_chars": 159,
+      "output_truncated": false,
+      "current_rss_mb": 1.16,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 4,
+      "stage_phase": "commands"
+    },
+    {
+      "command": "git show FETCH_HEAD:.agent/scripts/20260904-c6-final-critical-reaudit-recover-v58.sh > /tmp/c6_final_critical_reaudit_recover_v58.sh",
+      "exit_code": 0,
+      "output": "",
+      "elapsed_seconds": 0.385,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 4096,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": null,
+      "output_policy": "stream",
+      "captured_output_chars": 0,
+      "output_truncated": false,
+      "stage_name": "command-2",
+      "stage_index": 2,
+      "stage_total": 4,
+      "stage_phase": "commands"
+    },
+    {
+      "command": "chmod +x /tmp/c6_final_critical_reaudit_recover_v58.sh",
+      "exit_code": 0,
+      "output": "",
+      "elapsed_seconds": 0.364,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 4096,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": null,
+      "output_policy": "stream",
+      "captured_output_chars": 0,
+      "output_truncated": false,
+      "stage_name": "command-3",
+      "stage_index": 3,
+      "stage_total": 4,
+      "stage_phase": "commands"
+    },
+    {
+      "command": "/tmp/c6_final_critical_reaudit_recover_v58.sh",
+      "exit_code": 12,
+      "output": "From https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            integration/c6-s3-i2c-20260903 -> FETCH_HEAD\nSwitched to and reset branch 'integration/c6-s3-i2c-20260903'\nbranch 'integration/c6-s3-i2c-20260903' set up to track 'origin/integration/c6-s3-i2c-20260903'.\nYour branch is up to date with 'origin/integration/c6-s3-i2c-20260903'.\nHEAD is now at 5ce963d Prepare C6 module for LiteGraph migration\n=== FINAL REAUDIT V58: repository + contract audit ===\nmanifest_contract=PASS\ndocs/GATEWAY_LINK_V2.md:5:GatewayLink v1 remains documented in `docs/GATEWAY_LINK_V1.md` and frozen by `c6-gatewaylink-stable-2026-09-03`. The active branch does not implement a v1 compatibility shim because there is no deployed S3 peer or persisted application flow requiring migration.\ndocs/AUDIT_2026-09-04.md:24:- Active documentation incorrectly pointed new work at GatewayLink v1 even though the branch implements protocol v2 with no v1 compatibility shim. Active docs now point to v2; v1 remains historical recovery documentation only.\nactive v1 compatibility/reference leaked into current contract\n",
+      "elapsed_seconds": 1.639,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 4096,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 1.86,
+      "output_policy": "stream",
+      "captured_output_chars": 1097,
+      "output_truncated": false,
+      "current_rss_mb": 1.86,
+      "stage_name": "command-4",
+      "stage_index": 4,
+      "stage_total": 4,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 4,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 1.079
+    },
+    {
+      "stage_name": "command-2",
+      "stage_index": 2,
+      "stage_total": 4,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 0.385
+    },
+    {
+      "stage_name": "command-3",
+      "stage_index": 3,
+      "stage_total": 4,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 0.364
+    },
+    {
+      "stage_name": "command-4",
+      "stage_index": 4,
+      "stage_total": 4,
+      "stage_phase": "commands",
+      "outcome": "failed",
+      "elapsed_seconds": 1.639
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": " M docs/CONTINUATION.md\n M docs/LITEGRAPH_MIGRATION.md\n M docs/README.md\n M docs/VERIFIED_BASELINE.md\n M module.json\n?? docs/FINAL_REAUDIT_2026-09-04.md\n",
+    "elapsed_seconds": 0.072
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "diff --git a/docs/CONTINUATION.md b/docs/CONTINUATION.md\nindex 59cd00d..d3557b4 100644\n--- a/docs/CONTINUATION.md\n+++ b/docs/CONTINUATION.md\n@@ -472,3 +472,9 @@ The intended documentation split is:\n - `AGENTS.md` — **how to work safely**;\n - `docs/VERIFIED_BASELINE.md` — **what is proven and recoverable**;\n - `docs/CONTINUATION.md` — **where work is now and what happens next**.\n+\n+## Final pre-LiteGraph freeze — 2026-09-04\n+\n+Source checkpoint `5ce963d6ee3b03b9b788f9d02bd9acb4910acead` is the migration-ready C6 firmware proven by the final dual-C6 hardware gate. Software gates passed: migration readiness, canonical host tests, UART build, I2C build, emulator build, source hygiene and syntax/path/contract audit. Hardware gates passed without Zigbee/NVS erase: preserved-storage UART IAS/rejoin/contact regression, I2C missing-S3/shared-SCD41 stability, and final UART restore smoke.\n+\n+No further C6-only feature/refactor work is justified before import into the LiteGraph monorepo. The next work belongs in a LiteGraph-bound context: import this module unchanged first, rerun its nested gates, then implement the S3 I2C slave/mailbox and perform true C6↔S3 GatewayLink v2 E2E validation.\ndiff --git a/docs/LITEGRAPH_MIGRATION.md b/docs/LITEGRAPH_MIGRATION.md\nindex d2187d3..ec82a00 100644\n--- a/docs/LITEGRAPH_MIGRATION.md\n+++ b/docs/LITEGRAPH_MIGRATION.md\n@@ -47,6 +47,7 @@ The future S3 side must implement the complementary slave/mailbox plus GatewayLi\n 11. Keep UART as fallback until real I2C E2E plus bounded soak pass.\n \n ## Recovery checkpoints\n+- migration-ready hardware-proven export source → `5ce963d6ee3b03b9b788f9d02bd9acb4910acead`\n - `c6-sonoff-stable-2026-09-02` → `0d64fb03164d3bcb9f5cddd639977b4027bc581f`\n - `c6-gatewaylink-stable-2026-09-03` → `a4b1f629c1286d631ac208515b71aeeaa7c44b23`\n - dual-C6 IAS/rejoin source → `109a01f32d3bbc5c2ce2799ccbc8946a717b0e7a`\ndiff --git a/docs/README.md b/docs/README.md\nindex fe10028..58d0cb0 100644\n--- a/docs/README.md\n+++ b/docs/README.md\n@@ -7,6 +7,7 @@\n \n ## Verification and handoff\n - `VERIFIED_BASELINE.md` — physical hardware evidence and recovery checkpoints.\n+- `FINAL_REAUDIT_2026-09-04.md` — final critical pre-LiteGraph software/hardware audit and residual-risk statement.\n - `AUDIT_2026-09-04.md` — structural audit and post-refactor hardware closure.\n - `CONTINUATION.md` — mutable current-work handoff.\n \ndiff --git a/docs/VERIFIED_BASELINE.md b/docs/VERIFIED_BASELINE.md\nindex 9953423..e2534a9 100644\n--- a/docs/VERIFIED_BASELINE.md\n+++ b/docs/VERIFIED_BASELINE.md\n@@ -301,3 +301,9 @@ POST_REFACTOR_HARDWARE_GATE=PASS\n ```\n \n This hardware gate closes the C6-side structural-refactor regression. Physical GatewayLink I2C communication with a real S3 slave remains a separate future integration gate.\n+\n+## LiteGraph migration-ready hardware closure — 2026-09-04\n+\n+The migration-ready source checkpoint `5ce963d6ee3b03b9b788f9d02bd9acb4910acead` (`Prepare C6 module for LiteGraph migration`) was revalidated on both physical ESP32-C6 boards without erasing Zigbee storage. The preserved-storage UART IAS regression passed (rejoin, announce, CIE write, enroll, contact true/false, no panic/event drop). The C6 I2C0 mailbox backend then passed with the S3 intentionally absent while the shared SCD41 and Zigbee traffic remained healthy (`peer=0` expected, no event/link queue drop, no panic, no SCD4x unavailable transition). The gateway was finally restored to the UART1 fallback and the bounded final smoke passed.\n+\n+This proves the exported C6 checkpoint itself is hardware-safe before monorepo absorption. It does **not** prove physical C6↔S3 I2C; that remains the first true cross-MCU hardware gate after the S3 slave/mailbox exists.\ndiff --git a/module.json b/module.json\nindex 11d0d89..278673b 100644\n--- a/module.json\n+++ b/module.json\n@@ -44,14 +44,22 @@\n     \"i2c_build\": \"CONFIG_GATEWAY_LINK_BACKEND_I2C=y then idf.py build\",\n     \"emulator_path\": \"tests/zigbee_device_emulator\",\n     \"emulator_build\": \"idf.py -C tests/zigbee_device_emulator set-target esp32c6 && idf.py -C tests/zigbee_device_emulator build\",\n-    \"hardware_tested_source\": \"f13b293be2de6b1601d179568424e0046d6219a7\",\n+    \"hardware_tested_source\": \"5ce963d6ee3b03b9b788f9d02bd9acb4910acead\",\n     \"hardware_identities\": {\n       \"gateway_c6_usb_serial\": \"40:4C:CA:5D:0A:00\",\n       \"emulator_c6_usb_serial\": \"40:4C:CA:5D:01:D8\"\n-    }\n+    },\n+    \"migration_ready_hardware_gate\": \"5ce963d6ee3b03b9b788f9d02bd9acb4910acead\",\n+    \"migration_ready_hardware_gate_result\": \"PASS\",\n+    \"migration_ready_hardware_gate_date\": \"2026-09-04\",\n+    \"final_hardware_gate\": \"20260904-c6-migration-ready-hardware-v55\",\n+    \"final_hardware_gate_result\": \"PASS\",\n+    \"final_reaudit\": \"docs/FINAL_REAUDIT_2026-09-04.md\"\n   },\n   \"migration\": {\n     \"suggested_destination\": \"firmware/extensions/zigbee-c6/\",\n-    \"guide\": \"docs/LITEGRAPH_MIGRATION.md\"\n+    \"guide\": \"docs/LITEGRAPH_MIGRATION.md\",\n+    \"export_source_checkpoint\": \"5ce963d6ee3b03b9b788f9d02bd9acb4910acead\",\n+    \"export_source\": \"5ce963d6ee3b03b9b788f9d02bd9acb4910acead\"\n   }\n }\n",
+    "elapsed_seconds": 0.019
+  },
+  "failure_reason": "command_failed",
+  "finished_at": "2026-09-04T20:15:15.469534+00:00",
+  "workspace_checkpoint": {
+    "version": 2,
+    "task_id": "20260904-c6-final-critical-reaudit-recover-v58",
+    "reason": "task-exit",
+    "created_at": "2026-09-04T20:15:15.761177+00:00",
+    "base_head": "5ce963d6ee3b03b9b788f9d02bd9acb4910acead",
+    "work_branch": "integration/c6-s3-i2c-20260903",
+    "path": "/Users/michal/agent-workspace/repos/esp32-c6-zigbee/checkpoints/20260904-c6-final-critical-reaudit-recover-v58/1788552915632754000-task-exit",
+    "tracked_patch": "tracked.patch",
+    "untracked_root": "untracked",
+    "untracked_files": [
+      "docs/FINAL_REAUDIT_2026-09-04.md"
+    ],
+    "tracked_patch_bytes": 5459,
+    "untracked_bytes": 4149,
+    "total_bytes": 9608,
+    "status": " M docs/CONTINUATION.md\n M docs/LITEGRAPH_MIGRATION.md\n M docs/README.md\n M docs/VERIFIED_BASELINE.md\n M module.json\n?? docs/FINAL_REAUDIT_2026-09-04.md\n"
+  },
+  "task_digest": "f04fb263e71b7887839a2f5d6ec1a258c1077e55f5be5af5442741d53c7f1250",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "attempt_id": "079e6cb8b5e73899d40fa743",
+  "daemon_version": "4.15.0"
+}
