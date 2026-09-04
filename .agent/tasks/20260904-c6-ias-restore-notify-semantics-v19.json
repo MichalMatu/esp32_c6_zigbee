@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-ias-restore-notify-semantics-v19",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": ["board:zigbee-c6"],
+  "memory_limit_mb": 4096,
+  "command_timeout": 600,
+  "idle_timeout": 300,
+  "task_timeout": 1200,
+  "commands": [
+    "set -euo pipefail\nBRANCH=integration/c6-s3-i2c-20260903\nEXPECTED=3b331791d6ea2a372f42dd4cb3746af26441cd29\ngit fetch origin \"$BRANCH\"\ntest \"$(git rev-parse origin/$BRANCH)\" = \"$EXPECTED\"\ngit checkout -B \"$BRANCH\" \"$EXPECTED\"\ngit reset --hard \"$EXPECTED\"\n. ~/esp/esp-idf-v5.5.4/export.sh >/dev/null\npython3 - <<'PY'\nfrom pathlib import Path\nroots=[Path('tests/zigbee_device_emulator/managed_components/espressif__esp-zigbee-lib/include'),Path('managed_components/espressif__esp-zigbee-lib/include')]\nfor root in roots:\n    if not root.exists():\n        continue\n    for rel in ['ezbee/zcl/cluster/ias_zone.h','ezbee/zcl/cluster/ias_zone_desc.h','compat/zcl/esp_zigbee_zcl_ias_zone.h','compat/zcl/esp_zigbee_zcl_command.h']:\n        p=root/rel\n        if not p.exists():\n            continue\n        print('===',p,'===')\n        lines=p.read_text(errors='ignore').splitlines()\n        for i,line in enumerate(lines,1):\n            low=line.lower()\n            if ('restore' in low or 'zone status change' in low or 'zone_status_change' in low or 'status_change_notif' in low or 'zonestatus' in low) and i < 350:\n                lo=max(1,i-4); hi=min(len(lines),i+8)\n                for n in range(lo,hi+1): print(f'{n}: {lines[n-1]}')\n                print()\nprint('=== LOCAL EXAMPLES / SOURCES USING RESTORE_NOTIFY ===')\nfor base in [Path('.'),Path.home()/'esp',Path.home()/'.espressif']:\n    if not base.exists(): continue\n    count=0\n    for p in base.rglob('*'):\n        if count>=120: break\n        if not p.is_file() or p.suffix.lower() not in {'.c','.h','.cpp','.cc','.md','.rst','.txt'}: continue\n        try: text=p.read_text(errors='ignore')\n        except Exception: continue\n        if 'RESTORE_NOTIFY' in text or 'ZONE_STATUS_RESTORE' in text or 'restore reports' in text.lower():\n            for i,line in enumerate(text.splitlines(),1):\n                if 'RESTORE_NOTIFY' in line or 'ZONE_STATUS_RESTORE' in line or 'restore reports' in line.lower():\n                    print(f'{p}:{i}:{line.strip()}'); count+=1\n                    if count>=120: break\nprint('=== DECISION REQUIRED ===')\nprint('State whether the IAS ZoneStatus RestoreNotify bit 0x0020 is the standards-defined capability controlling clear/restore notifications. Given v15 receives 0x0001 repeatedly but never 0x0000, decide whether emulator normal/alarm values should be 0x0020/0x0021 (preserving RestoreNotify while toggling Alarm1). Cite exact local header/source evidence. State smallest code change only; do not edit files or touch hardware.')\nPY\ngit status --short"
+  ]
+}
