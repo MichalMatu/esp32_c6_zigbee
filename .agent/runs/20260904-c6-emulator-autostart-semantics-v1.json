@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-emulator-autostart-semantics-v1",
+  "task_digest": "bf01061e4433493ba6656ca6104ce414a68d2ed4bb78ca3721065d8587fbffd4",
+  "idle_timeout": 180,
+  "task_timeout": 900,
+  "memory_limit_mb": 2048,
+  "started_at": "2026-09-04T02:53:59.113048+00:00",
+  "attempt_id": "565756cfd76e427e46e704dd",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 43270,
+  "updated_at": "2026-09-04T02:53:59.113235+00:00",
+  "pid": 43270
+}
