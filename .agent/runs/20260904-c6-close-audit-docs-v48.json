@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-close-audit-docs-v48",
+  "task_digest": "251d14ab5ae484a5442874a7a5bce6957254680c71eee287b974305d1c0aea01",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T16:24:39.774775+00:00",
+  "attempt_id": "440d125f739338c504327949",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 47178,
+  "updated_at": "2026-09-04T16:24:39.774920+00:00",
+  "pid": 47178
+}
