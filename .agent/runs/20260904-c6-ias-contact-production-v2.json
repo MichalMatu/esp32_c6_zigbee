@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-ias-contact-production-v2",
+  "task_digest": "53d5ef4dc6cee715ba47448aafe86c0579bc7ad4439da720db54cd7cc3afa280",
+  "idle_timeout": 600,
+  "task_timeout": 7200,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T00:22:59.525504+00:00",
+  "attempt_id": "1ff2cbc459c69205ab9b82dc",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 26505,
+  "updated_at": "2026-09-04T00:22:59.530742+00:00",
+  "pid": 26505
+}
