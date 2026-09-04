@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-usb-reprobe-v1",
+  "task_digest": "040cf57c3290522ecb210cfaf448cbc5ed5870654b337a801b0fb7e1e24a1f3d",
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "started_at": "2026-09-04T01:22:51.550627+00:00",
+  "attempt_id": "58a8990bed44f37f2043d798",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 77702,
+  "updated_at": "2026-09-04T01:22:51.550904+00:00",
+  "pid": 77702
+}
