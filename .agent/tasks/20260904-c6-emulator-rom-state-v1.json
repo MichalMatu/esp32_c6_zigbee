@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-emulator-rom-state-v1",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 512,
+  "command_timeout": 120,
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "commands": [
+    ". ~/esp/esp-idf-v5.5.4/export.sh >/dev/null; PORT=$(python3 - <<'PY'\nfrom serial.tools import list_ports\nserial='40:4C:CA:5D:01:D8'\nm=[p for p in list_ports.comports() if p.serial_number==serial and p.vid==0x303A]\nif len(m)!=1: raise SystemExit(f'expected exactly one emulator C6, got {[p.device for p in m]}')\nprint(m[0].device)\nPY\n); echo EMU_PORT=$PORT; echo '=== NO-RESET ROM SYNC PROBE ==='; set +e; python -m esptool --chip esp32c6 -p \"$PORT\" --before no_reset --after no_reset chip_id 2>&1; RC=$?; set -e; echo NO_RESET_ESPTOOL_RC=$RC; if [ $RC -eq 0 ]; then echo ROM_STATE=DOWNLOAD_MODE_CONFIRMED; else echo ROM_STATE=NOT_CONFIRMED_APP_MAY_BE_RUNNING; fi"
+  ]
+}
