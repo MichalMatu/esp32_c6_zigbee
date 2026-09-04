@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-ias-preserved-rejoin-v23",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": ["board:zigbee-c6"],
+  "memory_limit_mb": 4096,
+  "command_timeout": 1200,
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "commands": [
+    "set -euo pipefail\nBRANCH=integration/c6-s3-i2c-20260903\nEXPECTED=68a066f546eed8307447a3ee59562b88a19823ca\ngit fetch origin \"$BRANCH\"\ntest \"$(git rev-parse origin/$BRANCH)\" = \"$EXPECTED\"\ngit checkout -B \"$BRANCH\" \"$EXPECTED\"\ngit reset --hard \"$EXPECTED\"\ngit fetch origin agent-control\ngit show FETCH_HEAD:.agent/scripts/20260904-c6-ias-preserved-rejoin-v23.py > /tmp/c6_ias_preserved_rejoin_v23.py\n. ~/esp/esp-idf-v5.5.4/export.sh >/dev/null\npython3 /tmp/c6_ias_preserved_rejoin_v23.py\ngit status --short"
+  ]
+}
