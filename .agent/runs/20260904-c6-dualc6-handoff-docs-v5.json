@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-dualc6-handoff-docs-v5",
+  "task_digest": "afb62629eb905fc9c0ce72d26bf91b72f9505ccd2308b61ae62a0f00015d4f73",
+  "idle_timeout": 180,
+  "task_timeout": 1200,
+  "memory_limit_mb": 2048,
+  "started_at": "2026-09-04T03:23:25.711854+00:00",
+  "attempt_id": "4f5600b8d4c71278324ea87c",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 97745,
+  "updated_at": "2026-09-04T03:23:25.712009+00:00",
+  "pid": 97745
+}
