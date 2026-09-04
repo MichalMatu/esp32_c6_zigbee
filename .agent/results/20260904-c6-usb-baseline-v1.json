@@ -1,0 +1,60 @@
+{
+  "id": "20260904-c6-usb-baseline-v1",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "started_at": "2026-09-04T00:34:05.581930+00:00",
+  "command_timeout": 120,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\necho '=== SERIAL PORTS ==='\n(ls -1 /dev/cu.* /dev/tty.* 2>/dev/null || true) | sort -u\necho '=== PYSerial ==='\npython3 - <<'PY'\ntry:\n    from serial.tools import list_ports\n    ports=list(list_ports.comports())\n    if not ports:\n        print('NO_PYSERIAL_PORTS')\n    for p in ports:\n        print(f'DEVICE={p.device} DESC={p.description} HWID={p.hwid} VID={p.vid} PID={p.pid} SERIAL={p.serial_number} LOCATION={p.location} MANUFACTURER={p.manufacturer} PRODUCT={p.product}')\nexcept Exception as e:\n    print('PYSERIAL_ERROR', repr(e))\nPY\necho '=== USB PROFILE MATCHES ==='\n(system_profiler SPUSBDataType 2>/dev/null || true) | grep -Ei -B4 -A12 'Espressif|ESP32|USB JTAG|CP210|CH34|CH910|FTDI' || true",
+      "exit_code": 0,
+      "output": "=== SERIAL PORTS ===\n/dev/cu.Bluetooth-Incoming-Port\n/dev/cu.BoseQCUltraHeadphones\n/dev/cu.debug-console\n/dev/cu.usbmodem101\n/dev/cu.usbserial-1130\n/dev/cu.wlan-debug\n/dev/tty.Bluetooth-Incoming-Port\n/dev/tty.BoseQCUltraHeadphones\n/dev/tty.debug-console\n/dev/tty.usbmodem101\n/dev/tty.usbserial-1130\n/dev/tty.wlan-debug\n=== PYSerial ===\nDEVICE=/dev/cu.wlan-debug DESC=n/a HWID=n/a VID=None PID=None SERIAL=None LOCATION=None MANUFACTURER=None PRODUCT=None\nDEVICE=/dev/cu.debug-console DESC=n/a HWID=n/a VID=None PID=None SERIAL=None LOCATION=None MANUFACTURER=None PRODUCT=None\nDEVICE=/dev/cu.Bluetooth-Incoming-Port DESC=n/a HWID=n/a VID=None PID=None SERIAL=None LOCATION=None MANUFACTURER=None PRODUCT=None\nDEVICE=/dev/cu.BoseQCUltraHeadphones DESC=n/a HWID=n/a VID=None PID=None SERIAL=None LOCATION=None MANUFACTURER=None PRODUCT=None\nDEVICE=/dev/cu.usbmodem101 DESC=USB JTAG/serial debug unit HWID=USB VID:PID=303A:1001 SER=40:4C:CA:5D:0A:00 LOCATION=0-1 VID=12346 PID=4097 SERIAL=40:4C:CA:5D:0A:00 LOCATION=0-1 MANUFACTURER=Espressif PRODUCT=USB JTAG/serial debug unit\nDEVICE=/dev/cu.usbserial-1130 DESC=USB Serial HWID=USB VID:PID=1A86:7523 LOCATION=1-1.3 VID=6790 PID=29987 SERIAL=None LOCATION=1-1.3 MANUFACTURER=None PRODUCT=USB Serial\n=== USB PROFILE MATCHES ===\n",
+      "elapsed_seconds": 3.009,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 512,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 2.09,
+      "output_policy": "stream",
+      "captured_output_chars": 1274,
+      "output_truncated": false,
+      "current_rss_mb": 2.09,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 3.009
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.172
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.161
+  },
+  "finished_at": "2026-09-04T00:34:12.967257+00:00",
+  "task_digest": "1cfe4e472792f53c6c436a9c069d33a8096d9091bcfbdbb9ac392a858c13dc61",
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "attempt_id": "a6cd2def64219992527e6d57",
+  "daemon_version": "4.15.0"
+}
