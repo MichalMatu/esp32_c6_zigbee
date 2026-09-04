@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-ias-zone-notif-api-v5",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 1024,
+  "command_timeout": 300,
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "commands": [
+    "set -euo pipefail\nEXPECTED=3d3a38885fb458d7693eab39450dad8506d504f6\ntest \"$(git rev-parse HEAD)\" = \"$EXPECTED\"\necho '=== IAS Zone public send APIs ==='\ngrep -RniE -B8 -A18 'ias_zone.*(status_change|notification|cmd_req)|status_change.*ias_zone|zone_status_change' managed_components/espressif__esp-zigbee-lib/include/ezbee 2>/dev/null || true\necho '=== generic/custom ZCL command APIs ==='\ngrep -RniE -B10 -A24 '(custom|raw|general|cluster).*cmd.*req|cmd.*req.*(custom|raw|general)|ezb_zcl_.*cluster.*cmd' managed_components/espressif__esp-zigbee-lib/include/ezbee 2>/dev/null | head -800 || true\necho '=== command control / payload types ==='\ngrep -RniE -B8 -A30 'typedef struct .*cluster_cmd|ezb_zcl_cluster_cmd_ctrl_t|custom.*payload|raw.*payload' managed_components/espressif__esp-zigbee-lib/include/ezbee/zcl 2>/dev/null | head -800 || true\necho '=== exported symbols likely usable ==='\nfind managed_components/espressif__esp-zigbee-lib -type f \( -name '*.a' -o -name '*.so' \) -print | while read f; do nm -g \"$f\" 2>/dev/null | grep -Ei 'ias.*zone.*(status|notif)|zcl.*(custom|raw|cluster).*cmd' || true; done\n"
+  ]
+}
