@@ -1,14 +1,13 @@
 {
-  "event": "task_started",
+  "event": "task_finished",
   "task_id": "20260904-c6-ias-zonetype-precise-diagnose-v3",
   "task_digest": "e307d7fdaf4639e7ba1043ff77afa63bd92d65667f6acd24da2a822bdad98ebe",
-  "idle_timeout": 180,
-  "task_timeout": 900,
-  "memory_limit_mb": 2048,
-  "started_at": "2026-09-04T03:33:49.749188+00:00",
+  "status": "done",
+  "failure_reason": null,
+  "finished_at": "2026-09-04T03:33:51.341469+00:00",
   "attempt_id": "2b9c99c65e6efcb59f08b9b5",
   "daemon_version": "4.15.0",
   "daemon_pid": 27749,
-  "updated_at": "2026-09-04T03:33:49.749247+00:00",
+  "updated_at": "2026-09-04T03:33:51.545343+00:00",
   "pid": 27749
 }
