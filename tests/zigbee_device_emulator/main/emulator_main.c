@@ -417,7 +417,7 @@ static esp_err_t register_selected_profile(void)
 static bool initialize_ias_contact_attributes(void)
 {
     uint16_t zone_type = EZB_ZCL_IAS_ZONE_ZONE_TYPE_CONTACT_SWITCH;
-    uint16_t zone_status = 0U;
+    uint16_t zone_status = EZB_ZCL_IAS_ZONE_ZONE_STATUS_RESTORE_NOTIFY;
     const ezb_zcl_status_t type_status = ezb_zcl_set_attr_value(
         EMULATOR_IAS_ENDPOINT, EMULATOR_CLUSTER_IAS_ZONE,
         EZB_ZCL_CLUSTER_SERVER, EMULATOR_ATTR_IAS_ZONE_TYPE,
@@ -540,7 +540,7 @@ static void emulation_task(void *arg)
     uint8_t occupancy = 0U;
     uint8_t battery_voltage = 30U;
     uint8_t battery_percentage = 180U;
-    uint16_t ias_zone_status = 0U;
+    uint16_t ias_zone_status = EZB_ZCL_IAS_ZONE_ZONE_STATUS_RESTORE_NOTIFY;
     uint32_t tick = 0U;
 
     for (;;) {
@@ -601,8 +601,7 @@ static void emulation_task(void *arg)
 #endif
 
 #if CONFIG_EMULATOR_PROFILE_IAS_CONTACT
-            ias_zone_status = ias_zone_status == 0U ?
-                EZB_ZCL_IAS_ZONE_ZONE_STATUS_ALARM1 : 0U;
+            ias_zone_status ^= EZB_ZCL_IAS_ZONE_ZONE_STATUS_ALARM1;
             (void)set_server_attr(
                 EMULATOR_IAS_ENDPOINT, EMULATOR_CLUSTER_IAS_ZONE,
                 EMULATOR_ATTR_IAS_ZONE_STATUS, &ias_zone_status);
