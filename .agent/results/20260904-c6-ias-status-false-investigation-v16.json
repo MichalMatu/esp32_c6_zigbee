@@ -1,0 +1,9 @@
+{
+  "id": "20260904-c6-ias-status-false-investigation-v16",
+  "status": "failed",
+  "failure_reason": "invalid_task_file",
+  "started_at": null,
+  "finished_at": "2026-09-04T04:35:31.998824+00:00",
+  "daemon_version": "4.15.0",
+  "error": "JSONDecodeError: Invalid \\escape: line 12 column 1227 (char 1558)"
+}
