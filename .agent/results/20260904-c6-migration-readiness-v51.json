@@ -1,0 +1,61 @@
+{
+  "id": "20260904-c6-migration-readiness-v51",
+  "status": "failed",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": true,
+  "started_at": "2026-09-04T17:21:28.192702+00:00",
+  "command_timeout": 7200,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\nROOT=$(git rev-parse --show-toplevel)\ngit fetch origin agent-control\ngit show FETCH_HEAD:.agent/scripts/20260904-c6-migration-readiness-v49.sh > /tmp/c6_migration_readiness_v51.sh\npython3 - <<'PY'\nfrom pathlib import Path\np=Path('/tmp/c6_migration_readiness_v51.sh')\ns=p.read_text()\ns=s.replace('REPO_DIR=\"/Users/michal/agent-workspace/repos/esp32-c6-zigbee\"', 'REPO_DIR=\"$(git rev-parse --show-toplevel)\"')\np.write_text(s)\nPY\nchmod +x /tmp/c6_migration_readiness_v51.sh\ncd \"$ROOT\"\n/tmp/c6_migration_readiness_v51.sh",
+      "exit_code": 1,
+      "output": "From https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            agent-control -> FETCH_HEAD\n   6178af0..b739fd6  agent-control -> origin/agent-control\nFrom https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            integration/c6-s3-i2c-20260903 -> FETCH_HEAD\nSwitched to and reset branch 'integration/c6-s3-i2c-20260903'\nbranch 'integration/c6-s3-i2c-20260903' set up to track 'origin/integration/c6-s3-i2c-20260903'.\nYour branch is up to date with 'origin/integration/c6-s3-i2c-20260903'.\nReading additional input from stdin...\nOpenAI Codex v0.153.2\n--------\nworkdir: /Users/michal/agent-workspace/repos/esp32-c6-zigbee/work\nmodel: gpt-5.6-sol\nprovider: openai\napproval: on-request\nsandbox: workspace-write [workdir, /tmp, $TMPDIR]\nreasoning effort: high\nreasoning summaries: none\nsession id: 01a06d70-a26c-7253-ad44-69a1ba0e11b2\n--------\nuser\nYou are preparing the repository MichalMatu/esp32_c6_zigbee to be absorbed later as an ESP32-C6 Zigbee extension/module inside a larger LiteGraph ESP32-S3 monorepo. Work ONLY in this repository. Do not inspect, clone, search, or modify any LiteGraph/S3 repository. This is a pre-migration cleanup and packaging task, not the migration itself.\n\nHard technical invariants:\n- ESP32-C6 native ESP-IDF, current verified environment ESP-IDF v5.5.4 and espressif/esp-zigbee-lib v2.0.4.\n- Preserve GatewayLink v2 wire contract. v1 is historical only; do not add a v1 shim.\n- Preserve IEEE-first Zigbee identity and mutable short-address routing.\n- Preserve bounded/nonblocking callback/event architecture.\n- Preserve UART backend as the verified fallback.\n- Preserve C6 I2C-master backend: I2C0, SDA GPIO1, SCL GPIO0, planned S3 slave 0x42, SCD4x shared bus at 0x62, bounded missing-peer behavior.\n- Do not change or erase Zigbee storage expectations.\n- Do not introduce Arduino/Matter/Thread/Wi-Fi/BLE/external RCP responsibilities.\n- Avoid gratuitous source moves/renames. The goal is import-readiness with low diff risk.\n\nThe repository was already structurally refactored and hardware-verified. Your job is to make the handoff into a future monorepo smooth and obvious.\n\nRequired work:\n1. Audit the tracked tree for generated files, obsolete scratch/config artifacts, stale references, duplicated instructions, repository-specific assumptions, and migration hazards. Clean only evidence-backed clutter. Update .gitignore so normal ESP-IDF generated debris such as sdkconfig.old/build artifacts does not dirty the tree.\n2. Keep the firmware independently buildable from its own module directory after it is nested under a larger repository. Audit CMake/scripts/tests for brittle assumptions about absolute paths, repository name, or being at filesystem root. Make small path-robustness fixes where justified, without changing runtime behavior.\n3. Create a concise machine-readable module manifest at `module.json` containing at least: module id/name, target esp32c6, framework/verified ESP-IDF version, Zigbee library version, app entrypoint/project build root, GatewayLink protocol version, supported physical backends, verified/default backend, I2C wiring/address facts, canonical host test command, canonical UART/I2C build commands, emulator location/build command, current verified hardware identities, and migration destination suggestion such as `firmware/extensions/zigbee-c6/`. Do not invent external dependency versions.\n4. Create `docs/LITEGRAPH_MIGRATION.md` as the single canonical absorption guide. It must clearly state:\n   - what to copy into the monorepo and what NOT to copy (.git, .agent, old control-task evidence, standalone CI as-is, generated build/sdkconfig.old);\n   - recommended destination layout;\n   - which files/contracts should become shared later versus stay C6-private;\n   - exact GatewayLink v2/I2C boundary that the future S3 side must implement;\n   - migration sequence with no behavior changes first, then test/build, then preserved-NVS hardware smoke, then only afterwards S3 mailbox implementation;\n   - rollback/recovery SHAs/tags;\n   - a post-import verification checklist;\n   - warning that actual C6↔S3 peer communication is still unverified, while C6 I2C with S3 absent/shared SCD41 bus is verified.\n5. Create or update `docs/README.md` as a documentation index separating active contracts, verified evidence, migration docs, and historical GatewayLink v1.\n6. Update README.md so the project is described as the ESP32-C6 Zigbee extension firmware intended for integration into the LiteGraph controller, while remaining independently buildable/testable. Make quick-start build/test commands current and reference the migration guide.\n7. Update `docs/CONTINUATION.md` to make the active goal explicitly \"freeze/export this verified C6 module into the LiteGraph monorepo\" and remove wording that suggests more speculative C6 work should happen before migration. Preserve all useful hardware evidence/history.\n8. Update AGENTS.md only if needed to distinguish stable C6 architectural invariants (which should travel with the module) from Local-Agent/repository-control instructions (which are standalone-repo operational metadata and should not be copied verbatim into the future monorepo).\n9. Add a lightweight, path-robust `scripts/verify_migration_ready.sh` that can be run from anywhere, resolves repository/module root from its own location, rejects tracked/generated migration debris, validates required migration docs/manifest fields, runs existing canonical host tests, and performs non-destructive static/source checks. Do not make it flash hardware.\n10. If a very small cohesive source/API cleanup materially improves module boundary clarity, you may do it, but prefer documentation/build/test hygiene over runtime churn. Do not redesign the already verified Zigbee gateway.\n11. Do not add source copies of GatewayLink for S3. Document future sharing; one canonical wire contract is enough.\n12. Run formatting/diff checks and ensure no generated build artifacts are staged.\n\nAcceptance criteria before you finish:\n- `git diff --check` passes.\n- `./scripts/run_host_tests.sh` passes.\n- `./scripts/verify_migration_ready.sh` passes.\n- Clean default UART ESP-IDF build passes.\n- Clean I2C-backend ESP-IDF build passes.\n- Zigbee emulator build passes.\n- repository has no unexpected tracked generated artifacts and final git status contains only intentional source/docs changes before commit.\n- No hardware flash in this task.\n\nMake the edits directly. Do not commit; the wrapper will validate and commit after your work.\nERROR: You've hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 8:40 PM.\nERROR: You've hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 8:40 PM.\n",
+      "elapsed_seconds": 7.207,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 4096,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 174.92,
+      "output_policy": "stream",
+      "captured_output_chars": 6891,
+      "output_truncated": false,
+      "current_rss_mb": 174.92,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "failed",
+      "elapsed_seconds": 7.207
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.097
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.068
+  },
+  "failure_reason": "command_failed",
+  "finished_at": "2026-09-04T17:21:37.012956+00:00",
+  "task_digest": "62da97437727be02ce2ffe04df7ec03af65de1055b39afb619de29a53a3cb724",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "attempt_id": "ac32f561b1242418dd431da6",
+  "daemon_version": "4.15.0"
+}
