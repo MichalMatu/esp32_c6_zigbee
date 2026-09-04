@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-zigbee-lab-baseline-doc-freeze-v26",
+  "task_digest": "219d55a4d65af43f2253aee668b35d941905617ea7fa307df24bfdf2d1daf983",
+  "idle_timeout": 300,
+  "task_timeout": 2400,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T06:20:56.942974+00:00",
+  "attempt_id": "fabeaa1050377fa9ba2a93a5",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 57920,
+  "updated_at": "2026-09-04T06:20:56.943090+00:00",
+  "pid": 57920
+}
