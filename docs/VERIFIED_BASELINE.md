@@ -301,3 +301,9 @@ POST_REFACTOR_HARDWARE_GATE=PASS
 ```
 
 This hardware gate closes the C6-side structural-refactor regression. Physical GatewayLink I2C communication with a real S3 slave remains a separate future integration gate.
+
+## LiteGraph migration-ready hardware closure — 2026-09-04
+
+The migration-ready source checkpoint `5ce963d6ee3b03b9b788f9d02bd9acb4910acead` (`Prepare C6 module for LiteGraph migration`) was revalidated on both physical ESP32-C6 boards without erasing Zigbee storage. The preserved-storage UART IAS regression passed (rejoin, announce, CIE write, enroll, contact true/false, no panic/event drop). The C6 I2C0 mailbox backend then passed with the S3 intentionally absent while the shared SCD41 and Zigbee traffic remained healthy (`peer=0` expected, no event/link queue drop, no panic, no SCD4x unavailable transition). The gateway was finally restored to the UART1 fallback and the bounded final smoke passed.
+
+This proves the exported C6 checkpoint itself is hardware-safe before monorepo absorption. It does **not** prove physical C6↔S3 I2C; that remains the first true cross-MCU hardware gate after the S3 slave/mailbox exists.

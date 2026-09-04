@@ -44,14 +44,22 @@
     "i2c_build": "CONFIG_GATEWAY_LINK_BACKEND_I2C=y then idf.py build",
     "emulator_path": "tests/zigbee_device_emulator",
     "emulator_build": "idf.py -C tests/zigbee_device_emulator set-target esp32c6 && idf.py -C tests/zigbee_device_emulator build",
-    "hardware_tested_source": "f13b293be2de6b1601d179568424e0046d6219a7",
+    "hardware_tested_source": "5ce963d6ee3b03b9b788f9d02bd9acb4910acead",
     "hardware_identities": {
       "gateway_c6_usb_serial": "40:4C:CA:5D:0A:00",
       "emulator_c6_usb_serial": "40:4C:CA:5D:01:D8"
-    }
+    },
+    "migration_ready_hardware_gate": "5ce963d6ee3b03b9b788f9d02bd9acb4910acead",
+    "migration_ready_hardware_gate_result": "PASS",
+    "migration_ready_hardware_gate_date": "2026-09-04",
+    "final_hardware_gate": "20260904-c6-migration-ready-hardware-v55",
+    "final_hardware_gate_result": "PASS",
+    "final_reaudit": "docs/FINAL_REAUDIT_2026-09-04.md"
   },
   "migration": {
     "suggested_destination": "firmware/extensions/zigbee-c6/",
-    "guide": "docs/LITEGRAPH_MIGRATION.md"
+    "guide": "docs/LITEGRAPH_MIGRATION.md",
+    "export_source_checkpoint": "5ce963d6ee3b03b9b788f9d02bd9acb4910acead",
+    "export_source": "5ce963d6ee3b03b9b788f9d02bd9acb4910acead"
   }
 }

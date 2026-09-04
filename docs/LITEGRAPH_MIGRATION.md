@@ -47,6 +47,7 @@ The future S3 side must implement the complementary slave/mailbox plus GatewayLi
 11. Keep UART as fallback until real I2C E2E plus bounded soak pass.
 
 ## Recovery checkpoints
+- migration-ready hardware-proven export source → `5ce963d6ee3b03b9b788f9d02bd9acb4910acead`
 - `c6-sonoff-stable-2026-09-02` → `0d64fb03164d3bcb9f5cddd639977b4027bc581f`
 - `c6-gatewaylink-stable-2026-09-03` → `a4b1f629c1286d631ac208515b71aeeaa7c44b23`
 - dual-C6 IAS/rejoin source → `109a01f32d3bbc5c2ce2799ccbc8946a717b0e7a`

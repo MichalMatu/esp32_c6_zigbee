@@ -472,3 +472,9 @@ The intended documentation split is:
 - `AGENTS.md` — **how to work safely**;
 - `docs/VERIFIED_BASELINE.md` — **what is proven and recoverable**;
 - `docs/CONTINUATION.md` — **where work is now and what happens next**.
+
+## Final pre-LiteGraph freeze — 2026-09-04
+
+Source checkpoint `5ce963d6ee3b03b9b788f9d02bd9acb4910acead` is the migration-ready C6 firmware proven by the final dual-C6 hardware gate. Software gates passed: migration readiness, canonical host tests, UART build, I2C build, emulator build, source hygiene and syntax/path/contract audit. Hardware gates passed without Zigbee/NVS erase: preserved-storage UART IAS/rejoin/contact regression, I2C missing-S3/shared-SCD41 stability, and final UART restore smoke.
+
+No further C6-only feature/refactor work is justified before import into the LiteGraph monorepo. The next work belongs in a LiteGraph-bound context: import this module unchanged first, rerun its nested gates, then implement the S3 I2C slave/mailbox and perform true C6↔S3 GatewayLink v2 E2E validation.

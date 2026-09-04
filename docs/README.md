@@ -7,6 +7,7 @@
 
 ## Verification and handoff
 - `VERIFIED_BASELINE.md` — physical hardware evidence and recovery checkpoints.
+- `FINAL_REAUDIT_2026-09-04.md` — final critical pre-LiteGraph software/hardware audit and residual-risk statement.
 - `AUDIT_2026-09-04.md` — structural audit and post-refactor hardware closure.
 - `CONTINUATION.md` — mutable current-work handoff.
 
