@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-ias-hardware-e2e-v3",
+  "task_digest": "5db7ddaf582c94357b1ce9b72ced5cf71834c212758d73198450056fd9b0a0b1",
+  "idle_timeout": 600,
+  "task_timeout": 7200,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T01:31:59.833002+00:00",
+  "attempt_id": "36dfea1975d64c369599b479",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 90445,
+  "updated_at": "2026-09-04T01:31:59.833215+00:00",
+  "pid": 90445
+}
