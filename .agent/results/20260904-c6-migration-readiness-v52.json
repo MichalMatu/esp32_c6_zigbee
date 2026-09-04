@@ -1,0 +1,61 @@
+{
+  "id": "20260904-c6-migration-readiness-v52",
+  "status": "failed",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": true,
+  "started_at": "2026-09-04T18:01:04.242882+00:00",
+  "command_timeout": 7200,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\ngit fetch origin agent-control\ngit show FETCH_HEAD:.agent/scripts/20260904-c6-migration-readiness-v52.sh > /tmp/c6_migration_readiness_v52.sh\nchmod +x /tmp/c6_migration_readiness_v52.sh\n/tmp/c6_migration_readiness_v52.sh",
+      "exit_code": 1,
+      "output": "From https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            agent-control -> FETCH_HEAD\n   b739fd6..f9b253f  agent-control -> origin/agent-control\nFrom https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            integration/c6-s3-i2c-20260903 -> FETCH_HEAD\nSwitched to and reset branch 'integration/c6-s3-i2c-20260903'\nbranch 'integration/c6-s3-i2c-20260903' set up to track 'origin/integration/c6-s3-i2c-20260903'.\nYour branch is up to date with 'origin/integration/c6-s3-i2c-20260903'.\nHEAD is now at 5801964 Record post-refactor C6 hardware validation\n  File \"<stdin>\", line 205\n    (root / 'scripts' / 'verify_migration_ready.sh').write_text(r'''#!/usr/bin/env bash\n                                                                ^\nSyntaxError: unterminated triple-quoted string literal (detected at line 236)\n",
+      "elapsed_seconds": 6.383,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 4096,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 24.44,
+      "output_policy": "stream",
+      "captured_output_chars": 833,
+      "output_truncated": false,
+      "current_rss_mb": 0.03,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "failed",
+      "elapsed_seconds": 6.383
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.076
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.075
+  },
+  "failure_reason": "command_failed",
+  "finished_at": "2026-09-04T18:01:13.110211+00:00",
+  "task_digest": "a21eb37a83b1aacaa570f2178abcc7ffaf7b967ad5db4355e255506b5c912767",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "attempt_id": "5ee7fbc3245e104fb568612f",
+  "daemon_version": "4.15.0"
+}
