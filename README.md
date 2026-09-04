@@ -20,6 +20,7 @@ The separation keeps Zigbee timing, device discovery, reporting, local sensor dr
 | Alternate backend | C6-master I2C0 mailbox |
 | Migration state | Ready for import into the LiteGraph monorepo |
 | Migration-ready tag | `c6-litegraph-migration-ready-2026-09-04` |
+| Export-ready tag | `c6-litegraph-export-ready-2026-09-04` |
 | Hardware-proven runtime source | `5ce963d6ee3b03b9b788f9d02bd9acb4910acead` |
 
 The repository remains independently buildable and testable. The C6 is still a separate firmware image after monorepo import; migration combines source management and contracts, not the C6 and S3 binaries.
@@ -97,6 +98,25 @@ idf.py -p /dev/cu.usbmodemXXXX flash monitor
 ```
 
 The build must report `espressif/esp-zigbee-lib (2.0.4)` and `idf (5.5.4)`. `idf.py build` was validated against this exact pair.
+
+## Repository verification
+
+Run the fast repository-quality gate and the canonical migration/host-test gate before publishing changes:
+
+```sh
+./scripts/check_repository_quality.sh
+./scripts/verify_migration_ready.sh
+```
+
+With the ESP-IDF v5.5.4 environment active, the same build entry points used by CI are:
+
+```sh
+./scripts/ci_build_variant.sh uart
+./scripts/ci_build_variant.sh i2c
+./scripts/ci_build_variant.sh emulator
+```
+
+GitHub Actions runs these as independent gates so a failure identifies whether repository hygiene, migration/host behavior, UART firmware, I2C firmware, or the second-C6 emulator regressed.
 
 ## First boot, pairing, and reboot
 

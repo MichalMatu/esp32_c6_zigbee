@@ -67,6 +67,12 @@ Use `resources: ["machine"]` only for operations that genuinely require the whol
 
 Resource contention is a wait state: the immutable task remains pending and is retried. One task still executes at a time for this repository, while unrelated registered repositories may overlap when their declared external resources do not conflict. Production normally uses `max_workers=2`; read shared supervisor status when the exact live worker cap matters.
 
+## Canonical repository quality gates
+
+- `scripts/check_repository_quality.sh` is the fast repository-maintenance gate for English-only maintained text, Markdown UX, generated-artifact hygiene, shell/Python syntax, and `git diff --check`.
+- `scripts/verify_migration_ready.sh` is the canonical migration-readiness gate and includes the strict host-test suite.
+- `scripts/ci_build_variant.sh` is the canonical ESP-IDF entry point for `uart`, `i2c`, and `emulator` builds; GitHub CI uses the same commands.
+
 ## Build and hardware rules
 
 Use the repository's pinned ESP-IDF v5.5.4 environment. The normal build flow is:
