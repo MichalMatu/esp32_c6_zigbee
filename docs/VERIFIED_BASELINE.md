@@ -158,15 +158,11 @@ rx_stack_hwm_min=3128
 
 The final gate also found no Guru Meditation, abort, panic, watchdog, Zigbee leave-reset, Zigbee security failure, GatewayLink queue drops or gateway-event queue drops. Heap and task stack high-water values were unchanged between the first and last resource samples.
 
-### Next integration branch
+### Historical integration branch
 
-Further C6-side work for physical S3 integration starts from:
+Physical-S3 preparation originally continued on `integration/c6-s3-i2c-20260903` after this baseline was recorded. That branch was later fast-forwarded into `main` and deleted during the final repository cleanup. Its history remains reachable from `main` and the immutable recovery tags.
 
-`integration/c6-s3-i2c-20260903`
-
-That branch is created after this verification note is committed, while the immutable firmware recovery tag remains on `a4b1f629c1286d631ac208515b71aeeaa7c44b23`.
-
-The next bench milestone is physical C6↔S3 I²C validation, including coexistence with the existing local SCD4x on the shared C6 I²C bus and recovery when the S3 peer is absent or unpowered. S3-side implementation belongs in its own correctly bound repository context.
+The remaining physical milestone is C6↔S3 I²C validation with a real S3 slave/mailbox peer. That work belongs after the C6 module is imported into the LiteGraph monorepo; UART remains the verified fallback until the cross-MCU gate passes.
 
 ### Recovery
 

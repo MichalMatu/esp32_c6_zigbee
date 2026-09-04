@@ -1,5 +1,7 @@
 # GatewayLink v1
 
+> **Status: Historical.** GatewayLink v1 is frozen for recovery only. New C6↔S3 integration uses [GatewayLink v2](GATEWAY_LINK_V2.md). Do not add a v1 compatibility shim unless an explicit migration requirement appears.
+
 GatewayLink is the protocol-neutral MCU-to-MCU link between the ESP32-C6 input gateway and the ESP32-S3 application host. It intentionally transports normalized input identity, capabilities, availability and measurements rather than Zigbee clusters, I2C registers or driver-specific structures.
 
 ## Physical link reserved for the next stage
@@ -44,7 +46,8 @@ Every input-bearing payload begins with:
 | id | N | stable UTF-8/ASCII identifier, not NUL terminated on wire |
 
 For example the validated local sensor is `source=2`, `channel=0`, `id=scd4x:a12bef073b43`. A Zigbee adapter should expose the authoritative IEEE-based identity before publishing it over GatewayLink; mutable short addresses are not application identities.
- The C6 Zigbee adapter enforces this rule: supported endpoints are announced only after IEEE recovery succeeds, and known reset/rejoin leaves emit protocol-neutral unavailability for those stable identities.
+
+The C6 Zigbee adapter enforces this rule: supported endpoints are announced only after IEEE recovery succeeds, and known reset/rejoin leaves emit protocol-neutral unavailability for those stable identities.
 
 ## Message types
 

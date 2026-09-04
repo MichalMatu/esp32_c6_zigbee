@@ -40,11 +40,11 @@ IEEE identity is authoritative; 16-bit Zigbee short addresses are mutable routes
 
 Zigbee SDK callbacks must remain bounded and non-blocking. They may copy/normalize payloads, update bounded per-device request state when a response determines that state, publish normalized events, and enqueue follow-up discovery/retry work. They must not wait indefinitely for locks, run blocking discovery loops, or perform transport I/O.
 
-The event bus is the internal transport boundary. Input adapters normalize measurements before publishing them. GatewayLink is the external MCU boundary and serializes only the normalized contract. Input adapters normalize measurements before publishing them. `gateway_transport` must consume `gateway_input_id_t` plus normalized measurements without branching on Zigbee cluster IDs or local sensor register formats. A later UART/SPI link to another MCU should serialize this normalized input contract; the ESP32-S3 can then own the current input list/state used by LiteGraph.
+The event bus is the internal transport boundary. Input adapters normalize measurements before publishing them. GatewayLink is the external MCU boundary and serializes only the normalized contract. `gateway_transport` must consume `gateway_input_id_t` plus normalized measurements without branching on Zigbee cluster IDs or local sensor register formats. GatewayLink carries this normalized input contract to the ESP32-S3, which owns the current application-facing input list/state used by LiteGraph.
 
 Stable input identity belongs to the adapter boundary. Zigbee uses IEEE identity plus endpoint as the logical channel; short addresses are routing-only and are never emitted as normalized input identities. The SCD4x adapter uses the sensor 48-bit serial number and channel 0, with `scd4x:0x62` only as a fallback when the serial cannot be read.
 
-The ESP32-C6 is an input gateway. Zigbee and local I2C are peer input adapters. The future UART/SPI transport to the ESP32-S3 must serialize input identity, availability/capabilities, and normalized measurements; the ESP32-S3 owns the application-facing current input registry used by LiteGraph. A later link resynchronization message may send a snapshot, but transport must not reinterpret source protocols.
+The ESP32-C6 is an input gateway. Zigbee and local I2C are peer input adapters. GatewayLink transport to the ESP32-S3 must serialize input identity, availability/capabilities, and normalized measurements; the ESP32-S3 owns the application-facing current input registry used by LiteGraph. A later link resynchronization message may send a snapshot, but transport must not reinterpret source protocols.
 
 All fixed-capacity structures must fail visibly rather than allocate without bounds or silently overwrite live state. Startup/task creation failures must return an error to the composition root or publish a warning before a task terminates.
 
@@ -81,7 +81,6 @@ This direction should be revisited before implementation. Pin allocation, memory
 
 Prefer extending the pure policy/state modules when adding supported clusters or device lifecycle behavior. Keep SDK-specific request/callback lifetime management in the gateway integration layer unless a future extraction creates a smaller coherent discovery API rather than merely moving functions between files.
 
-
 ## Normalized capability access profile
 
 The application boundary uses `gateway_input_capability_profile_t`, not Zigbee cluster IDs. `readable` identifies normalized state/measurements C6 understands, `reportable` and `configurable` identify values backed by an explicit source policy implementation, and `commandable` identifies normalized writable state. Zigbee Simple Descriptor data remains internal evidence used to construct that profile. GatewayLink v2 transports the profile unchanged over either UART or I2C.
@@ -90,7 +89,6 @@ The application boundary uses `gateway_input_capability_profile_t`, not Zigbee c
 ## Measurement policy command ownership
 
 GatewayLink RX validates and enqueues source-neutral measurement policy requests but does not mutate the Zigbee registry. The Zigbee discovery task resolves the stable IEEE+endpoint identity, validates the endpoint's configurable capability, checks binding state and owns Configure Reporting submission. A correlated request completes only after the ZCL Configure Reporting response (or an explicit timeout/queue/route failure), which is normalized to `APPLIED`, `CLAMPED`, `UNSUPPORTED` or `ERROR` before crossing GatewayLink.
-
 
 Level Control follows the same boundary: `CurrentLevel` becomes a normalized percent measurement/capability and `SET_LEVEL` is translated only inside C6 to standard ZCL `MoveToLevel`. The normalized API does not expose raw level bytes or ZCL transition units.
 

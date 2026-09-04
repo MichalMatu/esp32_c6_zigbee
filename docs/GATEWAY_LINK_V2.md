@@ -1,6 +1,8 @@
 # GatewayLink v2
 
-GatewayLink v2 is the current development contract between the ESP32-C6 gateway and the future application host. It carries normalized source-neutral identity, capability access, availability and measurements. Standard Zigbee cluster IDs remain C6 implementation detail and are not required by the application host.
+> **Status: Active.** GatewayLink v2 is the only protocol contract for new C6↔S3 integration.
+
+GatewayLink v2 is the active protocol contract between the ESP32-C6 gateway and the future application host. It carries normalized source-neutral identity, capability access, availability and measurements. Standard Zigbee cluster IDs remain C6 implementation detail and are not required by the application host.
 
 GatewayLink v1 remains documented in `docs/GATEWAY_LINK_V1.md` and frozen by `c6-gatewaylink-stable-2026-09-03`. The active branch does not implement a v1 compatibility shim because there is no deployed S3 peer or persisted application flow requiring migration.
 

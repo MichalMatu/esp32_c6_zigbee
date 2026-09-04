@@ -2,6 +2,18 @@
 
 This directory is an independent ESP-IDF application for a distinct second ESP32-C6. It does not link or include production `main/` sources.
 
+## Build
+
+From the repository root:
+
+```sh
+. ~/esp/esp-idf-v5.5.4/export.sh
+idf.py -C tests/zigbee_device_emulator set-target esp32c6
+idf.py -C tests/zigbee_device_emulator build
+```
+
+Use `idf.py -C tests/zigbee_device_emulator menuconfig` to select a profile before building when the default mixed profile is not desired.
+
 ## Build-time profiles
 
 Select one under `Second-C6 Zigbee emulator` in menuconfig:

@@ -1,13 +1,64 @@
-# ESP32-C6 Zigbee coordinator / gateway MVP
+# ESP32-C6 Zigbee and low-level I/O extension
 
-Native ESP-IDF firmware for an ESP32-C6 coordinator. It is pinned to **ESP-IDF v5.5.4** and the exact managed component **`espressif/esp-zigbee-lib` v2.0.4**. The generated [dependencies.lock](dependencies.lock) is committed to retain that resolution.
+Native ESP-IDF firmware for the ESP32-C6 hardware extension used by the LiteGraph controller architecture.
 
-This is SDK 2.x firmware: it uses the `esp_zigbee_*` and `ezb_*` APIs and one `ezb_af_create_gateway_endpoint()` gateway endpoint. It does not add a pretend client-cluster data model, nor does it use a ZBOSS/v1 compatibility API, Wi-Fi, BLE, Matter, Thread, MQTT, or an external RCP. An SCD4x-family sensor is supported as an independent local I2C input adapter.
+## Purpose
 
+This firmware exists to move deterministic, hardware-facing work away from the ESP32-S3 application processor. The C6 owns Zigbee coordination and local low-level I/O, converts device-specific data into a normalized source-neutral model, and exposes that model to the S3 through GatewayLink.
 
-## Migration-ready module
+The separation keeps Zigbee timing, device discovery, reporting, local sensor drivers, and bounded hardware queues out of the application layer. The ESP32-S3 can therefore focus on Wi-Fi, BLE, web/UI, configuration, and LiteGraph automation without needing to understand Zigbee clusters or local C6 driver details.
 
-This firmware is now packaged as the ESP32-C6 Zigbee/low-level-I/O extension intended for later absorption into the LiteGraph controller monorepo, while remaining independently buildable and testable. See `module.json`, `docs/README.md`, and `docs/LITEGRAPH_MIGRATION.md`. The migration must preserve GatewayLink v2 and UART fallback; true C6↔S3 I2C traffic remains a future gate.
+## Project status
+
+| Item | Value |
+| --- | --- |
+| Target | ESP32-C6 |
+| Framework | ESP-IDF v5.5.4 |
+| Zigbee stack | `espressif/esp-zigbee-lib` v2.0.4 |
+| Active MCU protocol | GatewayLink v2 |
+| Default GatewayLink backend | UART1 |
+| Alternate backend | C6-master I2C0 mailbox |
+| Migration state | Ready for import into the LiteGraph monorepo |
+| Migration-ready tag | `c6-litegraph-migration-ready-2026-09-04` |
+| Hardware-proven runtime source | `5ce963d6ee3b03b9b788f9d02bd9acb4910acead` |
+
+The repository remains independently buildable and testable. The C6 is still a separate firmware image after monorepo import; migration combines source management and contracts, not the C6 and S3 binaries.
+
+## Responsibility split
+
+**ESP32-C6 owns:**
+
+- Zigbee coordinator lifecycle, persisted Zigbee state, discovery, binding, reporting, IAS handling, and normalized commands;
+- stable IEEE-first Zigbee identities and route-safe short-address handling;
+- board-local deterministic I/O such as the SCD4x sensor;
+- normalized input capabilities, availability, measurements, and low-level command translation;
+- GatewayLink runtime and its UART/I2C physical backends.
+
+**ESP32-S3 owns:**
+
+- Wi-Fi and BLE;
+- web/UI and user configuration;
+- LiteGraph automation/application logic;
+- the application-facing input registry and the complementary GatewayLink peer.
+
+The C6 intentionally does not add Arduino, Matter, Thread, Wi-Fi, BLE, MQTT, or an external RCP.
+
+## Documentation
+
+Start with these documents:
+
+1. [Architecture](docs/ARCHITECTURE.md) — ownership, module boundaries, and invariants.
+2. [GatewayLink v2](docs/GATEWAY_LINK_V2.md) — active C6↔S3 protocol contract.
+3. [LiteGraph migration guide](docs/LITEGRAPH_MIGRATION.md) — exact import sequence and post-import gates.
+4. [Verified baseline](docs/VERIFIED_BASELINE.md) — physical hardware evidence and recovery points.
+5. [Continuation handoff](docs/CONTINUATION.md) — concise current state and next action.
+6. [Documentation index](docs/README.md) — complete active/historical documentation map.
+
+## Technical baseline
+
+The firmware is pinned to **ESP-IDF v5.5.4** and **`espressif/esp-zigbee-lib` v2.0.4**. The generated [dependencies.lock](dependencies.lock) is committed to retain that exact dependency resolution.
+
+This is SDK 2.x firmware using the `esp_zigbee_*` and `ezb_*` APIs with one `ezb_af_create_gateway_endpoint()` gateway endpoint. Zigbee is one input adapter; an SCD4x-family sensor is supported as an independent local I2C input adapter.
 
 ## Verified stable baseline
 
@@ -27,9 +78,11 @@ The local sensor does not enter `zigbee_gateway.c`: Zigbee reports and SCD4x rea
 
 ## GatewayLink to ESP32-S3
 
-The current protocol-neutral C6-to-S3 development contract is specified in [docs/GATEWAY_LINK_V2.md](docs/GATEWAY_LINK_V2.md). GatewayLink v2 uses bounded binary COBS frames with CRC32 and carries stable input identity, normalized capability access profiles, descriptors, normalized measurements and versioned controls. The frozen v1 contract remains documented for the `c6-gatewaylink-stable-2026-09-03` recovery point; the active branch has no v1 compatibility shim because there is no deployed S3 peer to migrate. UART1 runs at 460800 baud on TX GPIO18 / RX GPIO19. TX is bounded/non-blocking to event handling; RX resynchronizes at COBS delimiters and currently handles HELLO/ACK, PING/PONG and `PERMIT_JOIN`. Descriptor snapshot/resync is implemented with a bounded transport cache and TX-task replay; source-neutral measurement-policy application remains disabled until its real backing policy layer is implemented.
+The current protocol-neutral C6-to-S3 development contract is specified in [docs/GATEWAY_LINK_V2.md](docs/GATEWAY_LINK_V2.md). GatewayLink v2 uses bounded binary COBS frames with CRC32 and carries stable input identity, normalized capability access profiles, descriptors, normalized measurements, and versioned controls. The frozen v1 contract remains documented for the `c6-gatewaylink-stable-2026-09-03` recovery point; the active firmware has no v1 compatibility shim because there is no deployed S3 peer to migrate.
 
-## Build and flash
+UART1 runs at 460800 baud on TX GPIO18 / RX GPIO19. TX is bounded/non-blocking to event handling; RX resynchronizes at COBS delimiters and currently handles HELLO/ACK, PING/PONG, and `PERMIT_JOIN`. Descriptor snapshot/resync is implemented with a bounded transport cache and TX-task replay; source-neutral measurement-policy application remains disabled until its real backing policy layer is implemented.
+
+## Quick start: build and flash
 
 Install the official ESP-IDF v5.5.4 toolchain, then source its environment:
 
@@ -90,11 +143,15 @@ The gateway endpoint registers SDK 2.x app-signal and ZCL core-action handlers. 
 
 Recognized report attributes are normalized only when their incoming cluster, attribute, and ZCL type agree and the value is not a Zigbee invalid/sentinel value: temperature, humidity, illuminance, occupancy, CO2, battery voltage/percentage, and On/Off. Electrical Measurement and Metering reports are deliberately emitted through the raw fallback for now: their integer values are not presented as volts, amps, watts, or kWh until the required per-endpoint multiplier/divisor attributes are cached.
 
-After a successful Simple Descriptor, an endpoint with at least one actually normalized server cluster also publishes a protocol-neutral `INPUT_AVAILABLE` descriptor. Its v2 capability profile separates readable normalized values from reportable/configurable values and commandable state, so the future S3 does not need raw Zigbee cluster knowledge. The descriptor also carries bounded Basic manufacturer/model metadata when known and is emitted only after an authoritative IEEE identity is known; provisional short-address identities are never exposed on GatewayLink. A known RESET leave and a known REJOIN leave publish `INPUT_UNAVAILABLE` for previously announced endpoints; the generic descriptor is re-announced after rediscovery. `DEVICE_UNAVAILABLE` and unknown leave/update signals remain non-authoritative and do not fabricate generic offline state.
+After a successful Simple Descriptor, an endpoint with at least one actually normalized server cluster also publishes a protocol-neutral `INPUT_AVAILABLE` descriptor. Its v2 capability profile separates readable normalized values from reportable/configurable values and commandable state, so the future S3 does not need raw Zigbee cluster knowledge. The descriptor also carries bounded Basic manufacturer/model metadata when known and is emitted only after an authoritative IEEE identity is known; provisional short-address identities are never exposed on GatewayLink.
+
+A known RESET leave and a known REJOIN leave publish `INPUT_UNAVAILABLE` for previously announced endpoints; the generic descriptor is re-announced after rediscovery. `DEVICE_UNAVAILABLE` and unknown leave/update signals remain non-authoritative and do not fabricate generic offline state.
 
 When discovery finds the matching standard server clusters, the gateway sends one Configure Reporting request per cluster. Temperature (`0x0402/0x0000`) reports after at least 60 seconds on a 0.10 °C change and at least once every 300 seconds. Relative humidity (`0x0405/0x0000`) uses the same 60/300-second intervals with a 1.00 %RH change. Battery percentage (`0x0001/0x0021`) reports after at least one hour on a 1 % change and at least once every six hours. This is deliberately limited to standard attributes; manufacturer-specific clusters are neither configured nor interpreted. The serial transport logs each Configure Reporting response.
 
-For a sleepy end device, discovery creates standard ZDO bindings for its temperature, humidity, battery, and Poll Control clusters before configuring reports. The gateway also handles the standard Poll Control Check-In command. Its reply explicitly requests a **five-second** fast-poll window (`20` quarter-seconds; the similarly named SDK predefined macro is documented in milliseconds and is intentionally not used). It queues fresh endpoint discovery and retries each failed/lock-delayed operation up to three times outside Zigbee callbacks. Binding/reporting state is tracked per IEEE identity, endpoint, and cluster; it is marked configured only after a successful response. An unconfirmed request becomes retryable after ten seconds, preventing immediate duplicate commands during a burst of rejoin/check-in events. Thus a normal wake-up/button press is sufficient after a coordinator reboot; removing the battery or re-pairing is not required.
+For a sleepy end device, discovery creates standard ZDO bindings for its temperature, humidity, battery, and Poll Control clusters before configuring reports. The gateway also handles the standard Poll Control Check-In command. Its reply explicitly requests a **five-second** fast-poll window (`20` quarter-seconds; the similarly named SDK predefined macro is documented in milliseconds and is intentionally not used).
+
+The gateway queues fresh endpoint discovery and retries each failed/lock-delayed operation up to three times outside Zigbee callbacks. Binding/reporting state is tracked per IEEE identity, endpoint, and cluster; it is marked configured only after a successful response. An unconfirmed request becomes retryable after ten seconds, preventing immediate duplicate commands during a burst of rejoin/check-in events. Thus a normal wake-up/button press is sufficient after a coordinator reboot; removing the battery or re-pairing is not required.
 
 ### SNZB-02D pairing and wake-up flow
 

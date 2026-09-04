@@ -83,7 +83,8 @@ Do not erase flash or deliberately destroy the persisted Zigbee network unless t
 
 ## Change discipline
 
-- Keep execution content, code, comments, logs, task metadata, and commit messages in English.
+- Keep all repository-maintained text in English, including README/docs, code comments, logs, console/user-facing strings, task metadata, and commit messages.
+- Keep Markdown skimmable: one H1 per file, sentence-case headings, relative links for repository documents, language-tagged code fences, and no stale branch/current-state claims in active documentation.
 - Keep changes scoped and avoid unrelated refactors.
 - Preserve IEEE-first device identity and the bounded/non-blocking callback architecture unless the requested change intentionally revisits it. Callbacks may update bounded state and enqueue follow-up work, but must not wait indefinitely or perform long-running discovery/transport work.
 - Respect the module ownership documented in `docs/ARCHITECTURE.md`; prefer extending a cohesive state/policy module over growing `zigbee_gateway.c` with unrelated responsibilities.
@@ -93,7 +94,6 @@ Do not erase flash or deliberately destroy the persisted Zigbee network unless t
 - Update `docs/CONTINUATION.md` after a major milestone or when the active branch, hardware state, current goal, or exact next step changes materially.
 
 When the Local Agent task/control/resource/status/planner/binding contract changes, audit this file together with the canonical `MichalMatu/local-agent` documentation so future chats do not depend on remembered conversation context.
-
 
 ## Monorepo migration note
 
