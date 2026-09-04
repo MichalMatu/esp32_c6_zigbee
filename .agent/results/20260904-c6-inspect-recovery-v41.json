@@ -1,0 +1,60 @@
+{
+  "id": "20260904-c6-inspect-recovery-v41",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "started_at": "2026-09-04T15:56:56.801822+00:00",
+  "command_timeout": 300,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\necho HEAD=$(git rev-parse HEAD)\necho '=== STATUS ==='\ngit status --short\necho '=== DIFF STAT ==='\ngit diff --stat\necho '=== UNTRACKED ==='\ngit ls-files --others --exclude-standard\necho '=== RECENT FILES ==='\nls -lt main tests/host scripts 2>/dev/null | head -80 || true",
+      "exit_code": 0,
+      "output": "HEAD=5bde32fba74dce2e7e9fba07884209efee8fb026\n=== STATUS ===\n=== DIFF STAT ===\n=== UNTRACKED ===\n=== RECENT FILES ===\nmain:\ntotal 712\n-rw-r--r--@ 1 michal  staff  73730 Sep  4 16:04 zigbee_gateway.c\n-rw-r--r--@ 1 michal  staff  30218 Sep  4 16:04 gateway_link_protocol.c\n-rw-r--r--@ 1 michal  staff   3315 Sep  4 16:04 gateway_device_state.h\n-rw-r--r--@ 1 michal  staff   8209 Sep  4 16:04 gateway_device_state.c\n-rw-r--r--@ 1 michal  staff    817 Sep  4 16:04 CMakeLists.txt\n-rw-r--r--@ 1 michal  staff  10453 Sep  4 05:39 gateway_transport.c\n-rw-r--r--@ 1 michal  staff   1036 Sep  4 05:26 zigbee_gateway.h\n-rw-r--r--@ 1 michal  staff   7328 Sep  4 05:26 scd4x_input.c\n-rw-r--r--@ 1 michal  staff    482 Sep  4 05:26 gateway_zigbee_input.h\n-rw-r--r--@ 1 michal  staff   2613 Sep  4 05:26 gateway_zigbee_input.c\n-rw-r--r--@ 1 michal  staff    934 Sep  4 05:26 gateway_zcl_value.h\n-rw-r--r--@ 1 michal  staff   8565 Sep  4 05:26 gateway_zcl_value.c\n-rw-r--r--@ 1 michal  staff   1302 Sep  4 05:26 gateway_reporting_policy.h\n-rw-r--r--@ 1 michal  staff   5650 Sep  4 05:26 gateway_reporting_policy.c\n-rw-r--r--@ 1 michal  staff   2888 Sep  4 05:26 gateway_link_snapshot_cache.c\n-rw-r--r--@ 1 michal  staff   7129 Sep  4 05:26 gateway_link_protocol.h\n-rw-r--r--@ 1 michal  staff   4069 Sep  4 05:26 gateway_link_event_adapter.c\n-rw-r--r--@ 1 michal  staff   1641 Sep  4 05:26 gateway_link_control.h\n-rw-r--r--@ 1 michal  staff   6704 Sep  4 05:26 gateway_link_control.c\n-rw-r--r--@ 1 michal  staff  16027 Sep  4 05:26 gateway_link.c\n-rw-r--r--@ 1 michal  staff   2847 Sep  4 05:26 gateway_inputs.h\n-rw-r--r--@ 1 michal  staff   1994 Sep  4 05:26 gateway_inputs.c\n-rw-r--r--@ 1 michal  staff   4445 Sep  4 05:26 gateway_events.h\n-rw-r--r--@ 1 michal  staff    627 Sep  4 05:26 gateway_command_policy.h\n-rw-r--r--@ 1 michal  staff   1449 Sep  4 05:26 gateway_command_policy.c\n-rw-r--r--@ 1 michal  staff   5266 Sep  3 08:36 gateway_i2c_link.c\n-rw-r--r--@ 1 michal  staff    111 Sep  3 08:36 gateway_i2c_link.h\n-rw-r--r--@ 1 michal  staff   1193 Sep  3 08:36 gateway_i2c_mailbox.c\n-rw-r--r--@ 1 michal  staff    544 Sep  3 08:36 gateway_i2c_mailbox.h\n-rw-r--r--@ 1 michal  staff    570 Sep  3 08:36 Kconfig.projbuild\n-rw-r--r--@ 1 michal  staff   2494 Sep  3 07:58 gateway_console.c\n-rw-r--r--@ 1 michal  staff    783 Sep  3 07:58 gateway_link.h\n-rw-r--r--@ 1 michal  staff   2344 Sep  3 07:46 gateway_uart_link.c\n-rw-r--r--@ 1 michal  staff    230 Sep  3 07:46 gateway_uart_link.h\n-rw-r--r--@ 1 michal  staff    324 Sep  3 07:46 gateway_link_backend.h\n-rw-r--r--@ 1 michal  staff    633 Sep  3 07:21 app_main.c\n-rw-r--r--@ 1 michal  staff    854 Sep  2 00:44 gateway_link_snapshot_cache.h\n-rw-r--r--@ 1 michal  staff    387 Sep  2 00:07 gateway_link_event_adapter.h\n-rw-r--r--@ 1 michal  staff   1346 Sep  2 00:07 gateway_link_stream.c\n-rw-r--r--@ 1 michal  staff    661 Sep  2 00:07 gateway_link_stream.h\n-rw-r--r--@ 1 michal  staff   1248 Sep  1 21:33 local_i2c_bus.c\n-rw-r--r--@ 1 michal  staff    376 Sep  1 21:33 local_i2c_bus.h\n-rw-r--r--@ 1 michal  staff     76 Sep  1 21:29 idf_component.yml\n-rw-r--r--@ 1 michal  staff    513 Sep  1 21:29 local_inputs.c\n-rw-r--r--@ 1 michal  staff     72 Sep  1 21:29 local_inputs.h\n-rw-r--r--@ 1 michal  staff     71 Sep  1 21:29 scd4x_input.h\n-rw-r--r--@ 1 michal  staff   2641 Sep  1 21:21 gateway_events.c\n-rw-r--r--@ 1 michal  staff     75 Sep  1 02:32 gateway_console.h\n-rw-r--r--@ 1 michal  staff     77 Sep  1 02:14 gateway_transport.h\n\ntests/host:\ntotal 208\n-rw-r--r--@ 1 michal  staff   4946 Sep  4 16:04 test_gateway_device_state.c\n-rw-r--r--@ 1 michal  staff    590 Sep  4 05:26 test_no_embedded_nul.py\n-rw-r--r--@ 1 michal  staff   2536 Sep  4 05:26 test_gateway_zigbee_input.c\n-rw-r--r--@ 1 michal  staff   5163 Sep  4 05:26 test_gateway_zcl_value.c\n-rw-r--r--@ 1 michal  staff   3436 Sep  4 05:26 test_gateway_reporting_policy.c\n-rw-r--r--@ 1 michal  staff   3180 Sep  4 05:26 test_gateway_link_snapshot_cache.c\n-rw-r--r--@ 1 michal  staff  12061 Sep  4 05:26 test_gateway_link_protocol.c\n-rw-r--r--@ 1 michal  staff   5492 Sep  4 05:26 test_gateway_link_event_adapter.c\n-rw-r--r--@ 1 michal  staff  18782 Sep  4 05:26 test_gateway_link_e2e.c\n-rw-r--r--@ 1 michal  staff   8640 Sep  4 05:26 test_gateway_link_control.c\n-rw-r--r--@ 1 michal  staff   2153 Sep  4 05:26 test_gateway_inputs.c\n-rw-r--r--@ 1 michal  staff   2404 Sep  4 05:26 test_gateway_command_policy.c\n-rw-r--r--@ 1 michal  staff   1546 Sep  3 08:36 test_gateway_i2c_mailbox.c\n-rw-r--r--@ 1 michal  staff   7468 Sep  2 18:52 test_gateway_link_stream.c\n",
+      "elapsed_seconds": 0.168,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 1024,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 4.8,
+      "output_policy": "stream",
+      "captured_output_chars": 4571,
+      "output_truncated": false,
+      "current_rss_mb": 4.8,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 0.168
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.069
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.066
+  },
+  "finished_at": "2026-09-04T15:56:58.553428+00:00",
+  "task_digest": "4e626cb1ab6fab47893cdab5dff31b14fef4f0834c0cd8129d8f45fd0e84e19c",
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "memory_limit_mb": 1024,
+  "attempt_id": "22619bff11ebbfea663d6b2b",
+  "daemon_version": "4.15.0"
+}
