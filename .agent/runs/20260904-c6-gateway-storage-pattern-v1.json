@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-gateway-storage-pattern-v1",
+  "task_digest": "ffbfa83b0bbf7d639a2b4feee3471cc1aa71cdc46d4fce326b902d163fcd2cc4",
+  "idle_timeout": 180,
+  "task_timeout": 600,
+  "memory_limit_mb": 1024,
+  "started_at": "2026-09-04T02:24:46.289761+00:00",
+  "attempt_id": "e61b3ba1369c933c4f64ddc5",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 67928,
+  "updated_at": "2026-09-04T02:24:46.289914+00:00",
+  "pid": 67928
+}
