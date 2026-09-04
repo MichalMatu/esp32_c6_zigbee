@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-migration-ready-hardware-v55",
+  "task_digest": "d22a92448c7f51ccca4bb71bde9335f97b1d1c2f2255981cd0ed31dc0287c626",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T19:47:26.957338+00:00",
+  "attempt_id": "ae0c7149bd0b19f8e7539e75",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 98741,
+  "updated_at": "2026-09-04T19:47:26.957536+00:00",
+  "pid": 98741
+}
