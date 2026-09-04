@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-structural-refactor-v37",
+  "task_digest": "d68d9fe7c69eed42dc8381fc820cd1ba78350e1255695b0747afc780c995a683",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T13:50:12.707032+00:00",
+  "attempt_id": "48be52fdc9b6e107eab0006d",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 6759,
+  "updated_at": "2026-09-04T13:50:12.707139+00:00",
+  "pid": 6759
+}
