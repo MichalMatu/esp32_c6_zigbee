@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-ias-fresh-network-e2e-v1",
+  "task_digest": "ccf9d665cf37d7f8585f0c2c7de460fbd9988bd971a551a917226d5344d9b923",
+  "idle_timeout": 300,
+  "task_timeout": 3000,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T02:46:29.858824+00:00",
+  "attempt_id": "bd6fd0c50d7f8bbc46e4b891",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 18705,
+  "updated_at": "2026-09-04T02:46:29.858929+00:00",
+  "pid": 18705
+}
