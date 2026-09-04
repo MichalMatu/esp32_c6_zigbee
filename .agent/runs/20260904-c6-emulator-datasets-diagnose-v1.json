@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-emulator-datasets-diagnose-v1",
+  "task_digest": "ce208345fbe93cf429b7a9d5aaa31363ddb908d2bdd9c456b77f180dbd2eda56",
+  "idle_timeout": 300,
+  "task_timeout": 1200,
+  "memory_limit_mb": 2048,
+  "started_at": "2026-09-04T02:19:51.883590+00:00",
+  "attempt_id": "101c12a6fcfaf62ddae7ae54",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 57313,
+  "updated_at": "2026-09-04T02:19:51.883687+00:00",
+  "pid": 57313
+}
