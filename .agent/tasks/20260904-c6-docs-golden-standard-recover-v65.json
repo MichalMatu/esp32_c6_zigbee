@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-docs-golden-standard-recover-v65",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": true,
+  "resources": [],
+  "memory_limit_mb": 2048,
+  "command_timeout": 3600,
+  "idle_timeout": 600,
+  "task_timeout": 5400,
+  "commands": [
+    "set -euo pipefail\ngit fetch origin agent-control\ngit show FETCH_HEAD:.agent/scripts/20260904-c6-docs-golden-standard-recover-v65.sh > /tmp/c6_docs_golden_standard_recover_v65.sh\nchmod +x /tmp/c6_docs_golden_standard_recover_v65.sh\n/tmp/c6_docs_golden_standard_recover_v65.sh"
+  ]
+}
