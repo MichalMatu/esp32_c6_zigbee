@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-ias-callback-api-v2",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 4096,
+  "command_timeout": 900,
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "commands": [
+    "set -euo pipefail\ngit fetch origin\ngit checkout integration/c6-s3-i2c-20260903\ngit reset --hard origin/integration/c6-s3-i2c-20260903\n[ \"$(git rev-parse HEAD)\" = \"8badcdece00c876e5281afb3ca82a846859fab2c\" ]\npython3 - <<'PY'\nfrom pathlib import Path\nroots=[Path('managed_components/espressif__esp-zigbee-lib/include/ezbee'),Path('tests/zigbee_device_emulator/managed_components/espressif__esp-zigbee-lib/include/ezbee')]\nroot=next((r for r in roots if r.exists()),None)\nif root is None: raise SystemExit('ezbee headers missing')\nfiles=[]\nfor rel in ['zcl/zcl_core.h','zcl/cluster/ias_zone.h','zcl/cluster/ias_zone_desc.h','zcl/zcl_common.h']:\n    p=root/rel\n    if p.exists(): files.append(p)\nfor p in files:\n    print('===',p,'===')\n    ls=p.read_text(errors='ignore').splitlines()\n    for i,l in enumerate(ls):\n        low=l.lower()\n        if ('ias_zone' in low or 'zone_status' in low or 'enroll' in low or 'cie' in low or ('cb_id' in low and 'core' in str(p).lower()) or 'action_callback' in low):\n            lo=max(0,i-3); hi=min(len(ls),i+8)\n            print('\\n'.join(f'{j+1}:{ls[j]}' for j in range(lo,hi)))\nprint('=== EXACT RECURSIVE MATCHES ===')\nfor p in sorted(root.rglob('*.h')):\n    ls=p.read_text(errors='ignore').splitlines()\n    for i,l in enumerate(ls):\n        low=l.lower()\n        if 'zone_status_change' in low or 'status_change_notif' in low or 'ias_zone' in low and 'cb_id' in low:\n            print(f'{p}:{i+1}:{l}')\nPY"
+  ]
+}
