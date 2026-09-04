@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-zigbee-lab-baseline-doc-freeze-v26",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": true,
+  "resources": [],
+  "memory_limit_mb": 4096,
+  "command_timeout": 1800,
+  "idle_timeout": 300,
+  "task_timeout": 2400,
+  "commands": [
+    "set -euo pipefail\ngit fetch origin agent-control\ngit show FETCH_HEAD:.agent/scripts/20260904-c6-zigbee-lab-baseline-doc-freeze-v26.sh > /tmp/c6_zigbee_lab_baseline_doc_freeze_v26.sh\nchmod +x /tmp/c6_zigbee_lab_baseline_doc_freeze_v26.sh\n/tmp/c6_zigbee_lab_baseline_doc_freeze_v26.sh"
+  ]
+}
