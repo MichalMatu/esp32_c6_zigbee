@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-emulator-no-autostart-fix-v1",
+  "task_digest": "6ba95c8a6e641a4b1d88bed612dfd18034d9cafc2c26873b61e42f12c3baed40",
+  "idle_timeout": 300,
+  "task_timeout": 3000,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T02:54:54.626697+00:00",
+  "attempt_id": "c6391ae9314385a2ddee5d7a",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 44333,
+  "updated_at": "2026-09-04T02:54:54.626904+00:00",
+  "pid": 44333
+}
