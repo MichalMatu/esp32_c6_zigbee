@@ -179,16 +179,66 @@ git checkout c6-gatewaylink-stable-2026-09-03
 
 Do not move or recreate this tag onto a later commit.
 
-## Dual-C6 Zigbee laboratory development checkpoint — 2026-09-04
+## Dual-C6 Zigbee laboratory verified baseline — 2026-09-04
 
-This is a hardware-verified development checkpoint, not a frozen stable tag.
+This section freezes the verified dual-C6 IAS Contact laboratory baseline on the active integration branch. It is a hardware-verified source checkpoint, not a new stable tag.
 
-Physical task `20260904-c6-ias-fresh-network-e2e-v3` used emulator firmware `1821f6d95c0a1c1481031ecf42e35e586006146d` and proved fresh coordinator formation, 180 s permit-join, emulator factory-new steering success, authorization, announce, endpoint 1 discovery, IAS cluster `0x0500`, Basic metadata, and no emulator abort/panic.
+Verified source commit before this documentation commit:
 
-It did not complete IAS Contact semantic E2E: the coordinator logged `IAS ZoneType read failed`, no normalized `CONTACT_OPEN` was observed, and emulator ZoneStatus report requests returned `error=5`.
+- `109a01f32d3bbc5c2ce2799ccbc8946a717b0e7a` — refresh IAS CIE enrollment state after a device rejoin while preserving IEEE-first identity and the existing bounded discovery architecture.
 
-Therefore no stable Zigbee-lab tag should be created yet. The next gate is successful remote ZoneType `0x0015` read, observed Contact Open false/true normalization, then restart/rejoin resilience.
+The IAS Contact emulator also includes the previously verified fixes that expose ZoneType as ENUM16, complete IAS enrollment after the coordinator writes its CIE address, preserve RestoreNotify while toggling Alarm1, and run the roundtrip worker for the IAS profile.
 
-Verified boards:
-- coordinator serial `40:4C:CA:5D:0A:00`;
-- emulator serial `40:4C:CA:5D:01:D8`.
+### Fresh-network hardware gate
+
+Task: `20260904-c6-ias-rejoin-cie-refresh-v24`.
+
+The test rebuilt and flashed the exact source, erased only the `zb_storage` regions intentionally required for a factory-new Zigbee test, re-resolved both USB ports by immutable serial identity, formed a fresh coordinator network, opened permit-join, then started the emulator.
+
+Observed evidence:
+
+```text
+FRESH_REMOTE_ZONETYPE=True
+FRESH_CIE_QUEUED=True
+FRESH_CIE_ACTION=True
+FRESH_ENROLL_REQ=True
+FRESH_ENROLL_RSP=True
+FRESH_FALSE=True
+FRESH_TRUE=True
+FRESH_NO_ERROR5=True
+FRESH_GW_NO_PANIC=True
+FRESH_EMU_NO_PANIC=True
+FRESH_NETWORK_DUAL_C6_IAS_E2E=PASS
+```
+
+This proves remote IAS ZoneType `0x0015`, standard CIE/enrollment handshake, normalized `CONTACT_OPEN=false` and `CONTACT_OPEN=true`, no generic IAS ZoneStatus `error=5`, and no gateway/emulator panic.
+
+### Preserved-storage restart/rejoin gate
+
+The second phase of the same task restarted the emulator without erasing Zigbee storage and without reflashing either board. Ports were re-resolved from USB serial identity before hardware access.
+
+Observed evidence:
+
+```text
+PRESERVED_NON_FACTORY_NEW=True
+PRESERVED_REJOIN=True
+PRESERVED_ANNOUNCE=True
+PRESERVED_CIE_QUEUED=True
+PRESERVED_CIE_ACTION=True
+PRESERVED_ENROLL_REQ=True
+PRESERVED_ENROLL_RSP=True
+PRESERVED_FALSE=True
+PRESERVED_TRUE=True
+PRESERVED_GW_NO_PANIC=True
+PRESERVED_EMU_NO_PANIC=True
+PRESERVED_STORAGE_RESTART_REJOIN=PASS
+```
+
+The emulator explicitly reported `factory_new=0`; the coordinator observed rejoin/announce and refreshed the IAS CIE handshake even when the network short address was unchanged. Contact-open false/true notifications resumed after restart with no storage erase and no panic.
+
+Verified board identities:
+
+- coordinator C6 USB serial `40:4C:CA:5D:0A:00`;
+- emulator C6 USB serial `40:4C:CA:5D:01:D8`.
+
+This closes the IAS Contact fresh-network plus persisted-rejoin blocker for the current Zigbee laboratory baseline. Future hardware changes must preserve these gates rather than re-opening the already resolved storage/autostart/ZoneType/enrollment investigation without new regression evidence.

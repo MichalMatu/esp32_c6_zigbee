@@ -31,27 +31,24 @@ Current stable source state before S3 integration:
 
 Always inspect the live active-branch HEAD instead of assuming this document's commit is still current.
 
-## 2026-09-04 dual-C6 Zigbee laboratory checkpoint
+## 2026-09-04 dual-C6 Zigbee laboratory baseline complete
 
-Verified code checkpoint before this documentation commit:
-- `1821f6d95c0a1c1481031ecf42e35e586006146d` — emulator uses explicit commissioning via `esp_zigbee_start(false)`.
-- `d9bbd9be8c975d7ce05590e17631d6092aac49a8` — emulator starts BDB initialization/network steering.
-- `de6ac186f9aa6f0e533edf2a2ef8ffcf13691396` — emulator initializes `zb_storage`.
-- `85869b350d77d244993812bfec3787e2a9e38e58` — production Phase 7 IAS Contact support.
+Verified source checkpoint before this documentation commit:
 
-Physical task `20260904-c6-ias-fresh-network-e2e-v3` proved fresh network formation, 180 s permit-join, emulator `factory_new=1`, steering status 0, authorization status 0, device announce, endpoint 1 discovery, IAS Zone cluster `0x0500`, and Basic metadata (`C6EmuV20` / `C6Lab`). The emulator did not abort or panic.
+- `109a01f32d3bbc5c2ce2799ccbc8946a717b0e7a` — IAS CIE refresh after rejoin.
 
-This closes the dual-C6 network formation + join + authorization + endpoint/IAS-cluster discovery checkpoint. Do not repeat the storage/autostart/steering investigation unless later code changes invalidate this evidence.
+Hardware task `20260904-c6-ias-rejoin-cie-refresh-v24` passed both required gates on the two bound C6 boards.
 
-### Current single blocker / exact continuation point
+Fresh network proved remote IAS ZoneType `0x0015`, CIE write + enrollment, normalized `CONTACT_OPEN=false` and `CONTACT_OPEN=true`, absence of generic IAS ZoneStatus `error=5`, and no panic on either board.
 
-IAS semantic E2E is not complete. The coordinator detects cluster `0x0500` but logs `IAS ZoneType read failed`. The emulator locally initializes `ZoneType=0x0015` and `ZoneStatus=0x0000`, while explicit ZoneStatus report requests currently return `error=5`. No normalized `CONTACT_OPEN` was observed.
+Preserved-storage restart/rejoin then restarted the emulator with no storage erase and no reflash. The emulator reported `factory_new=0`; the coordinator observed rejoin + announce, refreshed the IAS CIE/enrollment path, and again received `CONTACT_OPEN=false` and `CONTACT_OPEN=true` with no panic.
 
-Read-only task `20260904-c6-ias-zonetype-read-diagnose-v1` confirmed that `ezb_zcl_ias_zone_create_cluster_desc()` accepts `ezb_zcl_ias_zone_cluster_server_config_t` or `NULL`. The emulator currently creates the IAS server descriptor with `NULL` and sets ZoneType/ZoneStatus afterward with `ezb_zcl_set_attr_value()`. Root cause is not yet proven between server-side attribute exposure and the coordinator read-attributes request/response path.
+The earlier `v23` failure was diagnostic evidence, not a storage/rejoin failure: rejoin itself succeeded with `factory_new=0`, but the coordinator did not refresh IAS CIE state when the device returned with the same short address. Commit `109a01f32d3bbc5c2ce2799ccbc8946a717b0e7a` fixes that exact lifecycle gap without resetting the whole discovery registry.
 
-Next chat: inspect the exact IAS server config/attribute registration and coordinator `DISCOVERY_READ_IAS_ZONE_TYPE` request+callback path, make the smallest evidence-driven fix, then rerun fresh-network dual-C6 E2E until remote ZoneType `0x0015` is read and normalized `CONTACT_OPEN` false/true toggles are observed. Then verify restart/rejoin persistence and freeze the next Zigbee-lab baseline.
+Do not repeat investigation of `zb_storage`, `esp_zigbee_start(false)`, ZoneType datatype, enrollment API, RestoreNotify semantics, or same-short rejoin unless a later code change creates new regression evidence.
 
-Verified hardware identities; always re-resolve live ports from serial before hardware writes:
+Verified hardware identities; always re-resolve live ports from serial before hardware access:
+
 - coordinator C6 serial `40:4C:CA:5D:0A:00`;
 - emulator C6 serial `40:4C:CA:5D:01:D8`.
 
@@ -163,32 +160,9 @@ The I2C backend is host-tested and firmware-build-tested. It has **not** yet bee
 
 ## Active goal
 
-Next milestone: **build and validate the C6-only Zigbee laboratory before physically wiring the S3**. The coordinator should reach a generic, self-tested Zigbee capability baseline first, so later S3/I2C work debugs only the inter-MCU link and application integration rather than mixing those failures with Zigbee discovery/reporting defects.
+The C6-only generic Zigbee/dual-C6 IAS laboratory blocker is closed and frozen by hardware evidence. The next C6-side milestone is preparation for physical C6 ↔ S3 GatewayLink I2C validation while preserving the verified Zigbee baseline and the existing UART fallback.
 
-Do not add or solder the S3 yet. Keep UART as the known-working GatewayLink observation path while the Zigbee side is generalized and tested.
-
-Implementation progress after the generic-coordinator audit:
-
-- Phase 1 is complete: IEEE+endpoint is the only normalized Zigbee input identity, Basic manufacturer/model metadata is retained, and input descriptors refresh when model metadata becomes known.
-- Phase 2 is complete: fixed reporting/binding bitmaps were replaced with bounded records keyed by endpoint/cluster/attribute so Configure Reporting state preserves per-attribute status.
-- Phase 3 introduces the normalized capability access profile and GatewayLink v2: readable, reportable, configurable and commandable masks plus manufacturer/model metadata are carried without exposing raw Zigbee semantics to the future S3. There is intentionally no v1 shim on the active branch.
-- Phase 4 connects `SET_MEASUREMENT_POLICY` to standard Zigbee Configure Reporting through the discovery-task ownership boundary. Supported requests are correlated by `request_id`; APPLIED/CLAMPED/UNSUPPORTED/ERROR is emitted only from real validation/device-response outcomes.
-- Phase 5 adds normalized writable On/Off over GatewayLink v2. `COMMAND_RESULT=TRANSMITTED` is emitted only from the ezbee AF confirmation callback; the later normalized On/Off measurement remains authoritative device state.
-- Phase 6 adds normalized Level Control: CurrentLevel is normalized to percent and `SET_LEVEL` maps to standard `MoveToLevel` without implicit On/Off side effects.
-- The second-C6 emulator and core deterministic profiles are implemented. Physical commissioning passes through IAS cluster discovery; the current blocker is remote IAS ZoneType read before CONTACT_OPEN normalization can complete.
-
-Execution order:
-
-1. audit the current coordinator against the Generic Zigbee Device Interview & Capability Discovery goal below;
-2. implement a separate second-C6 Zigbee end-device emulator/test application without contaminating the production coordinator image;
-3. make standard endpoint/cluster discovery, capability normalization, bind/reporting setup, commands, and configuration results generic where ZCL allows it;
-4. build a deterministic self-check loop using the coordinator C6 plus emulator C6, with host/UART observation of normalized GatewayLink output;
-5. exercise happy paths, rejoin/identity changes, sleepy behavior, reporting policy, command round-trips, malformed/unsupported cases, and bounded-failure behavior;
-6. keep the real SONOFF SNZB-02D and local SCD4x as real-world regressions while the emulator drives systematic coverage;
-7. run host tests plus dual-C6 hardware regression/soak and freeze a new verified Zigbee-lab baseline;
-8. only after that freeze, proceed to physical C6 ↔ S3 I2C integration.
-
-Before automating tests with two attached ESP32-C6 boards, verify or define distinct Local Agent hardware resource identities so coordinator and emulator ownership cannot be confused. Do not guess resource names from this document.
+Do not modify an S3 repository from this bound C6 context. Any S3 implementation requires its own correctly bound repository session. C6-side work must continue to preserve local SCD4x operation, Zigbee coordinator reliability, bounded missing-peer behavior, and the fresh-network/preserved-rejoin IAS gates above.
 
 ### Deferred physical C6 ↔ S3 milestone
 
@@ -209,7 +183,9 @@ Do not delete the UART backend. UART remains the known-working fallback/diagnost
 
 A later cleanup may split logical packet encoding from UART-specific COBS stream framing more strictly, but do not perform that refactor merely as a prerequisite for the first physical I2C validation unless evidence shows it is necessary.
 
-## Active milestone — Generic Zigbee Device Interview & Capability Discovery
+## Completed milestone — Generic Zigbee Device Interview & Capability Discovery
+
+The current dual-C6 baseline closes the IAS Contact blocker required for this milestone. The detailed design notes below remain as the capability/discovery contract and regression scope.
 
 Before physical C6↔S3 wiring, the next major C6 feature is **Generic Zigbee Device Interview & Capability Discovery**. The goal is to stop treating supported devices as model-specific special cases wherever standard ZCL metadata is sufficient.
 

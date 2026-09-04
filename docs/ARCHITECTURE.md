@@ -32,6 +32,8 @@ The ESP32-C6 firmware is intentionally split into a small SDK-facing shell and h
 
 `DEVICE_AUTHORIZED` is logged separately so hardware tests can distinguish successful authorization from early unsecure-join updates. This rule prevents discovery/bind/reporting traffic from racing the security handshake on sleepy end devices while retaining IEEE-first identity and generation-safe route replacement.
 
+A secure/Trust-Center rejoin may legitimately return with the same 16-bit short address. That must still be treated as a lifecycle transition for protocol state that the end device reconstructs at boot. For a previously identified IAS Contact endpoint, the gateway refreshes the IAS CIE write/enrollment path on `DEVICE_REJOIN` even when full endpoint discovery is already claimed for the unchanged route. This is a bounded targeted refresh: it does not discard IEEE identity, duplicate the complete discovery flow, or make the short address an application identity.
+
 ## Invariants
 
 IEEE identity is authoritative; 16-bit Zigbee short addresses are mutable routes. Async work must use generation-safe device references so a recycled slot or reused short address cannot be mistaken for the old device.
