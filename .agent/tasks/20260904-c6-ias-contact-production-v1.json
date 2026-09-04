@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-ias-contact-production-v1",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": true,
+  "resources": [],
+  "memory_limit_mb": 4096,
+  "command_timeout": 5400,
+  "idle_timeout": 600,
+  "task_timeout": 7200,
+  "commands": [
+    "git fetch origin agent-control && git show origin/agent-control:.agent/scripts/20260904-c6-ias-contact-production-v1.sh > /tmp/c6-ias-contact-production-v1.sh && bash /tmp/c6-ias-contact-production-v1.sh"
+  ]
+}
