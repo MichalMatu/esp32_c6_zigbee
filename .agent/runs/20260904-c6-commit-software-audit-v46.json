@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-commit-software-audit-v46",
+  "task_digest": "fa1975671216aeff915a1004f25aa77c56005ab6c5ff287d476000f23497a663",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T16:10:19.722398+00:00",
+  "attempt_id": "c765062d67923d7d6523e354",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 99503,
+  "updated_at": "2026-09-04T16:10:19.722572+00:00",
+  "pid": 99503
+}
