@@ -50,6 +50,7 @@
 #define ZCL_CLUSTER_IAS_ZONE 0x0500U
 #define ZCL_ATTR_IAS_ZONE_TYPE 0x0001U
 #define ZCL_ATTR_IAS_ZONE_STATUS 0x0002U
+#define ZCL_ATTR_IAS_CIE_ADDRESS 0x0010U
 #define ZCL_IAS_ZONE_TYPE_CONTACT_SWITCH 0x0015U
 
 typedef enum {
@@ -57,6 +58,7 @@ typedef enum {
     DISCOVERY_SIMPLE_DESCRIPTOR,
     DISCOVERY_READ_BASIC,
     DISCOVERY_READ_IAS_ZONE_TYPE,
+    DISCOVERY_WRITE_IAS_CIE,
     DISCOVERY_BIND_CLUSTER,
     DISCOVERY_CONFIG_REPORTING,
     DISCOVERY_EXTERNAL_REPORTING,
@@ -551,6 +553,11 @@ static void apply_ias_zone_type(
         (!state->input_announced || new_readable != old_readable)) {
         (void)publish_generic_input(slot, state, true);
     }
+    if (!queue_job(
+            DISCOVERY_WRITE_IAS_CIE, slot, state->endpoint,
+            ZCL_CLUSTER_IAS_ZONE, 0U)) {
+        gateway_event_warning(&slot->device, "IAS CIE write queue full");
+    }
     if (state->ias_zone_status_valid) {
         (void)publish_ias_contact_measurement(
             slot, state, state->ias_zone_status);
@@ -594,6 +601,45 @@ static void publish_ias_zone_type_read(
     if (seen) {
         state->ias_zone_type_read_requested = false;
         gateway_event_warning(&slot->device, "IAS ZoneType read failed");
+    }
+}
+
+static void handle_ias_zone_enroll(
+    ezb_zcl_ias_zone_enroll_req_message_t *message)
+{
+    if (message == NULL) {
+        return;
+    }
+    message->out.result = EZB_ZCL_STATUS_SUCCESS;
+    const ezb_zcl_cmd_hdr_t *header = message->in.header;
+    if (header == NULL || message->info.dst_ep != GATEWAY_ENDPOINT ||
+        header->cluster_id != ZCL_CLUSTER_IAS_ZONE) {
+        return;
+    }
+    device_slot_t *slot = recover_report_source(header);
+    endpoint_state_t *state =
+        slot == NULL ? NULL : endpoint_state(slot, header->src_ep, false);
+    if (slot == NULL || state == NULL) {
+        return;
+    }
+    const device_ref_t ref = gateway_device_ref_for(slot);
+    const size_t endpoint_index = (size_t)(state - slot->endpoints);
+    const uint8_t zone_id = (uint8_t)(
+        (size_t)ref.index * GATEWAY_MAX_ENDPOINTS_PER_DEVICE + endpoint_index);
+    const ezb_zcl_ias_zone_enroll_rsp_cmd_t response = {
+        .cmd_ctrl = {
+            .dst_addr = EZB_ADDRESS_SHORT(slot->device.short_addr),
+            .dst_ep = header->src_ep,
+            .src_ep = GATEWAY_ENDPOINT,
+            .dis_default_rsp = false,
+        },
+        .payload = {
+            .enroll_rsp_code = EZB_ZCL_IAS_ZONE_ENROLL_RESPONSE_CODE_SUCCESS,
+            .zone_id = zone_id,
+        },
+    };
+    if (ezb_zcl_ias_zone_enroll_cmd_resp(&response) != EZB_ERR_NONE) {
+        gateway_event_warning(&slot->device, "IAS enroll response failed");
     }
 }
 
@@ -883,6 +929,8 @@ static void zcl_core_action_handler(
     } else if (callback_id == EZB_ZCL_CORE_READ_ATTR_RSP_CB_ID) {
         publish_basic_read(message);
         publish_ias_zone_type_read(message);
+    } else if (callback_id == EZB_ZCL_CORE_IAS_ZONE_ENROLL_CB_ID) {
+        handle_ias_zone_enroll(message);
     } else if (callback_id == EZB_ZCL_CORE_IAS_ZONE_STATUS_CHANGE_NOTIF_CB_ID) {
         handle_ias_zone_status_change(message);
     } else if (callback_id == EZB_ZCL_CORE_CONFIG_REPORT_RSP_CB_ID) {
@@ -1187,6 +1235,31 @@ static bool submit_ias_zone_type(device_slot_t *slot, const discovery_job_t *job
         .payload = {.attr_number = 1U, .attr_field = attrs},
     };
     return ezb_zcl_read_attr_cmd_req(&request) == EZB_ERR_NONE;
+}
+
+static bool submit_ias_cie(device_slot_t *slot, const discovery_job_t *job)
+{
+    ezb_extaddr_t coordinator;
+    ezb_nwk_get_extended_address(&coordinator);
+    ezb_zcl_attribute_t attr = {
+        .id = ZCL_ATTR_IAS_CIE_ADDRESS,
+        .data = {
+            .type = EZB_ZCL_ATTR_TYPE_EUI64,
+            .size = sizeof(coordinator.u8),
+            .value = coordinator.u8,
+        },
+    };
+    const ezb_zcl_write_attr_cmd_t request = {
+        .cmd_ctrl = {
+            .dst_addr = EZB_ADDRESS_SHORT(slot->device.short_addr),
+            .dst_ep = job->endpoint,
+            .src_ep = GATEWAY_ENDPOINT,
+            .cluster_id = ZCL_CLUSTER_IAS_ZONE,
+            .manuf_code = EZB_ZCL_STD_MANUF_CODE,
+        },
+        .payload = {.attr_number = 1U, .attr_field = &attr},
+    };
+    return ezb_zcl_write_attr_cmd_req(&request) == EZB_ERR_NONE;
 }
 
 static bool submit_binding(device_slot_t *slot, const discovery_job_t *job)
@@ -1547,6 +1620,7 @@ static void discovery_task(void *arg)
             job.kind == DISCOVERY_SIMPLE_DESCRIPTOR ? submit_simple(slot, &job) :
             job.kind == DISCOVERY_READ_BASIC ? submit_basic(slot, &job) :
             job.kind == DISCOVERY_READ_IAS_ZONE_TYPE ? submit_ias_zone_type(slot, &job) :
+            job.kind == DISCOVERY_WRITE_IAS_CIE ? submit_ias_cie(slot, &job) :
             job.kind == DISCOVERY_BIND_CLUSTER ? submit_binding(slot, &job) :
             submit_reporting(slot, &job);
         esp_zigbee_lock_release();
