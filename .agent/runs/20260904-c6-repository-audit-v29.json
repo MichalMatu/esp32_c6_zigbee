@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-repository-audit-v29",
+  "task_digest": "d67d910ab26abe08d13a88f75d358f9048235cb999f6e4a49a8717facc96c84a",
+  "idle_timeout": 300,
+  "task_timeout": 5400,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T13:38:44.956086+00:00",
+  "attempt_id": "a113075a0289fba6ac098b4e",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 80504,
+  "updated_at": "2026-09-04T13:38:44.956222+00:00",
+  "pid": 80504
+}
