@@ -1,14 +1,13 @@
 {
-  "event": "task_started",
+  "event": "task_finished",
   "task_id": "20260904-c6-ias-zone-notif-api-v6",
   "task_digest": "d366bd3096fb53945cd72fd3ee963062761f35ec7d4512f834c75cbf92448f4b",
-  "idle_timeout": 120,
-  "task_timeout": 600,
-  "memory_limit_mb": 1024,
-  "started_at": "2026-09-04T04:00:24.590773+00:00",
+  "status": "done",
+  "failure_reason": null,
+  "finished_at": "2026-09-04T04:00:26.396415+00:00",
   "attempt_id": "c51297ba2c9ac4125adf5ade",
   "daemon_version": "4.15.0",
   "daemon_pid": 84458,
-  "updated_at": "2026-09-04T04:00:24.590890+00:00",
+  "updated_at": "2026-09-04T04:00:26.633892+00:00",
   "pid": 84458
 }
