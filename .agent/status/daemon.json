@@ -2,8 +2,8 @@
   "version": 1,
   "daemon_version": "4.15.0",
   "state": "idle",
-  "pid": 73578,
-  "updated_at": "2026-09-04T03:02:34.406119+00:00",
+  "pid": 77585,
+  "updated_at": "2026-09-04T03:07:42.306952+00:00",
   "self_revision": "c8251967dcd0b90fe26f14392eb56a67e39d542a",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -23,8 +23,7 @@
   "default_branch": "main",
   "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
   "execution_model": "multi_repository_worker",
-  "worker_pid": 73578,
+  "worker_pid": 77585,
   "supervisor_pid": 23848,
-  "last_task_id": "20260904-c6-ias-zonetype-read-diagnose-v1",
   "execution_variant": "parallel"
 }
