@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-upgrade-codex-cask-v36",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": ["machine"],
+  "memory_limit_mb": 1024,
+  "command_timeout": 1800,
+  "idle_timeout": 300,
+  "task_timeout": 2400,
+  "commands": [
+    "set -euo pipefail\necho BEFORE=$(codex --version)\nbrew uninstall --formula codex\nbrew install --cask codex\nhash -r\ncommand -v codex\necho AFTER=$(codex --version)"
+  ]
+}
