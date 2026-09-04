@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-post-refactor-hardware-v47",
+  "task_digest": "37c9636b4023651d24f4bbfb935932720f90eb66af73d2a8b014afded6961c55",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T16:17:38.388564+00:00",
+  "attempt_id": "96bc1c7cf5c42a377c134ab4",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 23043,
+  "updated_at": "2026-09-04T16:17:38.388664+00:00",
+  "pid": 23043
+}
