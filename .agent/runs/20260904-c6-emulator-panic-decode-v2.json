@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-emulator-panic-decode-v2",
+  "task_digest": "4995ef8897372537bce521f666f9e55205d12897365c1cffb70b28132e1a40b8",
+  "idle_timeout": 300,
+  "task_timeout": 2400,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T02:17:04.131844+00:00",
+  "attempt_id": "fa0f5691d74dfd127cfee5c8",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 49660,
+  "updated_at": "2026-09-04T02:17:04.131991+00:00",
+  "pid": 49660
+}
