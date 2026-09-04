@@ -1,0 +1,60 @@
+{
+  "id": "20260904-c6-ias-restore-notify-fix-v21",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": true,
+  "started_at": "2026-09-04T05:25:57.919788+00:00",
+  "command_timeout": 1200,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\nBRANCH=integration/c6-s3-i2c-20260903\nEXPECTED=3b331791d6ea2a372f42dd4cb3746af26441cd29\ngit fetch origin \"$BRANCH\"\ntest \"$(git rev-parse origin/$BRANCH)\" = \"$EXPECTED\"\ngit checkout -B \"$BRANCH\" \"origin/$BRANCH\"\ngit reset --hard \"origin/$BRANCH\"\npython3 - <<'PY'\nfrom pathlib import Path\np=Path('tests/zigbee_device_emulator/main/emulator_main.c')\ns=p.read_text()\nrepls=[\n('    uint16_t zone_status = 0U;','    uint16_t zone_status = EZB_ZCL_IAS_ZONE_ZONE_STATUS_RESTORE_NOTIFY;'),\n('    uint16_t ias_zone_status = 0U;','    uint16_t ias_zone_status = EZB_ZCL_IAS_ZONE_ZONE_STATUS_RESTORE_NOTIFY;'),\n('            ias_zone_status = ias_zone_status == 0U ?\\n                EZB_ZCL_IAS_ZONE_ZONE_STATUS_ALARM1 : 0U;','            ias_zone_status ^= EZB_ZCL_IAS_ZONE_ZONE_STATUS_ALARM1;')\n]\nfor old,new in repls:\n    if s.count(old) != 1:\n        raise SystemExit(f'expected exactly one match: {old!r}, got {s.count(old)}')\n    s=s.replace(old,new,1)\np.write_text(s)\nPY\ngit diff --check\npython3 tests/host/test_no_embedded_nul.py\n. ~/esp/esp-idf-v5.5.4/export.sh >/dev/null\ncd tests/zigbee_device_emulator\nrm -f sdkconfig sdkconfig.old; rm -rf build\nidf.py set-target esp32c6 >/dev/null\npython3 - <<'PY'\nfrom pathlib import Path\np=Path('sdkconfig')\ns=p.read_text()\nold='CONFIG_EMULATOR_PROFILE_MIXED=y'\nnew='# CONFIG_EMULATOR_PROFILE_MIXED is not set\\nCONFIG_EMULATOR_PROFILE_IAS_CONTACT=y'\nif s.count(old) != 1:\n    raise SystemExit(f'mixed profile default count={s.count(old)}')\np.write_text(s.replace(old,new,1))\nPY\nidf.py reconfigure >/dev/null\nidf.py build >/dev/null\ncd ../..\ngit checkout -- tests/zigbee_device_emulator/dependencies.lock 2>/dev/null || true\ngit add tests/zigbee_device_emulator/main/emulator_main.c\ngit diff --cached --check\ngit commit -m 'Preserve IAS restore notifications'\nFIX_HEAD=$(git rev-parse HEAD)\ngit push --verbose origin HEAD:refs/heads/$BRANCH\necho IAS_RESTORE_NOTIFY_FIX_HEAD=$FIX_HEAD\ngit status --short",
+      "exit_code": 0,
+      "output": "From https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            integration/c6-s3-i2c-20260903 -> FETCH_HEAD\nSwitched to and reset branch 'integration/c6-s3-i2c-20260903'\nbranch 'integration/c6-s3-i2c-20260903' set up to track 'origin/integration/c6-s3-i2c-20260903'.\nYour branch is up to date with 'origin/integration/c6-s3-i2c-20260903'.\nHEAD is now at 3b33179 Run roundtrip worker for IAS emulator\ntext source NUL scan passed\nActivating ESP-IDF 5.5\nSetting IDF_PATH to '/Users/michal/esp/esp-idf'.\n* Checking python version ... 3.13.9\n* Checking python dependencies ... OK\n* Deactivating the current ESP-IDF environment (if any) ... OK\n* Establishing a new ESP-IDF environment ... OK\n* Identifying shell ... bash\n* Detecting outdated tools in system ... OK - no outdated tools found\n* Shell completion ... Autocompletion code generated\n[integration/c6-s3-i2c-20260903 68a066f] Preserve IAS restore notifications\n 1 file changed, 3 insertions(+), 4 deletions(-)\nPushing to https://github.com/MichalMatu/esp32_c6_zigbee.git\nPOST git-receive-pack (802 bytes)\nTo https://github.com/MichalMatu/esp32_c6_zigbee.git\n   3b33179..68a066f  HEAD -> integration/c6-s3-i2c-20260903\nupdating local tracking ref 'refs/remotes/origin/integration/c6-s3-i2c-20260903'\nIAS_RESTORE_NOTIFY_FIX_HEAD=68a066f546eed8307447a3ee59562b88a19823ca\n",
+      "elapsed_seconds": 48.009,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 4096,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 146.75,
+      "output_policy": "stream",
+      "captured_output_chars": 1330,
+      "output_truncated": false,
+      "current_rss_mb": 17.69,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 48.009
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.091
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.082
+  },
+  "finished_at": "2026-09-04T05:26:47.480846+00:00",
+  "task_digest": "7bb0243558cf6ef5f1123fc96ba2c5fe2742b3a0aa14bb4d4823d3c6b1ccd880",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 4096,
+  "attempt_id": "3c255eac4783f33e0b27be7d",
+  "daemon_version": "4.15.0"
+}
