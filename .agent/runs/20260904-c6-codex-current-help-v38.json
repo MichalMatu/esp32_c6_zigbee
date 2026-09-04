@@ -1,14 +1,13 @@
 {
-  "event": "task_started",
+  "event": "task_finished",
   "task_id": "20260904-c6-codex-current-help-v38",
   "task_digest": "38f13f530b2233a21ad8a912626177f17744a9f0e1aa4b68f3d3259e7b6b3171",
-  "idle_timeout": 120,
-  "task_timeout": 300,
-  "memory_limit_mb": 512,
-  "started_at": "2026-09-04T13:50:54.006235+00:00",
+  "status": "done",
+  "failure_reason": null,
+  "finished_at": "2026-09-04T13:50:55.643245+00:00",
   "attempt_id": "af9330d05a086dd213481007",
   "daemon_version": "4.15.0",
   "daemon_pid": 7662,
-  "updated_at": "2026-09-04T13:50:54.006341+00:00",
+  "updated_at": "2026-09-04T13:50:55.853231+00:00",
   "pid": 7662
 }
