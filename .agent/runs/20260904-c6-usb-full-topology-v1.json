@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-usb-full-topology-v1",
+  "task_digest": "a2e147c2657fb76ce3fa927d3c0cfab3d94226f92f2c35b1569b8e423e1d9489",
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "started_at": "2026-09-04T01:25:50.288297+00:00",
+  "attempt_id": "e1a8f0a715caf11bfa2ad4a7",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 80807,
+  "updated_at": "2026-09-04T01:25:50.288540+00:00",
+  "pid": 80807
+}
