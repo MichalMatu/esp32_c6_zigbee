@@ -1,14 +1,13 @@
 {
-  "event": "task_started",
+  "event": "task_finished",
   "task_id": "20260904-c6-ias-emulator-enroll-hook-v12",
   "task_digest": "58203882fc9d39278d01f981296a4b7460c377a8cfa5ae4cad1d6110458e3ab2",
-  "idle_timeout": 120,
-  "task_timeout": 300,
-  "memory_limit_mb": 512,
-  "started_at": "2026-09-04T04:14:59.750663+00:00",
+  "status": "done",
+  "failure_reason": null,
+  "finished_at": "2026-09-04T04:15:02.653125+00:00",
   "attempt_id": "65e83874ceb60f2d23df8ef0",
   "daemon_version": "4.15.0",
   "daemon_pid": 3878,
-  "updated_at": "2026-09-04T04:14:59.758887+00:00",
+  "updated_at": "2026-09-04T04:15:02.950224+00:00",
   "pid": 3878
 }
