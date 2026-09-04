@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-ias-zone-status-notif-symbols-v2",
+  "task_digest": "558a084792ca75fcabdb040c640901c5975df8ef806229a5538dcfc06684142e",
+  "idle_timeout": 180,
+  "task_timeout": 900,
+  "memory_limit_mb": 1024,
+  "started_at": "2026-09-04T03:54:54.340224+00:00",
+  "attempt_id": "3e25e1aa3063bfaa94914c53",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 75561,
+  "updated_at": "2026-09-04T03:54:54.340325+00:00",
+  "pid": 75561
+}
