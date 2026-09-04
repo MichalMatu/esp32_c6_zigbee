@@ -1,9 +1,0 @@
-{
-  "event": "invalid_task_rejected",
-  "status": "failed",
-  "failure_reason": "invalid_task_file",
-  "updated_at": "2026-09-04T06:09:25.446332+00:00",
-  "task_id": "20260904-c6-zigbee-lab-baseline-doc-freeze-v25",
-  "daemon_version": "4.15.0",
-  "pid": 49504
-}
