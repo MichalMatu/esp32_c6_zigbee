@@ -99,14 +99,21 @@ static bool app_signal_handler(const ezb_app_signal_t *signal)
 {
     const ezb_app_signal_type_t type = ezb_app_signal_get_type(signal);
     const void *params = ezb_app_signal_get_params(signal);
-    if (type == EZB_BDB_SIGNAL_STEERING) {
+    if (type == EZB_ZDO_SIGNAL_SKIP_STARTUP) {
+        (void)ezb_bdb_start_top_level_commissioning(EZB_BDB_MODE_INITIALIZATION);
+    } else if (type == EZB_BDB_SIGNAL_STEERING) {
         const ezb_bdb_signal_simple_params_t *steering = params;
         ESP_LOGI(TAG, "network steering status=%u",
                  steering == NULL ? 0xffU : (unsigned)steering->status);
-    } else if (type == EZB_BDB_SIGNAL_DEVICE_FIRST_START) {
-        ESP_LOGI(TAG, "device first start");
-    } else if (type == EZB_BDB_SIGNAL_DEVICE_REBOOT) {
-        ESP_LOGI(TAG, "device reboot");
+    } else if (type == EZB_BDB_SIGNAL_DEVICE_FIRST_START ||
+               type == EZB_BDB_SIGNAL_DEVICE_REBOOT) {
+        const bool factory_new = ezb_bdb_is_factory_new();
+        ESP_LOGI(TAG, "device %s factory_new=%u",
+                 type == EZB_BDB_SIGNAL_DEVICE_FIRST_START ? "first start" : "reboot",
+                 (unsigned)factory_new);
+        if (factory_new) {
+            (void)ezb_bdb_start_top_level_commissioning(EZB_BDB_MODE_NETWORK_STEERING);
+        }
     }
     return false;
 }
