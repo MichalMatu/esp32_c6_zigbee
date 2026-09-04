@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-ias-emulator-enroll-hook-v12",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 512,
+  "command_timeout": 180,
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "commands": [
+    "set -euo pipefail\ntest \"$(git rev-parse HEAD)\" = 3f4d34dabd602cd38f722e3424ea94fdab977dd7\npython3 - <<'PY'\nfrom pathlib import Path\nroot=Path('managed_components/espressif__esp-zigbee-lib/include/ezbee')\nneedles=['ezb_zcl_set_attr_value_message_s','ezb_zcl_get_attr_value','ezb_zcl_ias_zone_enroll_req_cmd_s','EZB_ZCL_ATTR_IAS_ZONE_IAS_CIE_ADDRESS_ID','EZB_ZCL_ATTR_IAS_ZONE_ZONE_STATE_ID','EZB_ZCL_ATTR_IAS_ZONE_ZONE_ID_ID']\nfor p in sorted(root.rglob('*')):\n    if not p.is_file(): continue\n    lines=p.read_text(errors='ignore').splitlines()\n    hits=[i for i,l in enumerate(lines) if any(n.lower() in l.lower() for n in needles)]\n    if not hits: continue\n    print('===',p,'===')\n    spans=[]\n    for i in hits:\n        a=max(0,i-12); b=min(len(lines),i+34)\n        if spans and a<=spans[-1][1]: spans[-1]=(spans[-1][0],max(spans[-1][1],b))\n        else: spans.append((a,b))\n    for a,b in spans:\n        for j in range(a,b): print(f'{j+1:4d}: {lines[j]}')\n        print()\nPY\n"
+  ]
+}
