@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-finalize-software-audit-v44",
+  "task_digest": "79158af81ad32a72b05093adb2cd68ee63d38576630691fe89668c1f48961a91",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T16:04:31.395492+00:00",
+  "attempt_id": "88ba784177e1e96264066e56",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 80926,
+  "updated_at": "2026-09-04T16:04:31.395578+00:00",
+  "pid": 80926
+}
