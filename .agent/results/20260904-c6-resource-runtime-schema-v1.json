@@ -1,0 +1,9 @@
+{
+  "id": "20260904-c6-resource-runtime-schema-v1",
+  "status": "failed",
+  "failure_reason": "invalid_task_file",
+  "started_at": null,
+  "finished_at": "2026-09-04T00:51:46.741603+00:00",
+  "daemon_version": "4.15.0",
+  "error": "JSONDecodeError: Invalid \\escape: line 13 column 395 (char 735)"
+}
