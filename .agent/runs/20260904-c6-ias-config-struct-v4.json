@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-ias-config-struct-v4",
+  "task_digest": "7a15a3d072bf8e93913b1445ce285a28a967bd3aeb106e58160abb37194aad27",
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "memory_limit_mb": 1024,
+  "started_at": "2026-09-04T03:35:15.204060+00:00",
+  "attempt_id": "6976314a2e3633067b279e00",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 28778,
+  "updated_at": "2026-09-04T03:35:15.204209+00:00",
+  "pid": 28778
+}
