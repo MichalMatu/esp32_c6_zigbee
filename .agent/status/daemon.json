@@ -1,9 +1,9 @@
 {
   "version": 1,
   "daemon_version": "4.15.0",
-  "state": "running",
+  "state": "idle",
   "pid": 67928,
-  "updated_at": "2026-09-04T02:24:43.012117+00:00",
+  "updated_at": "2026-09-04T02:24:59.995071+00:00",
   "self_revision": "c8251967dcd0b90fe26f14392eb56a67e39d542a",
   "poll_seconds": 15,
   "self_update_seconds": 60,
@@ -14,7 +14,7 @@
   "task_timeout_default": 1800,
   "task_timeout_max": 21600,
   "memory_limit_mb_default": 4096,
-  "current_task_id": "20260904-c6-gateway-storage-pattern-v1",
+  "current_task_id": null,
   "current_attempt_id": null,
   "current_task_digest": null,
   "repository_id": "esp32-c6-zigbee",
@@ -25,6 +25,6 @@
   "execution_model": "multi_repository_worker",
   "worker_pid": 67928,
   "supervisor_pid": 23848,
-  "active_resources": [],
+  "last_task_id": "20260904-c6-gateway-storage-pattern-v1",
   "execution_variant": "parallel"
 }
