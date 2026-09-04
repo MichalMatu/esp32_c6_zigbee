@@ -1,0 +1,61 @@
+{
+  "id": "20260904-c6-emulator-strap-probe-v1",
+  "status": "failed",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-09-04T02:10:38.711702+00:00",
+  "command_timeout": 180,
+  "edits": {},
+  "commands": [
+    {
+      "command": ". ~/esp/esp-idf-v5.5.4/export.sh >/dev/null; PORT=$(python3 - <<'PY'\nfrom serial.tools import list_ports\nserial='40:4C:CA:5D:01:D8'\nm=[p for p in list_ports.comports() if p.serial_number==serial and p.vid==0x303A]\nif len(m)!=1: raise SystemExit(f'expected exactly one emulator C6, got {[p.device for p in m]}')\nprint(m[0].device)\nPY\n); echo EMU_PORT=$PORT; echo '=== STRAP DEFINITIONS ==='; grep -RniE 'GPIO_STRAP_REG|STRAP.*GPIO9|GPIO9.*STRAP|DOWNLOAD.*BOOT|BOOT.*DOWNLOAD' \"$IDF_PATH/components/soc/esp32c6\" \"$IDF_PATH/components/bootloader_support\" 2>/dev/null | head -160 || true; echo '=== RESOLVE GPIO_STRAP_REG ==='; python3 - <<'PY'\nfrom pathlib import Path\nimport re, os\nroots=[Path(os.environ['IDF_PATH'])/'components/soc/esp32c6/include/soc', Path(os.environ['IDF_PATH'])/'components/soc/esp32c6/register']\ntext='\\n'.join(p.read_text(errors='ignore') for root in roots if root.exists() for p in root.rglob('*.h'))\ndef macro(name):\n    m=re.search(r'^#define\\s+'+re.escape(name)+r'\\s+(.+)$', text, re.M)\n    return m.group(1).strip() if m else None\nprint('GPIO_STRAP_REG_EXPR='+str(macro('GPIO_STRAP_REG')))\nprint('DR_REG_GPIO_BASE_EXPR='+str(macro('DR_REG_GPIO_BASE')))\nexpr=macro('GPIO_STRAP_REG'); base=macro('DR_REG_GPIO_BASE')\naddr=None\nif expr and base:\n    bm=re.search(r'0x[0-9A-Fa-f]+', base)\n    om=re.search(r'\\+\\s*(0x[0-9A-Fa-f]+)', expr)\n    if bm and om: addr=int(bm.group(0),16)+int(om.group(1),16)\nif addr is None: raise SystemExit('could not resolve GPIO_STRAP_REG')\nprint(f'GPIO_STRAP_REG_ADDR=0x{addr:08x}')\nPath('/tmp/c6_gpio_strap_addr').write_text(hex(addr))\nPY\n; ADDR=$(cat /tmp/c6_gpio_strap_addr); echo '=== RAW STRAP REGISTER ==='; set +e; python -m esptool --chip esp32c6 -p \"$PORT\" --before no_reset --after no_reset --no-stub read_mem \"$ADDR\" 2>&1; RC=$?; set -e; echo STRAP_READ_RC=$RC",
+      "exit_code": 2,
+      "output": "Activating ESP-IDF 5.5\nSetting IDF_PATH to '/Users/michal/esp/esp-idf'.\n* Checking python version ... 3.13.9\n* Checking python dependencies ... OK\n* Deactivating the current ESP-IDF environment (if any) ... OK\n* Establishing a new ESP-IDF environment ... OK\n* Identifying shell ... bash\n* Detecting outdated tools in system ... OK - no outdated tools found\n* Shell completion ... Autocompletion code generated\nEMU_PORT=/dev/cu.usbmodem11101\n=== STRAP DEFINITIONS ===\n/Users/michal/esp/esp-idf/components/soc/esp32c6/include/soc/boot_mode.h:15:/*Download Boot, SPI(or SDIO_V2)/UART0*/\n/Users/michal/esp/esp-idf/components/soc/esp32c6/include/soc/boot_mode.h:18:/*Download Boot, SDIO/UART0/UART1,FEI_FEO V2*/\n/Users/michal/esp/esp-idf/components/soc/esp32c6/include/soc/boot_mode.h:21:/*Download Boot, SDIO/UART0/UART1,FEI_REO V2*/\n/Users/michal/esp/esp-idf/components/soc/esp32c6/include/soc/boot_mode.h:24:/*Download Boot, SDIO/UART0/UART1,REI_FEO V2*/\n/Users/michal/esp/esp-idf/components/soc/esp32c6/include/soc/boot_mode.h:27:/*Download Boot, SDIO/UART0/UART1,REI_REO V2*/\n/Users/michal/esp/esp-idf/components/soc/esp32c6/include/soc/boot_mode.h:42:#define BOOT_MODE_GET()                         (GPIO_REG_READ(GPIO_STRAP_REG))\n/Users/michal/esp/esp-idf/components/soc/esp32c6/include/soc/boot_mode.h:75:#define ETS_IS_SPI_DOWNLOAD_BOOT()              IS_0110(BOOT_MODE_GET())\n/Users/michal/esp/esp-idf/components/soc/esp32c6/include/soc/boot_mode.h:79:/*joint download boot*/\n/Users/michal/esp/esp-idf/components/soc/esp32c6/include/soc/boot_mode.h:80:#define ETS_IS_JOINT_DOWNLOAD_BOOT()                  IS_00XX(BOOT_MODE_GET())\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/efuse_reg.h:219: *  Represents whether SPI0 controller during boot_mode_download is disabled or\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/lp_aon_struct.h:73:        /** force_download_boot : R/W; bitpos: [30]; default: 0;\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/lp_aon_struct.h:76:        uint32_t force_download_boot:1;\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/gpio_reg.h:182:/** GPIO_STRAP_REG register\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/gpio_reg.h:185:#define GPIO_STRAP_REG (DR_REG_GPIO_BASE + 0x38)\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/efuse_struct.h:212:         *  Represents whether SPI0 controller during boot_mode_download is disabled or\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/gpio_struct.h:215:} gpio_strap_reg_t;\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/gpio_struct.h:573:    volatile gpio_strap_reg_t strap;\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/hp_system_struct.h:28:         *  Set this bit as 1 to enable mspi xts auto decrypt in download boot mode.\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/hp_system_struct.h:32:         *  Set this bit as 1 to enable mspi xts manual encrypt in download boot mode.\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/hp_system_reg.h:33: *  Set this bit as 1 to enable mspi xts auto decrypt in download boot mode.\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/hp_system_reg.h:40: *  Set this bit as 1 to enable mspi xts manual encrypt in download boot mode.\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/lp_aon_reg.h:174:/** LP_AON_FORCE_DOWNLOAD_BOOT : R/W; bitpos: [30]; default: 0;\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/lp_aon_reg.h:177:#define LP_AON_FORCE_DOWNLOAD_BOOT    (BIT(30))\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/lp_aon_reg.h:178:#define LP_AON_FORCE_DOWNLOAD_BOOT_M  (LP_AON_FORCE_DOWNLOAD_BOOT_V << LP_AON_FORCE_DOWNLOAD_BOOT_S)\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/lp_aon_reg.h:179:#define LP_AON_FORCE_DOWNLOAD_BOOT_V  0x00000001U\n/Users/michal/esp/esp-idf/components/soc/esp32c6/register/soc/lp_aon_reg.h:180:#define LP_AON_FORCE_DOWNLOAD_BOOT_S  30\n/Users/michal/esp/esp-idf/components/bootloader_support/src/flash_encryption/flash_encrypt.c:326:        // Burning WR_DIS_CRYPT_CNT, blocks further changing of eFuses: DOWNLOAD_DIS_MANUAL_ENCRYPT, SPI_BOOT_CRYPT_CNT, [XTS_KEY_LENGTH_256], SECURE_BOOT_EN.\n/Users/michal/esp/esp-idf/components/bootloader_support/src/flash_encrypt.c:208:    // Burning WR_DIS_CRYPT_CNT, blocks further changing of eFuses: DIS_DOWNLOAD_MANUAL_ENCRYPT, SPI_BOOT_CRYPT_CNT, [XTS_KEY_LENGTH_256], SECURE_BOOT_EN.\n/Users/michal/esp/esp-idf/components/bootloader_support/src/flash_encrypt.c:347:        ESP_LOGW(TAG, \"Not disabled UART bootloader encryption (set DIS_DOWNLOAD_MANUAL_ENCRYPT->1)\");\n/Users/michal/esp/esp-idf/components/bootloader_support/src/flash_encrypt.c:354:        ESP_LOGW(TAG, \"Not disabled UART bootloader Dcache (set DIS_DOWNLOAD_DCACHE->1)\");\n/Users/michal/esp/esp-idf/components/bootloader_support/src/flash_encrypt.c:362:        ESP_LOGW(TAG, \"Not disabled UART bootloader download mspi (set DIS_DOWNLOAD_MSPI->1)\");\n/Users/michal/esp/esp-idf/components/bootloader_support/src/flash_encrypt.c:369:        ESP_LOGW(TAG, \"Not disabled UART bootloader cache (set DIS_DOWNLOAD_ICACHE->1)\");\n/Users/michal/esp/esp-idf/components/bootloader_support/src/esp32s2/flash_encryption_secure_features.c:55:    // DIS_FORCE_DOWNLOAD, DIS_USB, DIS_TWAI, DIS_BOOT_REMAP, SOFT_DIS_JTAG,\n=== RESOLVE GPIO_STRAP_REG ===\nGPIO_STRAP_REG_EXPR=(DR_REG_GPIO_BASE + 0x38)\nDR_REG_GPIO_BASE_EXPR=0x60091000\nGPIO_STRAP_REG_ADDR=0x60091038\n/bin/sh: -c: line 27: syntax error near unexpected token `;'\n/bin/sh: -c: line 27: `; ADDR=$(cat /tmp/c6_gpio_strap_addr); echo '=== RAW STRAP REGISTER ==='; set +e; python -m esptool --chip esp32c6 -p \"$PORT\" --before no_reset --after no_reset --no-stub read_mem \"$ADDR\" 2>&1; RC=$?; set -e; echo STRAP_READ_RC=$RC'\n",
+      "elapsed_seconds": 2.727,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 512,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 4.95,
+      "output_policy": "stream",
+      "captured_output_chars": 5867,
+      "output_truncated": false,
+      "current_rss_mb": 4.95,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "failed",
+      "elapsed_seconds": 2.727
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.066
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.066
+  },
+  "failure_reason": "command_failed",
+  "finished_at": "2026-09-04T02:10:42.996807+00:00",
+  "task_digest": "412ca255db504f263f1dc4e9b1dcbed37d343c400dcdfe2af401972bd1eb14bd",
+  "idle_timeout": 180,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "attempt_id": "321c5f12e462dde9163c9807",
+  "daemon_version": "4.15.0"
+}
