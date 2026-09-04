@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-docs-golden-standard-recover-v65",
+  "task_digest": "4d71a1a16cc9ee57ea6734b34dc6581519a1db8011a8651be4ec3950fc43e538",
+  "idle_timeout": 600,
+  "task_timeout": 5400,
+  "memory_limit_mb": 2048,
+  "started_at": "2026-09-04T20:57:08.859631+00:00",
+  "attempt_id": "9af5e7a78ecb1c08c7878fe7",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 88021,
+  "updated_at": "2026-09-04T20:57:08.859763+00:00",
+  "pid": 88021
+}
