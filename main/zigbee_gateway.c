@@ -1661,6 +1661,17 @@ static void announce_and_discover(
         event.data.rejoin.new_short_addr = slot->device.short_addr;
     }
     gateway_event_publish(&event);
+    if (kind == GATEWAY_EVENT_DEVICE_REJOIN) {
+        for (size_t i = 0U; i < GATEWAY_MAX_ENDPOINTS_PER_DEVICE; ++i) {
+            endpoint_state_t *state = &slot->endpoints[i];
+            if (state->in_use && state->ias_zone_type_known &&
+                !queue_job(
+                    DISCOVERY_WRITE_IAS_CIE, slot, state->endpoint,
+                    ZCL_CLUSTER_IAS_ZONE, 0U)) {
+                gateway_event_warning(&slot->device, "IAS CIE rejoin refresh queue full");
+            }
+        }
+    }
     if (slot->discovery_short_addr != slot->device.short_addr &&
         !schedule_active_discovery(slot)) {
         gateway_event_warning(&slot->device, "active endpoint queue full");
