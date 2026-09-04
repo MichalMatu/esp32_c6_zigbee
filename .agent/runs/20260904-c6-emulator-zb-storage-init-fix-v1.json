@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-emulator-zb-storage-init-fix-v1",
+  "task_digest": "f8f6e4fd84f4ef8d2e79308b97ed27ac018d7a57492406e576ec23c55ef32edc",
+  "idle_timeout": 300,
+  "task_timeout": 3000,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T02:26:29.192054+00:00",
+  "attempt_id": "eb981d46da6eb0dfef99ab3d",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 69890,
+  "updated_at": "2026-09-04T02:26:29.192256+00:00",
+  "pid": 69890
+}
