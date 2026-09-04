@@ -583,7 +583,7 @@ static void publish_ias_zone_type_read(
         }
         seen = true;
         if (item->status == EZB_ZCL_STATUS_SUCCESS &&
-            item->attr_type == EZB_ZCL_ATTR_TYPE_UINT16 &&
+            item->attr_type == EZB_ZCL_ATTR_TYPE_ENUM16 &&
             item->attr_value != NULL) {
             uint16_t zone_type = 0U;
             memcpy(&zone_type, item->attr_value, sizeof(zone_type));
