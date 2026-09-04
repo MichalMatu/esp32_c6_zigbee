@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-final-freeze-tag-v60",
+  "task_digest": "ecd286dec89c494b170830151670ca145fbadd2b131c3a96a14092d7ba6bf7bc",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 1024,
+  "started_at": "2026-09-04T20:27:13.031058+00:00",
+  "attempt_id": "9770be411b1fab4c4944fd92",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 67869,
+  "updated_at": "2026-09-04T20:27:13.031245+00:00",
+  "pid": 67869
+}
