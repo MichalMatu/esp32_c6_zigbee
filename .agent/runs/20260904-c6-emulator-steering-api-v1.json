@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-emulator-steering-api-v1",
+  "task_digest": "b02af80a3f733609313856873aacd22d3b1426016b54e611fd6df3568a4c2745",
+  "idle_timeout": 180,
+  "task_timeout": 900,
+  "memory_limit_mb": 2048,
+  "started_at": "2026-09-04T02:41:27.677672+00:00",
+  "attempt_id": "0128f3ca32eb381ae4255be4",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 8462,
+  "updated_at": "2026-09-04T02:41:27.677769+00:00",
+  "pid": 8462
+}
