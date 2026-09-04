@@ -1,0 +1,60 @@
+{
+  "id": "20260904-c6-migration-readiness-recover-v54",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": true,
+  "started_at": "2026-09-04T19:41:35.539500+00:00",
+  "command_timeout": 7200,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\ngit fetch origin agent-control\ngit show FETCH_HEAD:.agent/scripts/20260904-c6-migration-readiness-recover-v54.sh > /tmp/c6_migration_readiness_recover_v54.sh\nchmod +x /tmp/c6_migration_readiness_recover_v54.sh\n/tmp/c6_migration_readiness_recover_v54.sh",
+      "exit_code": 0,
+      "output": "From https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            agent-control -> FETCH_HEAD\n   6a917c9..67af9f4  agent-control -> origin/agent-control\nFrom https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            integration/c6-s3-i2c-20260903 -> FETCH_HEAD\nSwitched to and reset branch 'integration/c6-s3-i2c-20260903'\nbranch 'integration/c6-s3-i2c-20260903' set up to track 'origin/integration/c6-s3-i2c-20260903'.\nYour branch is up to date with 'origin/integration/c6-s3-i2c-20260903'.\nHEAD is now at 5801964 Record post-refactor C6 hardware validation\n=== DIFF / READINESS ===\n[migration] root=/Users/michal/agent-workspace/repos/esp32-c6-zigbee/work\n[migration] manifest PASS\n[host] source-hygiene\ntext source NUL scan passed\n[host] discovery-claim-source\ndiscovery claim source invariant: PASS\n[host] zcl\ngateway_zcl_value host tests passed\n[host] device-state\ngateway_device_state host tests passed\n[host] inputs\ngateway_inputs host tests passed\n[host] zigbee-input\ngateway_zigbee_input host tests passed\n[host] command-policy\ngateway_command_policy host tests passed\n[host] link-protocol\ngateway_link_protocol host tests passed\n[host] link-event-adapter\ngateway_link_event_adapter host tests passed\n[host] link-stream\ngateway_link_stream host tests passed\n[host] link-snapshot-cache\ngateway_link_snapshot_cache host tests passed\n[host] link-control\ngateway_link_control host tests passed\n[host] link-e2e\ngateway_link virtual S3 E2E host tests passed\n[host] reporting-policy\ngateway_reporting_policy host tests passed\n[host] i2c-mailbox\ngateway_i2c_mailbox host tests passed\n[host] all tests passed\n[migration] readiness PASS\n=== ESP-IDF ===\nActivating ESP-IDF 5.5\nSetting IDF_PATH to '/Users/michal/esp/esp-idf'.\n* Checking python version ... 3.13.9\n* Checking python dependencies ... OK\n* Deactivating the current ESP-IDF environment (if any) ... OK\n* Establishing a new ESP-IDF environment ... OK\n* Identifying shell ... bash\n* Detecting outdated tools in system ... OK - no outdated tools found\n* Shell completion ... Autocompletion code generated\n=== UART BUILD ===\nUART_BUILD=PASS\n=== I2C BUILD ===\nI2C_BUILD=PASS\n=== EMULATOR BUILD ===\nEMULATOR_BUILD=PASS\n[migration] root=/Users/michal/agent-workspace/repos/esp32-c6-zigbee/work\n[migration] manifest PASS\n[host] source-hygiene\ntext source NUL scan passed\n[host] discovery-claim-source\ndiscovery claim source invariant: PASS\n[host] zcl\ngateway_zcl_value host tests passed\n[host] device-state\ngateway_device_state host tests passed\n[host] inputs\ngateway_inputs host tests passed\n[host] zigbee-input\ngateway_zigbee_input host tests passed\n[host] command-policy\ngateway_command_policy host tests passed\n[host] link-protocol\ngateway_link_protocol host tests passed\n[host] link-event-adapter\ngateway_link_event_adapter host tests passed\n[host] link-stream\ngateway_link_stream host tests passed\n[host] link-snapshot-cache\ngateway_link_snapshot_cache host tests passed\n[host] link-control\ngateway_link_control host tests passed\n[host] link-e2e\ngateway_link virtual S3 E2E host tests passed\n[host] reporting-policy\ngateway_reporting_policy host tests passed\n[host] i2c-mailbox\ngateway_i2c_mailbox host tests passed\n[host] all tests passed\n[migration] readiness PASS\n[integration/c6-s3-i2c-20260903 5ce963d] Prepare C6 module for LiteGraph migration\n 8 files changed, 189 insertions(+)\n create mode 100644 docs/LITEGRAPH_MIGRATION.md\n create mode 100644 docs/README.md\n create mode 100644 module.json\n create mode 100755 scripts/verify_migration_ready.sh\nTo https://github.com/MichalMatu/esp32_c6_zigbee.git\n   5801964..5ce963d  HEAD -> integration/c6-s3-i2c-20260903\nMIGRATION_READY_SOFTWARE_HEAD=5ce963d6ee3b03b9b788f9d02bd9acb4910acead\n",
+      "elapsed_seconds": 116.901,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 4096,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 160.38,
+      "output_policy": "stream",
+      "captured_output_chars": 3712,
+      "output_truncated": false,
+      "current_rss_mb": 17.8,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 116.901
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.073
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.068
+  },
+  "finished_at": "2026-09-04T19:43:34.013702+00:00",
+  "task_digest": "7b087d101ba797b3231a3ddb47c0c4e6c34c61506ac7e25b93176805e72498ca",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "attempt_id": "4202c66a3d9469522760ae1c",
+  "daemon_version": "4.15.0"
+}
