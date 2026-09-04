@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-final-freeze-tag-v60",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": true,
+  "resources": [],
+  "memory_limit_mb": 1024,
+  "command_timeout": 900,
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "commands": [
+    "set -euo pipefail\nBRANCH='integration/c6-s3-i2c-20260903'\nHEAD_EXPECTED='067fa6f744f5e28233eb5b267edd7d6daa262c2c'\nRUNTIME_BASE='5ce963d6ee3b03b9b788f9d02bd9acb4910acead'\nTAG='c6-litegraph-migration-ready-2026-09-04'\ngit fetch origin \"$BRANCH\"\ngit checkout -B \"$BRANCH\" \"origin/$BRANCH\"\ntest \"$(git rev-parse HEAD)\" = \"$HEAD_EXPECTED\"\ntest -z \"$(git status --short)\"\nCHANGED_RUNTIME=\"$(git diff --name-only \"$RUNTIME_BASE\" \"$HEAD_EXPECTED\" -- CMakeLists.txt dependencies.lock main partitions.csv sdkconfig.defaults tests/host tests/zigbee_device_emulator scripts/run_host_tests.sh .github/workflows/quality.yml)\"\ntest -z \"$CHANGED_RUNTIME\"\nif git ls-remote --exit-code --tags origin \"refs/tags/$TAG\" >/dev/null 2>&1; then\n  echo \"tag already exists unexpectedly: $TAG\" >&2\n  exit 20\nfi\ngit tag -a \"$TAG\" \"$HEAD_EXPECTED\" -m 'C6 LiteGraph migration-ready freeze'\ngit push origin \"refs/tags/$TAG\"\nREMOTE_TAG=\"$(git ls-remote --tags origin \"refs/tags/$TAG^{}\" | awk '{print $1}')\"\ntest \"$REMOTE_TAG\" = \"$HEAD_EXPECTED\"\necho FINAL_MIGRATION_TAG=\"$TAG\"\necho FINAL_FREEZE_HEAD=\"$HEAD_EXPECTED\"\necho HARDWARE_PROVEN_RUNTIME_SOURCE=\"$RUNTIME_BASE\"\necho FINAL_TAG_GATE=PASS"
+  ]
+}
