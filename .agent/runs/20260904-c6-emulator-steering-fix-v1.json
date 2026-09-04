@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-emulator-steering-fix-v1",
+  "task_digest": "a39a1b3b855e223406cb9ccdeecf6c0beb5790e1d3f40e957fe8679d0ca430c1",
+  "idle_timeout": 300,
+  "task_timeout": 3000,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T02:43:24.673803+00:00",
+  "attempt_id": "0227efd88180cf8d2607b6d2",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 10829,
+  "updated_at": "2026-09-04T02:43:24.673952+00:00",
+  "pid": 10829
+}
