@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-ias-zone-header-only-v4",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 512,
+  "command_timeout": 300,
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "commands": [
+    "set -euo pipefail\nEXPECTED=3d3a38885fb458d7693eab39450dad8506d504f6\ntest \"$(git rev-parse HEAD)\" = \"$EXPECTED\"\necho '=== ias_zone.h lines 1-180 ==='\nsed -n '1,180p' managed_components/espressif__esp-zigbee-lib/include/ezbee/zcl/cluster/ias_zone.h\necho '=== ias_zone_desc.h lines 1-190 ==='\nsed -n '1,190p' managed_components/espressif__esp-zigbee-lib/include/ezbee/zcl/cluster/ias_zone_desc.h\necho '=== any callable symbols containing status_change ==='\ngrep -RniE 'status_change[^;{]*\\(|STATUS_CHANGE[^;{]*\\(' managed_components/espressif__esp-zigbee-lib/include 2>/dev/null || true\necho '=== any command request APIs accepting custom/general payload ==='\ngrep -RniE -B6 -A14 'custom.*cmd.*req|cmd.*custom.*req|raw.*cmd.*req|cluster.*cmd.*req|command.*req' managed_components/espressif__esp-zigbee-lib/include/ezbee 2>/dev/null | head -500 || true\n"
+  ]
+}
