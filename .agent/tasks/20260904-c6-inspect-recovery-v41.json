@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-inspect-recovery-v41",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 1024,
+  "command_timeout": 300,
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "commands": [
+    "set -euo pipefail\necho HEAD=$(git rev-parse HEAD)\necho '=== STATUS ==='\ngit status --short\necho '=== DIFF STAT ==='\ngit diff --stat\necho '=== UNTRACKED ==='\ngit ls-files --others --exclude-standard\necho '=== RECENT FILES ==='\nls -lt main tests/host scripts 2>/dev/null | head -80 || true"
+  ]
+}
