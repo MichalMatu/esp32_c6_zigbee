@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-inspect-recovery-v41",
+  "task_digest": "4e626cb1ab6fab47893cdab5dff31b14fef4f0834c0cd8129d8f45fd0e84e19c",
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "memory_limit_mb": 1024,
+  "started_at": "2026-09-04T15:56:56.801710+00:00",
+  "attempt_id": "22619bff11ebbfea663d6b2b",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 53746,
+  "updated_at": "2026-09-04T15:56:56.801919+00:00",
+  "pid": 53746
+}
