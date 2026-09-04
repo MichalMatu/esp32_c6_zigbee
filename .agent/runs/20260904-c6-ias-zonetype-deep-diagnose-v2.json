@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-ias-zonetype-deep-diagnose-v2",
+  "task_digest": "86bb9643ea2f4fea92ca82aa1590d5e0d1c32f8fb0837e6b49d23ca9269f55b9",
+  "idle_timeout": 180,
+  "task_timeout": 900,
+  "memory_limit_mb": 2048,
+  "started_at": "2026-09-04T03:32:43.467309+00:00",
+  "attempt_id": "c50070b7bc6deb496312c236",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 26742,
+  "updated_at": "2026-09-04T03:32:43.467486+00:00",
+  "pid": 26742
+}
