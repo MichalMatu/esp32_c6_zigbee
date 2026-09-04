@@ -242,3 +242,62 @@ Verified board identities:
 - emulator C6 USB serial `40:4C:CA:5D:01:D8`.
 
 This closes the IAS Contact fresh-network plus persisted-rejoin blocker for the current Zigbee laboratory baseline. Future hardware changes must preserve these gates rather than re-opening the already resolved storage/autostart/ZoneType/enrollment investigation without new regression evidence.
+
+
+## Post-refactor dual-C6 hardware regression — 2026-09-04
+
+Task: `20260904-c6-post-refactor-hardware-v47`.
+
+Exact tested source:
+
+- `f13b293be2de6b1601d179568424e0046d6219a7` — `Refactor Zigbee gateway before S3 integration`.
+
+The task re-resolved both boards from their immutable USB serial identities and did not erase coordinator or emulator Zigbee storage. It first flashed/ran the UART-default coordinator and IAS Contact emulator, then rebuilt/flashed the coordinator with the I2C GatewayLink backend while the S3 peer remained intentionally absent, and finally restored the UART-default firmware.
+
+UART preserved-storage regression:
+
+```text
+UART_EMULATOR_PRESERVED_STORAGE=True
+UART_GATEWAY_REJOIN=True
+UART_GATEWAY_ANNOUNCE=True
+UART_IAS_CIE_WRITE=True
+UART_IAS_ENROLL=True
+UART_CONTACT_FALSE=True
+UART_CONTACT_TRUE=True
+UART_GW_NO_PANIC=True
+UART_EMU_NO_PANIC=True
+UART_NO_GATEWAY_EVENT_DROP=True
+UART_POST_REFACTOR_DUAL_C6=PASS
+```
+
+I2C missing-S3/shared-bus regression:
+
+```text
+I2C_BACKEND_SELECTED=True
+I2C_PEER_ABSENT_EXPECTED=True
+I2C_SCD4X_AVAILABLE=True
+I2C_SCD4X_CO2=True
+I2C_SCD4X_TEMPERATURE=True
+I2C_SCD4X_HUMIDITY=True
+I2C_ZIGBEE_REJOIN=True
+I2C_CONTACT_FALSE=True
+I2C_CONTACT_TRUE=True
+I2C_GW_NO_PANIC=True
+I2C_EMU_NO_PANIC=True
+I2C_NO_EVENT_DROP=True
+I2C_NO_LINK_QUEUE_DROP=True
+I2C_SCD4X_NOT_MARKED_UNAVAILABLE=True
+I2C_MISSING_S3_SHARED_BUS=PASS
+```
+
+During the I2C phase `peer=0` was expected. Missing-peer write failures increased the short-write counter, but bounded backoff/logging prevented queue loss or disruption of the shared SCD41 bus. Local CO2/temperature/humidity measurements and IAS Contact false/true measurements continued throughout the phase.
+
+Final restoration check:
+
+```text
+UART_RESTORED_FINAL_SMOKE=PASS
+HARDWARE_GATE_HEAD=f13b293be2de6b1601d179568424e0046d6219a7
+POST_REFACTOR_HARDWARE_GATE=PASS
+```
+
+This hardware gate closes the C6-side structural-refactor regression. Physical GatewayLink I2C communication with a real S3 slave remains a separate future integration gate.

@@ -53,9 +53,13 @@ On opening a new C6 chat: fetch the live active-branch HEAD and fresh `agent-con
 
 ## 2026-09-04 pre-S3 structural audit
 
-A behavior-preserving structural audit is being closed before S3 integration. The oversized Zigbee SDK boundary was split into lifecycle/public API, work/discovery, ZCL/IAS, and command modules; GatewayLink frame mechanics were split from payload codecs. Poll Control Check-In now uses the same per-route discovery claim as other discovery triggers, preventing duplicate Active Endpoint discovery for one current route. `scripts/run_host_tests.sh` is the canonical strict host-test gate. See `docs/AUDIT_2026-09-04.md` for scope and evidence.
+A behavior-preserving structural audit was completed before S3 integration. The oversized Zigbee SDK boundary was split into lifecycle/public API, work/discovery, ZCL/IAS, and command modules; GatewayLink frame mechanics were split from payload codecs. Poll Control Check-In now uses the same per-route discovery claim as other discovery triggers, preventing duplicate Active Endpoint discovery for one current route. `scripts/run_host_tests.sh` is the canonical strict host-test gate. See `docs/AUDIT_2026-09-04.md` for scope and evidence.
 
 Active development uses GatewayLink v2. v1 is retained only as a frozen recovery contract and must not be implemented by a new S3 peer.
+
+Post-refactor physical regression task `20260904-c6-post-refactor-hardware-v47` validated exact source `f13b293be2de6b1601d179568424e0046d6219a7` on both connected ESP32-C6 boards. It preserved Zigbee storage, passed IAS Contact restart/rejoin on UART, selected the I2C backend with the S3 intentionally absent while SCD41 and Zigbee remained healthy, and then restored UART with a final smoke pass. No panic, gateway-event drop, GatewayLink queue drop, or SCD4x-unavailable transition was observed.
+
+This closes the C6 structural-audit/regression phase. The remaining physical integration gap is specifically communication with a real S3 I2C slave/mailbox peer; that still cannot be closed from this C6-bound repository alone.
 
 ## Current work context
 
@@ -202,7 +206,7 @@ Missing-peer behavior is intentionally bounded:
 - backend logging is not allowed to flood;
 - common short-write warnings are throttled while counters still record failures.
 
-The I2C backend is host-tested and firmware-build-tested. It has **not** yet been physically validated against an S3 slave.
+The I2C backend is host-tested, firmware-build-tested, and physically regression-tested on the C6 with the S3 intentionally absent while sharing I2C0 with the SCD41. It has **not** yet been physically validated against an actual S3 slave.
 
 ## Active goal
 
