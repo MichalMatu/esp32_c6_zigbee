@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-usb-reprobe-v1",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 512,
+  "command_timeout": 120,
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "commands": [
+    "python3 - <<'PY'\nimport time\nfrom serial.tools import list_ports\nfor i in range(4):\n    print(f'=== SAMPLE {i} ===')\n    ports=list(list_ports.comports())\n    for p in sorted(ports,key=lambda x:x.device):\n        if p.vid == 0x303A or (p.manufacturer and 'Espressif' in p.manufacturer):\n            print(f'DEVICE={p.device} VIDPID={p.vid:04X}:{p.pid:04X} SERIAL={p.serial_number} LOCATION={p.location} MANUFACTURER={p.manufacturer} PRODUCT={p.product}')\n    time.sleep(3)\nPY"
+  ]
+}
