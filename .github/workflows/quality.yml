@@ -8,20 +8,56 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  host-tests:
+  repository-quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Run strict host tests
-        run: ./scripts/run_host_tests.sh
+      - name: Check repository quality
+        run: ./scripts/check_repository_quality.sh
 
-  firmware:
+  migration-readiness:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify migration readiness and host tests
+        run: ./scripts/verify_migration_ready.sh
+
+  firmware-uart:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: espressif/esp-idf-ci-action@v1
         with:
           esp_idf_version: v5.5.4
           target: esp32c6
-          command: idf.py build
+          command: ./scripts/ci_build_variant.sh uart
+
+  firmware-i2c:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.5.4
+          target: esp32c6
+          command: ./scripts/ci_build_variant.sh i2c
+
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.5.4
+          target: esp32c6
+          command: ./scripts/ci_build_variant.sh emulator
