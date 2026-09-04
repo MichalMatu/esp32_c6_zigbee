@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-ias-zone-status-notif-symbols-v2",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 1024,
+  "command_timeout": 600,
+  "idle_timeout": 180,
+  "task_timeout": 900,
+  "commands": [
+    "set -euo pipefail\nEXPECTED=3d3a38885fb458d7693eab39450dad8506d504f6\ntest \"$(git rev-parse HEAD)\" = \"$EXPECTED\"\nROOT=managed_components/espressif__esp-zigbee-lib/include\npython3 - <<'PY'\nfrom pathlib import Path\nroot=Path('managed_components/espressif__esp-zigbee-lib/include')\nneedles=('status_change_notif','ZONE_STATUS_CHANGE','zone_status_change','ias_zone_status')\nfor p in sorted(root.rglob('*')):\n    if not p.is_file(): continue\n    try: lines=p.read_text(errors='ignore').splitlines()\n    except Exception: continue\n    hits=[]\n    for i,l in enumerate(lines):\n        if any(n.lower() in l.lower() for n in needles): hits.append(i)\n    if not hits: continue\n    print('===',p,'===')\n    spans=[]\n    for i in hits:\n        a=max(0,i-12); b=min(len(lines),i+22)\n        if spans and a<=spans[-1][1]: spans[-1]=(spans[-1][0],max(spans[-1][1],b))\n        else: spans.append((a,b))\n    for a,b in spans:\n        for n in range(a,b): print(f'{n+1:4d}: {lines[n]}')\n        print()\nPY\necho '=== exported IAS-related functions ==='\ngrep -RnhE '^[a-zA-Z_][a-zA-Z0-9_ *]+ezb_[a-zA-Z0-9_]*(ias|zone)[a-zA-Z0-9_]*\\(' \"$ROOT\" 2>/dev/null | sort -u || true\necho '=== ESP native IAS symbols too ==='\ngrep -RniE -B8 -A20 'esp_zb.*ias.*zone|ias.*zone.*status.*change|zone.*status.*change.*cmd' managed_components/espressif__esp-zigbee-lib/include 2>/dev/null || true\n"
+  ]
+}
