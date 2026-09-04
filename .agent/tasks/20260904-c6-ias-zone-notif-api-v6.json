@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-ias-zone-notif-api-v6",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 1024,
+  "command_timeout": 300,
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "commands": [
+    "set -euo pipefail\nEXPECTED=3d3a38885fb458d7693eab39450dad8506d504f6\ntest \"$(git rev-parse HEAD)\" = \"$EXPECTED\"\npython3 - <<'PY'\nfrom pathlib import Path\nroot=Path('managed_components/espressif__esp-zigbee-lib/include')\nneedles=['zone_status_change','status_change_notif','custom_cluster_cmd','cluster_cmd_req','raw_cmd','general_cmd','ias_cie','zone_enroll']\nfor p in sorted(root.rglob('*')):\n    if not p.is_file():\n        continue\n    text=p.read_text(errors='ignore')\n    low=text.lower()\n    hits=[n for n in needles if n in low]\n    if not hits:\n        continue\n    lines=text.splitlines()\n    print('===',p,'hits',hits,'===')\n    for i,line in enumerate(lines):\n        if any(n in line.lower() for n in needles):\n            a=max(0,i-8)\n            b=min(len(lines),i+18)\n            for j in range(a,b):\n                print(f'{j+1:4d}: {lines[j]}')\n            print()\nPY\n"
+  ]
+}
