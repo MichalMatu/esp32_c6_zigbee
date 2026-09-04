@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-branch-cleanup-v61",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": true,
+  "resources": [],
+  "memory_limit_mb": 1024,
+  "command_timeout": 900,
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "commands": [
+    "set -euo pipefail\nEXPECTED='067fa6f744f5e28233eb5b267edd7d6daa262c2c'\ngit fetch origin --prune\ntest \"$(git rev-parse origin/main)\" = \"$EXPECTED\"\ntest \"$(git rev-parse origin/integration/c6-s3-i2c-20260903)\" = \"$EXPECTED\"\ngit merge-base --is-ancestor origin/agent-control-tmp-ignore origin/main\nINSPECT1=\"$(git rev-parse origin/agent-control-inspect)\"\nINSPECT2=\"$(git rev-parse origin/agent-control-inspect-2)\"\ntest \"$INSPECT1\" = \"$INSPECT2\"\ngit merge-base --is-ancestor origin/agent-control-inspect origin/agent-control\nfor b in 'integration/c6-s3-i2c-20260903' 'agent-control-tmp-ignore' 'agent-control-inspect' 'agent-control-inspect-2'; do git push origin --delete \"$b\"; done\ngit fetch origin --prune\ntest \"$(git rev-parse origin/main)\" = \"$EXPECTED\"\ngit show-ref --verify --quiet refs/remotes/origin/agent-control\nfor b in 'integration/c6-s3-i2c-20260903' 'agent-control-tmp-ignore' 'agent-control-inspect' 'agent-control-inspect-2'; do if git show-ref --verify --quiet \"refs/remotes/origin/$b\"; then echo \"branch still exists: $b\" >&2; exit 30; fi; done\necho BRANCH_CLEANUP=PASS\necho MAIN_HEAD=\"$EXPECTED\"\necho REMAINING_EXPECTED='main agent-control'"
+  ]
+}
