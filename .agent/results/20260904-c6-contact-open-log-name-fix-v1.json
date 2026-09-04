@@ -1,0 +1,60 @@
+{
+  "id": "20260904-c6-contact-open-log-name-fix-v1",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": true,
+  "started_at": "2026-09-04T03:39:26.314875+00:00",
+  "command_timeout": 1800,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail; BRANCH=integration/c6-s3-i2c-20260903; EXPECTED=3c3bb9af4cb1f35c7ff3c98dc0dd7d853ce26b4d; git fetch origin \"$BRANCH\"; test \"$(git rev-parse origin/$BRANCH)\" = \"$EXPECTED\"; git checkout -B \"$BRANCH\" \"$EXPECTED\"; git reset --hard \"$EXPECTED\"; python3 - <<'PY'\nfrom pathlib import Path\np=Path('main/gateway_transport.c')\ns=p.read_text()\nold='''        \"battery_percent\", \"mains_voltage\", \"voltage\", \"current\", \"power\", \"energy\", \"on_off\", \"level\",\n'''\nnew='''        \"battery_percent\", \"mains_voltage\", \"voltage\", \"current\", \"power\", \"energy\", \"on_off\", \"level\",\n        \"contact_open\",\n'''\nif s.count(old) != 1:\n    raise SystemExit(f'expected one measurement names tail, got {s.count(old)}')\np.write_text(s.replace(old,new))\nPY\ngit diff --check; git diff -- main/gateway_transport.c; . ~/esp/esp-idf-v5.5.4/export.sh >/dev/null; idf.py build >/dev/null; python3 tests/host/test_no_embedded_nul.py; git diff --check; test \"$(git status --short | grep -v '^?? build/' | grep -v '^?? managed_components/' | wc -l | tr -d ' ')\" = 1; git add main/gateway_transport.c; git diff --cached --check; git commit -m 'Name contact-open measurements in logs'; git push origin HEAD:\"$BRANCH\"; echo CONTACT_LOG_FIX_HEAD=$(git rev-parse HEAD)",
+      "exit_code": 0,
+      "output": "From https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            integration/c6-s3-i2c-20260903 -> FETCH_HEAD\nSwitched to and reset branch 'integration/c6-s3-i2c-20260903'\nYour branch is up to date with 'origin/integration/c6-s3-i2c-20260903'.\nHEAD is now at 3c3bb9a Accept IAS ZoneType enum16 reads\ndiff --git a/main/gateway_transport.c b/main/gateway_transport.c\nindex e458964..52a8bd8 100644\n--- a/main/gateway_transport.c\n+++ b/main/gateway_transport.c\n@@ -40,6 +40,7 @@ static const char *measurement_name(gateway_measurement_kind_t kind)\n     static const char *const names[] = {\n         \"temperature\", \"humidity\", \"illuminance\", \"occupancy\", \"co2\", \"battery_voltage\",\n         \"battery_percent\", \"mains_voltage\", \"voltage\", \"current\", \"power\", \"energy\", \"on_off\", \"level\",\n+        \"contact_open\",\n     };\n     return kind < (sizeof(names) / sizeof(names[0])) ? names[kind] : \"unknown\";\n }\nActivating ESP-IDF 5.5\nSetting IDF_PATH to '/Users/michal/esp/esp-idf'.\n* Checking python version ... 3.13.9\n* Checking python dependencies ... OK\n* Deactivating the current ESP-IDF environment (if any) ... OK\n* Establishing a new ESP-IDF environment ... OK\n* Identifying shell ... bash\n* Detecting outdated tools in system ... OK - no outdated tools found\n* Shell completion ... Autocompletion code generated\ntext source NUL scan passed\n[integration/c6-s3-i2c-20260903 3d3a388] Name contact-open measurements in logs\n 1 file changed, 1 insertion(+)\nTo https://github.com/MichalMatu/esp32_c6_zigbee.git\n   3c3bb9a..3d3a388  HEAD -> integration/c6-s3-i2c-20260903\nCONTACT_LOG_FIX_HEAD=3d3a38885fb458d7693eab39450dad8506d504f6\n",
+      "elapsed_seconds": 14.327,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 4096,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 165.84,
+      "output_policy": "stream",
+      "captured_output_chars": 1630,
+      "output_truncated": false,
+      "current_rss_mb": 102.17,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 14.327
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.071
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.068
+  },
+  "finished_at": "2026-09-04T03:39:42.095678+00:00",
+  "task_digest": "cd370e4ed68a10d49d034c28ee47bfca2805391a996e670feb4481f2b14e5fe2",
+  "idle_timeout": 300,
+  "task_timeout": 2400,
+  "memory_limit_mb": 4096,
+  "attempt_id": "55d87f9a19ffa046ba158716",
+  "daemon_version": "4.15.0"
+}
