@@ -1,14 +1,13 @@
 {
-  "event": "task_started",
+  "event": "task_finished",
   "task_id": "20260904-c6-ias-zone-header-only-v4",
   "task_digest": "ae48d9899865d767230360a6dc816db553002d9d61719d309c251fba27f0a2f2",
-  "idle_timeout": 120,
-  "task_timeout": 600,
-  "memory_limit_mb": 512,
-  "started_at": "2026-09-04T03:56:41.984365+00:00",
+  "status": "done",
+  "failure_reason": null,
+  "finished_at": "2026-09-04T03:56:44.024493+00:00",
   "attempt_id": "9b73f799d094f0505a3133e4",
   "daemon_version": "4.15.0",
   "daemon_pid": 81957,
-  "updated_at": "2026-09-04T03:56:41.984540+00:00",
+  "updated_at": "2026-09-04T03:56:44.260696+00:00",
   "pid": 81957
 }
