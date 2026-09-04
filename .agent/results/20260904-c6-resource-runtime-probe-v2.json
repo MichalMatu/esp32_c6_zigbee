@@ -1,0 +1,59 @@
+{
+  "id": "20260904-c6-resource-runtime-probe-v2",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "started_at": "2026-09-04T01:01:36.254502+00:00",
+  "command_timeout": 120,
+  "edits": {},
+  "commands": [
+    {
+      "command": "ps -p 58809 -ww -o pid=,command=; lsof -a -p 58809 -d cwd 2>/dev/null || true; lsof -p 58809 2>/dev/null | head -80 || true",
+      "exit_code": 0,
+      "output": "",
+      "elapsed_seconds": 0.607,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 512,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": null,
+      "output_policy": "stream",
+      "captured_output_chars": 0,
+      "output_truncated": false,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 0.607
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.202
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.186
+  },
+  "finished_at": "2026-09-04T01:01:39.557688+00:00",
+  "task_digest": "c1e5bbc3b6a8bde061bbaeb4229a7ee45ad4b821a1bb791abfeeb918774ef231",
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "attempt_id": "e706a06bcb3202b29833252b",
+  "daemon_version": "4.15.0"
+}
