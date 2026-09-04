@@ -4,6 +4,11 @@ Native ESP-IDF firmware for an ESP32-C6 coordinator. It is pinned to **ESP-IDF v
 
 This is SDK 2.x firmware: it uses the `esp_zigbee_*` and `ezb_*` APIs and one `ezb_af_create_gateway_endpoint()` gateway endpoint. It does not add a pretend client-cluster data model, nor does it use a ZBOSS/v1 compatibility API, Wi-Fi, BLE, Matter, Thread, MQTT, or an external RCP. An SCD4x-family sensor is supported as an independent local I2C input adapter.
 
+
+## Migration-ready module
+
+This firmware is now packaged as the ESP32-C6 Zigbee/low-level-I/O extension intended for later absorption into the LiteGraph controller monorepo, while remaining independently buildable and testable. See `module.json`, `docs/README.md`, and `docs/LITEGRAPH_MIGRATION.md`. The migration must preserve GatewayLink v2 and UART fallback; true C6↔S3 I2C traffic remains a future gate.
+
 ## Verified stable baseline
 
 The hardware-verified SONOFF SNZB-02D baseline is frozen at tag `c6-sonoff-stable-2026-09-02`, pointing to firmware commit `0d64fb03164d3bcb9f5cddd639977b4027bc581f`. The controlled pairing test completed with successful authorization, no `LEAVE_RESET` and no APS security failures; a following 20-minute read-only soak received repeated temperature/humidity reports with zero rejoin, leave, queue-drop, panic or watchdog events. See [docs/VERIFIED_BASELINE.md](docs/VERIFIED_BASELINE.md) for the exact root cause, fix and evidence.

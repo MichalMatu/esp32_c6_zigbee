@@ -51,6 +51,10 @@ Until the S3 side exists or new C6-specific evidence/task is supplied, an idle C
 On opening a new C6 chat: fetch the live active-branch HEAD and fresh `agent-control:.agent/status/daemon.json`, read this file plus the canonical docs above, then continue only from repository evidence. If daemon is idle and no new C6-side task is enabled by evidence, say so tersely rather than creating work.
 
 
+## Migration/export status — 2026-09-04
+
+The active C6 goal is now to freeze/export this verified firmware as a nested LiteGraph monorepo module. Do not invent additional speculative C6 feature work before migration. Preserve the physically tested firmware behavior, GatewayLink v2, UART fallback, Zigbee storage, and the C6 I2C missing-S3/shared-SCD41 gate. The canonical absorption procedure is `docs/LITEGRAPH_MIGRATION.md`; actual edits to the LiteGraph/S3 repository require that repository's own bound context.
+
 ## 2026-09-04 pre-S3 structural audit
 
 A behavior-preserving structural audit was completed before S3 integration. The oversized Zigbee SDK boundary was split into lifecycle/public API, work/discovery, ZCL/IAS, and command modules; GatewayLink frame mechanics were split from payload codecs. Poll Control Check-In now uses the same per-route discovery claim as other discovery triggers, preventing duplicate Active Endpoint discovery for one current route. `scripts/run_host_tests.sh` is the canonical strict host-test gate. See `docs/AUDIT_2026-09-04.md` for scope and evidence.

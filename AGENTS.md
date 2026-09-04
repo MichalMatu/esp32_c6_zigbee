@@ -93,3 +93,8 @@ Do not erase flash or deliberately destroy the persisted Zigbee network unless t
 - Update `docs/CONTINUATION.md` after a major milestone or when the active branch, hardware state, current goal, or exact next step changes materially.
 
 When the Local Agent task/control/resource/status/planner/binding contract changes, audit this file together with the canonical `MichalMatu/local-agent` documentation so future chats do not depend on remembered conversation context.
+
+
+## Monorepo migration note
+
+Stable C6 architectural invariants in this file should travel with the module. Standalone Local Agent repository binding, control-branch, queue and wake mechanics are operational metadata for `MichalMatu/esp32_c6_zigbee` and must be rewritten rather than copied verbatim when the module is absorbed into a different monorepo.

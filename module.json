@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "module_id": "zigbee-c6",
+  "name": "ESP32-C6 Zigbee extension firmware",
+  "role": "LiteGraph controller Zigbee and deterministic low-level I/O extension",
+  "target": "esp32c6",
+  "framework": {
+    "name": "ESP-IDF",
+    "verified_version": "5.5.4"
+  },
+  "dependencies": {
+    "espressif/esp-zigbee-lib": "2.0.4",
+    "jef-sure/scd4x": "0.0.3"
+  },
+  "project": {
+    "build_root": ".",
+    "entrypoint": "main/app_main.c"
+  },
+  "gatewaylink": {
+    "protocol_version": 2,
+    "contract": "docs/GATEWAY_LINK_V2.md",
+    "supported_backends": [
+      "uart1",
+      "i2c0-mailbox"
+    ],
+    "default_backend": "uart1",
+    "verified_fallback_backend": "uart1",
+    "i2c": {
+      "controller": "I2C0",
+      "role": "master",
+      "sda_gpio": 1,
+      "scl_gpio": 0,
+      "frequency_hz": 400000,
+      "planned_s3_slave_address": "0x42",
+      "shared_scd4x_address": "0x62",
+      "transaction_timeout_ms": 20,
+      "absent_peer_backoff_ms": 1000
+    }
+  },
+  "verification": {
+    "canonical_host_tests": "./scripts/run_host_tests.sh",
+    "migration_readiness": "./scripts/verify_migration_ready.sh",
+    "uart_build": "idf.py set-target esp32c6 && idf.py build",
+    "i2c_build": "CONFIG_GATEWAY_LINK_BACKEND_I2C=y then idf.py build",
+    "emulator_path": "tests/zigbee_device_emulator",
+    "emulator_build": "idf.py -C tests/zigbee_device_emulator set-target esp32c6 && idf.py -C tests/zigbee_device_emulator build",
+    "hardware_tested_source": "f13b293be2de6b1601d179568424e0046d6219a7",
+    "hardware_identities": {
+      "gateway_c6_usb_serial": "40:4C:CA:5D:0A:00",
+      "emulator_c6_usb_serial": "40:4C:CA:5D:01:D8"
+    }
+  },
+  "migration": {
+    "suggested_destination": "firmware/extensions/zigbee-c6/",
+    "guide": "docs/LITEGRAPH_MIGRATION.md"
+  }
+}
