@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-emulator-autostart-semantics-v1",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "resources": [],
+  "memory_limit_mb": 2048,
+  "command_timeout": 600,
+  "idle_timeout": 180,
+  "task_timeout": 900,
+  "commands": [
+    "set -euo pipefail; EXPECTED=d9bbd9be8c975d7ce05590e17631d6092aac49a8; BRANCH=integration/c6-s3-i2c-20260903; git fetch origin \"$BRANCH\"; test \"$(git rev-parse origin/$BRANCH)\" = \"$EXPECTED\"; git checkout --detach \"$EXPECTED\"; test \"$(git rev-parse HEAD)\" = \"$EXPECTED\"; echo '=== CURRENT START ==='; grep -RniE 'esp_zigbee_start\\(|esp_zb_start\\(' tests/zigbee_device_emulator/main main | head -80 || true; echo '=== HEADER DOCS ==='; grep -RniE -B12 -A24 'esp_zigbee_start\\(|esp_zb_start\\(' tests/zigbee_device_emulator/managed_components/espressif__esp-zigbee-lib/include managed_components/espressif__esp-zigbee-lib/include 2>/dev/null | head -240 || true; echo '=== ESPRESSIF EXAMPLES ==='; grep -RniE -B16 -A24 'esp_zb_start\\((true|false)\\)|esp_zigbee_start\\((true|false)\\)' ~/esp/esp-idf/examples/zigbee 2>/dev/null | head -320 || true; echo '=== SIGNAL FLOW EXAMPLES ==='; grep -RniE -B10 -A28 'ZDO_SIGNAL_SKIP_STARTUP|BDB_SIGNAL_DEVICE_FIRST_START|BDB_SIGNAL_DEVICE_REBOOT' ~/esp/esp-idf/examples/zigbee 2>/dev/null | head -360 || true"
+  ]
+}
