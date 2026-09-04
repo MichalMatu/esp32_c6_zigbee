@@ -1,14 +1,13 @@
 {
-  "event": "task_started",
+  "event": "task_finished",
   "task_id": "20260904-c6-docs-language-ux-audit-v62",
   "task_digest": "420bc8e001bfabe15780fca739842695276d982bbeb2c4b1fe192dc0b04c1839",
-  "idle_timeout": 300,
-  "task_timeout": 3600,
-  "memory_limit_mb": 2048,
-  "started_at": "2026-09-04T20:48:10.176903+00:00",
+  "status": "done",
+  "failure_reason": null,
+  "finished_at": "2026-09-04T20:48:12.634814+00:00",
   "attempt_id": "934921acd19388173d369427",
   "daemon_version": "4.15.0",
   "daemon_pid": 81085,
-  "updated_at": "2026-09-04T20:48:10.177122+00:00",
+  "updated_at": "2026-09-04T20:48:12.858082+00:00",
   "pid": 81085
 }
