@@ -606,7 +606,7 @@ static void zigbee_task(void *arg)
     }
     ezb_app_signal_add_handler(app_signal_handler);
     ezb_zcl_core_action_handler_register(zcl_core_action_handler);
-    if (esp_zigbee_start(true) != ESP_OK) {
+    if (esp_zigbee_start(false) != ESP_OK) {
         ESP_LOGE(TAG, "esp_zigbee_start failed");
         vTaskDelete(NULL);
         return;
