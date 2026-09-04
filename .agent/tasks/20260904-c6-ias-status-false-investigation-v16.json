@@ -1,0 +1,14 @@
+{
+  "id": "20260904-c6-ias-status-false-investigation-v16",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": false,
+  "memory_limit_mb": 4096,
+  "command_timeout": 900,
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "commands": [
+    "set -euo pipefail\nBRANCH=integration/c6-s3-i2c-20260903\nEXPECTED=3b331791d6ea2a372f42dd4cb3746af26441cd29\ngit fetch origin \"$BRANCH\"\ntest \"$(git rev-parse origin/$BRANCH)\" = \"$EXPECTED\"\ngit checkout -B \"$BRANCH\" \"$EXPECTED\"\ngit reset --hard \"$EXPECTED\"\n. ~/esp/esp-idf-v5.5.4/export.sh >/dev/null\nprintf '%s\\n' '=== CURRENT IAS EMULATOR PATH ==='\ngrep -n -A35 -B12 'ias_zone_status = ias_zone_status' tests/zigbee_device_emulator/main/emulator_main.c || true\nprintf '%s\\n' '=== EZBEE / ESP ZIGBEE IAS HEADERS AND SOURCES ==='\nROOTS=(tests/zigbee_device_emulator/managed_components managed_components components \"$HOME/esp\" \"$HOME/.espressif\")\nfor root in \"${ROOTS[@]}\"; do\n  [ -e \"$root\" ] || continue\n  echo ROOT=$root\n  grep -RniE --include='*.h' --include='*.c' --include='*.cpp' --include='*.cc' --include='*.inc' '(zone[ _-]*status.*change|status[ _-]*change.*zone|ias_zone.*status|ZONE_STATUS_CHANGE|IAS_ZONE_STATUS|status_change_notification|zone_status_change)' \"$root\" 2>/dev/null | head -n 500 || true\ndone\nprintf '%s\\n' '=== IAS PUBLIC SYMBOL CANDIDATES IN BUILT LIBRARIES ==='\nfind tests/zigbee_device_emulator/build build \"$HOME/.espressif\" \"$HOME/esp\" -type f \( -name '*.a' -o -name '*.so' -o -name '*.dylib' \) 2>/dev/null | while read -r f; do\n  nm -g \"$f\" 2>/dev/null | grep -Ei '(ias.*zone.*status|zone.*status.*change|status.*change.*notif)' && echo LIB=$f || true\ndone | head -n 300\nprintf '%s\\n' '=== IAS HEADER FILES ==='\nfind tests/zigbee_device_emulator/managed_components managed_components components \"$HOME/esp\" \"$HOME/.espressif\" -type f \( -iname '*ias*zone*.h' -o -iname '*zcl*ias*.h' \) 2>/dev/null | sort -u | head -n 100\nprintf '%s\\n' '=== DECISION ==='\npython3 - <<'PY'\nprint('INVESTIGATION_COMPLETE=1')\nprint('REPORT_REQUIRED: exact callable API/signature (if any) for IAS Zone Status Change Notification; whether EZBee exposes it; whether esp_zigbee exposes a lower-level public API; and the smallest standards-correct way to emit both ZoneStatus 0x0001 and 0x0000 after enrollment. Do not modify files.')\nPY\ngit status --short\n"
+  ]
+}
