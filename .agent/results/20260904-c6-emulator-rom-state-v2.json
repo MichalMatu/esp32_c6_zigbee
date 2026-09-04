@@ -1,0 +1,60 @@
+{
+  "id": "20260904-c6-emulator-rom-state-v2",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-09-04T02:08:29.657149+00:00",
+  "command_timeout": 120,
+  "edits": {},
+  "commands": [
+    {
+      "command": ". ~/esp/esp-idf-v5.5.4/export.sh >/dev/null; PORT=$(python3 - <<'PY'\nfrom serial.tools import list_ports\nserial='40:4C:CA:5D:01:D8'\nm=[p for p in list_ports.comports() if p.serial_number==serial and p.vid==0x303A]\nif len(m)!=1: raise SystemExit(f'expected exactly one emulator C6, got {[p.device for p in m]}')\nprint(m[0].device)\nPY\n); echo EMU_PORT=$PORT; echo '=== NO-RESET NO-STUB ROM SYNC AFTER HARD RESET ==='; set +e; python -m esptool --chip esp32c6 -p \"$PORT\" --before no_reset --after no_reset --no-stub chip_id 2>&1; RC=$?; set -e; echo NO_RESET_NO_STUB_RC=$RC; if [ $RC -eq 0 ]; then echo POST_RESET_STATE=ROM_DOWNLOAD_MODE; else echo POST_RESET_STATE=APP_OR_OTHER; fi",
+      "exit_code": 0,
+      "output": "Activating ESP-IDF 5.5\nSetting IDF_PATH to '/Users/michal/esp/esp-idf'.\n* Checking python version ... 3.13.9\n* Checking python dependencies ... OK\n* Deactivating the current ESP-IDF environment (if any) ... OK\n* Establishing a new ESP-IDF environment ... OK\n* Identifying shell ... bash\n* Detecting outdated tools in system ... OK - no outdated tools found\n* Shell completion ... Autocompletion code generated\nEMU_PORT=/dev/cu.usbmodem11101\n=== NO-RESET NO-STUB ROM SYNC AFTER HARD RESET ===\nesptool.py v4.12.0\nSerial port /dev/cu.usbmodem11101\nWARNING: Pre-connection option \"no_reset\" was selected. Connection may fail if the chip is not in bootloader or flasher stub mode.\nConnecting...\nChip is ESP32-C6FH4 (QFN32) (revision v0.1)\nFeatures: Wi-Fi 6, BT 5 (LE), IEEE802.15.4, Single Core + LP Core, 160MHz, Embedded Flash 4MB\nCrystal is 40MHz\nUSB mode: USB-Serial/JTAG\nMAC: 40:4c:ca:ff:fe:5d:01:d8\nBASE MAC: 40:4c:ca:5d:01:d8\nMAC_EXT: ff:fe\nEnabling default SPI flash mode...\n\nA fatal error occurred: Failed to configure SPI flash pins (result was 0100: Undefined errors)\nNO_RESET_NO_STUB_RC=2\nPOST_RESET_STATE=APP_OR_OTHER\n",
+      "elapsed_seconds": 1.409,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 512,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 3.84,
+      "output_policy": "stream",
+      "captured_output_chars": 1126,
+      "output_truncated": false,
+      "current_rss_mb": 3.84,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 1.409
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.098
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.077
+  },
+  "finished_at": "2026-09-04T02:08:32.618625+00:00",
+  "task_digest": "bf275484c8b6b2308527e6c8ba8039fb51f2fdcc4576c2baf8348224bdc5dfd7",
+  "idle_timeout": 120,
+  "task_timeout": 300,
+  "memory_limit_mb": 512,
+  "attempt_id": "02cde8160a123bf168f9f15a",
+  "daemon_version": "4.15.0"
+}
