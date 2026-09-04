@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-branch-cleanup-v61",
+  "task_digest": "69a16556f9f0ee3bdbe67eddd1a04368b5dd013ddeb9449d3b4d6dca0db51208",
+  "idle_timeout": 300,
+  "task_timeout": 1800,
+  "memory_limit_mb": 1024,
+  "started_at": "2026-09-04T20:40:13.472629+00:00",
+  "attempt_id": "db67d029b3dafd0e3dceb1b0",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 75651,
+  "updated_at": "2026-09-04T20:40:13.472729+00:00",
+  "pid": 75651
+}
