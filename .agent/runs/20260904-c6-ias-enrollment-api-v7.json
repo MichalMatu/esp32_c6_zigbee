@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-ias-enrollment-api-v7",
+  "task_digest": "04241a41f7c851772a7b4a62bc5d2f329089192276c9394df5198cf1d3863e96",
+  "idle_timeout": 120,
+  "task_timeout": 600,
+  "memory_limit_mb": 1024,
+  "started_at": "2026-09-04T04:01:39.291517+00:00",
+  "attempt_id": "728723bbc555563e67a7c8e4",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 85374,
+  "updated_at": "2026-09-04T04:01:39.291651+00:00",
+  "pid": 85374
+}
