@@ -1,14 +1,13 @@
 {
-  "event": "task_started",
+  "event": "task_finished",
   "task_id": "20260904-c6-ias-enrollment-types-v8",
   "task_digest": "7efb585df2218dd40fceb84c416713cc8ba760ae834e09e9ddc72f97f1cada2b",
-  "idle_timeout": 120,
-  "task_timeout": 300,
-  "memory_limit_mb": 512,
-  "started_at": "2026-09-04T04:03:44.893491+00:00",
+  "status": "done",
+  "failure_reason": null,
+  "finished_at": "2026-09-04T04:03:46.873686+00:00",
   "attempt_id": "5435325794b8de70d08a468d",
   "daemon_version": "4.15.0",
   "daemon_pid": 86809,
-  "updated_at": "2026-09-04T04:03:44.893645+00:00",
+  "updated_at": "2026-09-04T04:03:47.107050+00:00",
   "pid": 86809
 }
