@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-ias-enrollment-fix-v10",
+  "task_digest": "92c8574b8df7ee284b153bc888127ea5cf27bac1f2bba8108f8ce3e41b3b6243",
+  "idle_timeout": 300,
+  "task_timeout": 3000,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T04:07:40.828109+00:00",
+  "attempt_id": "5a315cd753230e85f38c5f63",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 89330,
+  "updated_at": "2026-09-04T04:07:40.828294+00:00",
+  "pid": 89330
+}
