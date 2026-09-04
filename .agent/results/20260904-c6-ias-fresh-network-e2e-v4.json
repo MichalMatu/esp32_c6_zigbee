@@ -1,0 +1,9 @@
+{
+  "id": "20260904-c6-ias-fresh-network-e2e-v4",
+  "status": "failed",
+  "failure_reason": "invalid_task_file",
+  "started_at": null,
+  "finished_at": "2026-09-04T03:41:20.233040+00:00",
+  "daemon_version": "4.15.0",
+  "error": "JSONDecodeError: Invalid \\escape: line 13 column 5397 (char 5755)"
+}
