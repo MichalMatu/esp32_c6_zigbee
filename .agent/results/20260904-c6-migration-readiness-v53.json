@@ -1,0 +1,82 @@
+{
+  "id": "20260904-c6-migration-readiness-v53",
+  "status": "failed",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": true,
+  "started_at": "2026-09-04T19:16:24.915156+00:00",
+  "command_timeout": 7200,
+  "edits": {},
+  "commands": [
+    {
+      "command": "set -euo pipefail\ngit fetch origin agent-control\ngit show FETCH_HEAD:.agent/scripts/20260904-c6-migration-readiness-v53.sh > /tmp/c6_migration_readiness_v53.sh\nchmod +x /tmp/c6_migration_readiness_v53.sh\n/tmp/c6_migration_readiness_v53.sh",
+      "exit_code": 2,
+      "output": "From https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            agent-control -> FETCH_HEAD\n   f9b253f..6a917c9  agent-control -> origin/agent-control\nFrom https://github.com/MichalMatu/esp32_c6_zigbee\n * branch            integration/c6-s3-i2c-20260903 -> FETCH_HEAD\nSwitched to and reset branch 'integration/c6-s3-i2c-20260903'\nbranch 'integration/c6-s3-i2c-20260903' set up to track 'origin/integration/c6-s3-i2c-20260903'.\nYour branch is up to date with 'origin/integration/c6-s3-i2c-20260903'.\nHEAD is now at 5801964 Record post-refactor C6 hardware validation\n[migration] root=/Users/michal/agent-workspace/repos/esp32-c6-zigbee/work\n[migration] manifest PASS\n[host] source-hygiene\ntext source NUL scan passed\n[host] discovery-claim-source\ndiscovery claim source invariant: PASS\n[host] zcl\ngateway_zcl_value host tests passed\n[host] device-state\ngateway_device_state host tests passed\n[host] inputs\ngateway_inputs host tests passed\n[host] zigbee-input\ngateway_zigbee_input host tests passed\n[host] command-policy\ngateway_command_policy host tests passed\n[host] link-protocol\ngateway_link_protocol host tests passed\n[host] link-event-adapter\ngateway_link_event_adapter host tests passed\n[host] link-stream\ngateway_link_stream host tests passed\n[host] link-snapshot-cache\ngateway_link_snapshot_cache host tests passed\n[host] link-control\ngateway_link_control host tests passed\n[host] link-e2e\ngateway_link virtual S3 E2E host tests passed\n[host] reporting-policy\ngateway_reporting_policy host tests passed\n[host] i2c-mailbox\ngateway_i2c_mailbox host tests passed\n[host] all tests passed\n[migration] readiness PASS\nActivating ESP-IDF 5.5\nSetting IDF_PATH to '/Users/michal/esp/esp-idf'.\n* Checking python version ... 3.13.9\n* Checking python dependencies ... OK\n* Deactivating the current ESP-IDF environment (if any) ... OK\n* Establishing a new ESP-IDF environment ... OK\n* Identifying shell ... bash\n* Detecting outdated tools in system ... OK - no outdated tools found\n* Shell completion ... Autocompletion code generated\n[build] UART PASS\n[build] I2C PASS\nProject directory /Users/michal/agent-workspace/repos/esp32-c6-zigbee/work/tools/zigbee_device_emulator does not exist\n",
+      "elapsed_seconds": 74.132,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 4096,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 159.38,
+      "output_policy": "stream",
+      "captured_output_chars": 2190,
+      "output_truncated": false,
+      "current_rss_mb": 103.45,
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands"
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "command-1",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "failed",
+      "elapsed_seconds": 74.132
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": " M .gitignore\n M AGENTS.md\n M README.md\n M docs/CONTINUATION.md\n?? docs/LITEGRAPH_MIGRATION.md\n?? docs/README.md\n?? module.json\n?? scripts/verify_migration_ready.sh\n",
+    "elapsed_seconds": 0.1
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "diff --git a/.gitignore b/.gitignore\nindex f60afb7..ab14020 100644\n--- a/.gitignore\n+++ b/.gitignore\n@@ -1,3 +1,5 @@\n /build/\n /managed_components/\n /sdkconfig\n+/sdkconfig.old\n+.DS_Store\ndiff --git a/AGENTS.md b/AGENTS.md\nindex d9f377c..2c31d1a 100644\n--- a/AGENTS.md\n+++ b/AGENTS.md\n@@ -93,3 +93,8 @@ Do not erase flash or deliberately destroy the persisted Zigbee network unless t\n - Update `docs/CONTINUATION.md` after a major milestone or when the active branch, hardware state, current goal, or exact next step changes materially.\n \n When the Local Agent task/control/resource/status/planner/binding contract changes, audit this file together with the canonical `MichalMatu/local-agent` documentation so future chats do not depend on remembered conversation context.\n+\n+\n+## Monorepo migration note\n+\n+Stable C6 architectural invariants in this file should travel with the module. Standalone Local Agent repository binding, control-branch, queue and wake mechanics are operational metadata for `MichalMatu/esp32_c6_zigbee` and must be rewritten rather than copied verbatim when the module is absorbed into a different monorepo.\ndiff --git a/README.md b/README.md\nindex 2cda118..bd8ca4c 100644\n--- a/README.md\n+++ b/README.md\n@@ -4,6 +4,11 @@ Native ESP-IDF firmware for an ESP32-C6 coordinator. It is pinned to **ESP-IDF v\n \n This is SDK 2.x firmware: it uses the `esp_zigbee_*` and `ezb_*` APIs and one `ezb_af_create_gateway_endpoint()` gateway endpoint. It does not add a pretend client-cluster data model, nor does it use a ZBOSS/v1 compatibility API, Wi-Fi, BLE, Matter, Thread, MQTT, or an external RCP. An SCD4x-family sensor is supported as an independent local I2C input adapter.\n \n+\n+## Migration-ready module\n+\n+This firmware is now packaged as the ESP32-C6 Zigbee/low-level-I/O extension intended for later absorption into the LiteGraph controller monorepo, while remaining independently buildable and testable. See `module.json`, `docs/README.md`, and `docs/LITEGRAPH_MIGRATION.md`. The migration must preserve GatewayLink v2 and UART fallback; true C6↔S3 I2C traffic remains a future gate.\n+\n ## Verified stable baseline\n \n The hardware-verified SONOFF SNZB-02D baseline is frozen at tag `c6-sonoff-stable-2026-09-02`, pointing to firmware commit `0d64fb03164d3bcb9f5cddd639977b4027bc581f`. The controlled pairing test completed with successful authorization, no `LEAVE_RESET` and no APS security failures; a following 20-minute read-only soak received repeated temperature/humidity reports with zero rejoin, leave, queue-drop, panic or watchdog events. See [docs/VERIFIED_BASELINE.md](docs/VERIFIED_BASELINE.md) for the exact root cause, fix and evidence.\ndiff --git a/docs/CONTINUATION.md b/docs/CONTINUATION.md\nindex 19706c6..59cd00d 100644\n--- a/docs/CONTINUATION.md\n+++ b/docs/CONTINUATION.md\n@@ -51,6 +51,10 @@ Until the S3 side exists or new C6-specific evidence/task is supplied, an idle C\n On opening a new C6 chat: fetch the live active-branch HEAD and fresh `agent-control:.agent/status/daemon.json`, read this file plus the canonical docs above, then continue only from repository evidence. If daemon is idle and no new C6-side task is enabled by evidence, say so tersely rather than creating work.\n \n \n+## Migration/export status — 2026-09-04\n+\n+The active C6 goal is now to freeze/export this verified firmware as a nested LiteGraph monorepo module. Do not invent additional speculative C6 feature work before migration. Preserve the physically tested firmware behavior, GatewayLink v2, UART fallback, Zigbee storage, and the C6 I2C missing-S3/shared-SCD41 gate. The canonical absorption procedure is `docs/LITEGRAPH_MIGRATION.md`; actual edits to the LiteGraph/S3 repository require that repository's own bound context.\n+\n ## 2026-09-04 pre-S3 structural audit\n \n A behavior-preserving structural audit was completed before S3 integration. The oversized Zigbee SDK boundary was split into lifecycle/public API, work/discovery, ZCL/IAS, and command modules; GatewayLink frame mechanics were split from payload codecs. Poll Control Check-In now uses the same per-route discovery claim as other discovery triggers, preventing duplicate Active Endpoint discovery for one current route. `scripts/run_host_tests.sh` is the canonical strict host-test gate. See `docs/AUDIT_2026-09-04.md` for scope and evidence.\n",
+    "elapsed_seconds": 0.094
+  },
+  "failure_reason": "command_failed",
+  "finished_at": "2026-09-04T19:17:40.733875+00:00",
+  "workspace_checkpoint": {
+    "version": 2,
+    "task_id": "20260904-c6-migration-readiness-v53",
+    "reason": "task-exit",
+    "created_at": "2026-09-04T19:17:41.267014+00:00",
+    "base_head": "5801964144ccc8f825c4d4548daca4a1e526937c",
+    "work_branch": "integration/c6-s3-i2c-20260903",
+    "path": "/Users/michal/agent-workspace/repos/esp32-c6-zigbee/checkpoints/20260904-c6-migration-readiness-v53/1788549461137654000-task-exit",
+    "tracked_patch": "tracked.patch",
+    "untracked_root": "untracked",
+    "untracked_files": [
+      "docs/LITEGRAPH_MIGRATION.md",
+      "docs/README.md",
+      "module.json",
+      "scripts/verify_migration_ready.sh"
+    ],
+    "tracked_patch_bytes": 4607,
+    "untracked_bytes": 8742,
+    "total_bytes": 13349,
+    "status": " M .gitignore\n M AGENTS.md\n M README.md\n M docs/CONTINUATION.md\n?? docs/LITEGRAPH_MIGRATION.md\n?? docs/README.md\n?? module.json\n?? scripts/verify_migration_ready.sh\n"
+  },
+  "task_digest": "7720bc4783502ec7653675feedc48c638dd9b97ae08e47f21fc471e815239743",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "attempt_id": "4dda983f643b790ed4f4b89e",
+  "daemon_version": "4.15.0"
+}
