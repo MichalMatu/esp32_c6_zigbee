@@ -1,9 +1,0 @@
-{
-  "id": "20260904-c6-continuation-new-chat-handoff-v27",
-  "status": "failed",
-  "failure_reason": "invalid_task_file",
-  "started_at": null,
-  "finished_at": "2026-09-04T13:15:12.958638+00:00",
-  "daemon_version": "4.15.0",
-  "error": "JSONDecodeError: Invalid control character at: line 13 column 4342 (char 4690)"
-}
