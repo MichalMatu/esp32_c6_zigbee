@@ -1,0 +1,14 @@
+{
+  "event": "task_started",
+  "task_id": "20260904-c6-migration-readiness-v51",
+  "task_digest": "62da97437727be02ce2ffe04df7ec03af65de1055b39afb619de29a53a3cb724",
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "memory_limit_mb": 4096,
+  "started_at": "2026-09-04T17:21:28.192633+00:00",
+  "attempt_id": "ac32f561b1242418dd431da6",
+  "daemon_version": "4.15.0",
+  "daemon_pid": 11657,
+  "updated_at": "2026-09-04T17:21:28.192770+00:00",
+  "pid": 11657
+}
