@@ -1,0 +1,15 @@
+{
+  "id": "20260904-c6-migration-readiness-recover-v54",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "integration/c6-s3-i2c-20260903",
+  "allow_write": true,
+  "resources": [],
+  "memory_limit_mb": 4096,
+  "command_timeout": 7200,
+  "idle_timeout": 900,
+  "task_timeout": 10800,
+  "commands": [
+    "set -euo pipefail\ngit fetch origin agent-control\ngit show FETCH_HEAD:.agent/scripts/20260904-c6-migration-readiness-recover-v54.sh > /tmp/c6_migration_readiness_recover_v54.sh\nchmod +x /tmp/c6_migration_readiness_recover_v54.sh\n/tmp/c6_migration_readiness_recover_v54.sh"
+  ]
+}
