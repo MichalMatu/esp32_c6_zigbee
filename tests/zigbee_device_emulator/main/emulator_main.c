@@ -14,6 +14,7 @@
 #include <ezbee/app_signals.h>
 #include <ezbee/bdb.h>
 #include <ezbee/zcl/cluster/basic_desc.h>
+#include <ezbee/zcl/cluster/ias_zone.h>
 #include <ezbee/zcl/cluster/ias_zone_desc.h>
 #include <ezbee/zcl/cluster/level_desc.h>
 #include <ezbee/zcl/cluster/occupancy_sensing_desc.h>
@@ -51,8 +52,11 @@
 #define EMULATOR_CLUSTER_LEVEL 0x0008U
 #define EMULATOR_CLUSTER_IAS_ZONE 0x0500U
 #define EMULATOR_ATTR_MEASURED_VALUE 0x0000U
+#define EMULATOR_ATTR_IAS_ZONE_STATE 0x0000U
 #define EMULATOR_ATTR_IAS_ZONE_TYPE 0x0001U
 #define EMULATOR_ATTR_IAS_ZONE_STATUS 0x0002U
+#define EMULATOR_ATTR_IAS_CIE_ADDRESS 0x0010U
+#define EMULATOR_ATTR_IAS_ZONE_ID 0x0011U
 #define EMULATOR_ATTR_OCCUPANCY 0x0000U
 #define EMULATOR_ATTR_BATTERY_VOLTAGE 0x0020U
 #define EMULATOR_ATTR_BATTERY_PERCENTAGE_REMAINING 0x0021U
@@ -121,11 +125,38 @@ static bool app_signal_handler(const ezb_app_signal_t *signal)
 static void zcl_core_action_handler(
     ezb_zcl_core_action_callback_id_t callback_id, void *message)
 {
+#if CONFIG_EMULATOR_PROFILE_IAS_CONTACT
+    if (callback_id == EZB_ZCL_CORE_IAS_ZONE_ENROLL_RSP_CB_ID && message != NULL) {
+        ezb_zcl_ias_zone_enroll_rsp_message_t *response = message;
+        response->out.result = EZB_ZCL_STATUS_SUCCESS;
+        if (response->in.payload.enroll_rsp_code ==
+            EZB_ZCL_IAS_ZONE_ENROLL_RESPONSE_CODE_SUCCESS) {
+            uint8_t zone_state = EZB_ZCL_IAS_ZONE_ZONE_STATE_ENROLLED;
+            uint8_t zone_id = response->in.payload.zone_id;
+            const ezb_zcl_status_t state_status = ezb_zcl_set_attr_value(
+                EMULATOR_IAS_ENDPOINT, EMULATOR_CLUSTER_IAS_ZONE,
+                EZB_ZCL_CLUSTER_SERVER, EMULATOR_ATTR_IAS_ZONE_STATE,
+                EMULATOR_STD_MANUF_CODE, &zone_state, false);
+            const ezb_zcl_status_t id_status = ezb_zcl_set_attr_value(
+                EMULATOR_IAS_ENDPOINT, EMULATOR_CLUSTER_IAS_ZONE,
+                EZB_ZCL_CLUSTER_SERVER, EMULATOR_ATTR_IAS_ZONE_ID,
+                EMULATOR_STD_MANUF_CODE, &zone_id, false);
+            ESP_LOGI(TAG,
+                     "IAS enroll response success zone_id=%u state_status=0x%02x id_status=0x%02x",
+                     (unsigned)zone_id, (unsigned)state_status, (unsigned)id_status);
+        } else {
+            ESP_LOGW(TAG, "IAS enroll response rejected code=%u",
+                     (unsigned)response->in.payload.enroll_rsp_code);
+        }
+        return;
+    }
+#endif
     if (callback_id != EZB_ZCL_CORE_SET_ATTR_VALUE_CB_ID ||
         message == NULL || s_roundtrip_queue == NULL) {
         return;
     }
-    const ezb_zcl_set_attr_value_message_t *changed = message;
+    ezb_zcl_set_attr_value_message_t *changed = message;
+    changed->out.result = EZB_ZCL_STATUS_SUCCESS;
     if (changed->info.cluster_role != EZB_ZCL_CLUSTER_SERVER) {
         return;
     }
@@ -139,16 +170,21 @@ static void zcl_core_action_handler(
         event.attribute = EMULATOR_ATTR_ON_OFF;
     } else if (event.cluster == EMULATOR_CLUSTER_LEVEL) {
         event.attribute = EMULATOR_ATTR_CURRENT_LEVEL;
+#if CONFIG_EMULATOR_PROFILE_IAS_CONTACT
+    } else if (event.cluster == EMULATOR_CLUSTER_IAS_ZONE &&
+               changed->in.attribute.id == EMULATOR_ATTR_IAS_CIE_ADDRESS) {
+        event.attribute = EMULATOR_ATTR_IAS_CIE_ADDRESS;
+#endif
     } else {
         return;
     }
 
     if (xQueueSend(s_roundtrip_queue, &event, 0) != pdPASS) {
-        ESP_LOGW(TAG, "roundtrip report queue full ep=%u cluster=0x%04x",
-                 event.endpoint, event.cluster);
+        ESP_LOGW(TAG, "roundtrip queue full ep=%u cluster=0x%04x attr=0x%04x",
+                 event.endpoint, event.cluster, event.attribute);
     } else {
-        ESP_LOGI(TAG, "writable state changed ep=%u cluster=0x%04x; report queued",
-                 event.endpoint, event.cluster);
+        ESP_LOGI(TAG, "writable state changed ep=%u cluster=0x%04x attr=0x%04x; queued",
+                 event.endpoint, event.cluster, event.attribute);
     }
 }
 
@@ -422,6 +458,28 @@ static bool request_report(uint8_t endpoint, uint16_t cluster, uint16_t attribut
     return true;
 }
 
+#if CONFIG_EMULATOR_PROFILE_IAS_CONTACT
+static bool request_ias_enroll(uint8_t endpoint)
+{
+    const ezb_zcl_ias_zone_enroll_req_cmd_t request = {
+        .cmd_ctrl = {
+            .dst_addr = EZB_ADDRESS_SHORT(EMULATOR_COORDINATOR_SHORT),
+            .dst_ep = EMULATOR_COORDINATOR_ENDPOINT,
+            .src_ep = endpoint,
+            .dis_default_rsp = false,
+        },
+        .payload = {
+            .zone_type = EZB_ZCL_IAS_ZONE_ZONE_TYPE_CONTACT_SWITCH,
+            .manuf_code = EMULATOR_STD_MANUF_CODE,
+        },
+    };
+    const ezb_err_t error = ezb_zcl_ias_zone_enroll_cmd_req(&request);
+    ESP_LOGI(TAG, "IAS enroll request ep=%u error=%u",
+             endpoint, (unsigned)error);
+    return error == EZB_ERR_NONE;
+}
+#endif
+
 static void roundtrip_report_task(void *arg)
 {
     (void)arg;
@@ -436,10 +494,19 @@ static void roundtrip_report_task(void *arg)
                      event.endpoint, event.cluster);
             continue;
         }
-        const bool sent = request_report(event.endpoint, event.cluster, event.attribute);
+        bool sent = false;
+#if CONFIG_EMULATOR_PROFILE_IAS_CONTACT
+        if (event.cluster == EMULATOR_CLUSTER_IAS_ZONE &&
+            event.attribute == EMULATOR_ATTR_IAS_CIE_ADDRESS) {
+            sent = request_ias_enroll(event.endpoint);
+        } else
+#endif
+        {
+            sent = request_report(event.endpoint, event.cluster, event.attribute);
+        }
         esp_zigbee_lock_release();
-        ESP_LOGI(TAG, "roundtrip report ep=%u cluster=0x%04x sent=%u",
-                 event.endpoint, event.cluster, (unsigned)sent);
+        ESP_LOGI(TAG, "roundtrip action ep=%u cluster=0x%04x attr=0x%04x sent=%u",
+                 event.endpoint, event.cluster, event.attribute, (unsigned)sent);
     }
 }
 
@@ -455,7 +522,10 @@ static bool set_server_attr(
         return false;
     }
 #if CONFIG_EMULATOR_EXPLICIT_REPORTS
-    (void)request_report(endpoint, cluster, attribute);
+    if (cluster != EMULATOR_CLUSTER_IAS_ZONE ||
+        attribute != EMULATOR_ATTR_IAS_ZONE_STATUS) {
+        (void)request_report(endpoint, cluster, attribute);
+    }
 #endif
     return true;
 }
