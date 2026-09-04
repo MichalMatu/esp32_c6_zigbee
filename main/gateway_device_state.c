@@ -136,6 +136,14 @@ bool gateway_device_claim_discovery(device_slot_t *slot)
     return true;
 }
 
+bool gateway_device_route_is_current(
+    const device_slot_t *slot, uint16_t short_addr)
+{
+    return slot != NULL && slot->state == SLOT_ACTIVE &&
+        short_addr != GATEWAY_INVALID_SHORT_ADDR &&
+        slot->device.short_addr == short_addr;
+}
+
 void gateway_device_release_discovery(device_slot_t *slot, uint16_t short_addr)
 {
     if (slot != NULL && slot->discovery_short_addr == short_addr) {

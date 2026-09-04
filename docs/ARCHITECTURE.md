@@ -9,7 +9,7 @@ The ESP32-C6 firmware is intentionally split into a small SDK-facing shell and h
 - `gateway_inputs.c/.h` defines the protocol-neutral input identity, measurement kinds/units, and capability bits. Zigbee endpoints and local buses must normalize into this contract before transport.
 - `gateway_events.c/.h` defines the normalized internal event envelope, static event queue, drop accounting, timestamps, and common warning/event construction helpers. Zigbee lifecycle metadata may remain Zigbee-specific, while measurement events carry a protocol-neutral `gateway_input_id_t`.
 - `gateway_transport.c/.h` consumes normalized events and renders the current serial/log transport. It must not own Zigbee state or interpretation policy.
-- `gateway_link_protocol.c/.h` defines the hardware-independent GatewayLink v1 framing and payload codec for the future C6-to-S3 link. It uses COBS framing, CRC32, explicit little-endian wire values and fixed-size buffers; it never serializes raw C structs.
+- `gateway_link_frame.c` owns GatewayLink v2 frame-envelope mechanics: COBS encode/decode and CRC32 over fixed-size buffers. `gateway_link_protocol.c/.h` owns typed v2 payload codecs and the public protocol API. Neither serializes raw C structs; both are physical-backend independent.
 - `gateway_link_event_adapter.c/.h` is the pure mapping from normalized gateway input events to GatewayLink messages. Protocol-specific Zigbee lifecycle/raw events are intentionally not forwarded.
 - `gateway_link_stream.c/.h` is the pure incremental COBS frame stream decoder. Oversize/corrupt frames are dropped at the delimiter so later frames resynchronize without dynamic allocation.
 - `gateway_link_snapshot_cache.c/.h` owns a bounded cache of protocol-neutral input descriptors for reconnect resynchronization. The UART TX task is its sole runtime owner, so descriptor caching and snapshot replay have deterministic ordering without a cross-task lock. It is transport state only, not the application input registry; incremental events remain authoritative after a snapshot.
@@ -24,7 +24,7 @@ The ESP32-C6 firmware is intentionally split into a small SDK-facing shell and h
 - `gateway_zigbee_input.c/.h` is the pure Zigbee-to-generic input adapter for capability aggregation and stable IEEE-based input identity. It deliberately refuses provisional short-address identities.
 - `gateway_reporting_policy.c/.h` is the pure, host-testable table for standard binding requirements and per-attribute Configure Reporting parameters.
 - `gateway_device_state.c/.h` owns the bounded IEEE-first device/endpoint registry, generation-safe references, short-address replacement, reclaim rules, and bounded per-device binding/reporting request records keyed by endpoint/cluster/attribute. It has no ESP Zigbee or FreeRTOS dependency.
-- `zigbee_gateway.c/.h` is the SDK integration/orchestration boundary: stack lifecycle, app/ZCL signal dispatch, discovery jobs, bounded async callback contexts, binding/reporting submission, and permit-join control.
+- `zigbee_gateway.c/.h` is the small public/lifecycle shell for stack start, app signals, permit-join and normalized public submissions. `zigbee_gateway_work.c` owns the bounded discovery/work queue, async ZDO contexts, binding/reporting submission and route-safe scheduling. `zigbee_gateway_zcl.c` owns ZCL report/read/config/Poll-Control/IAS callbacks and normalization. `zigbee_gateway_commands.c` owns bounded outbound command confirmation contexts and ZCL command translation. `zigbee_gateway_internal.h` is private glue only; no application code may depend on it.
 
 ## Zigbee join lifecycle boundary
 
@@ -50,7 +50,7 @@ All fixed-capacity structures must fail visibly rather than allocate without bou
 
 ## Verification
 
-`gateway_inputs`, `gateway_zcl_value`, `gateway_reporting_policy`, and `gateway_device_state` have strict C11 host tests compiled with `-Wall -Wextra -Werror -pedantic`. GitHub CI also builds the complete firmware with the pinned ESP-IDF/ESP Zigbee versions. Hardware/RF behavior remains a separate validation gate after source/CI validation.
+`scripts/run_host_tests.sh` is the canonical strict C11 host-test gate and compiles all host-tested modules with `-Wall -Wextra -Werror -pedantic`. GitHub CI invokes that runner and builds the complete firmware with the pinned ESP-IDF/ESP Zigbee versions. Local release gates additionally build both UART-default and I2C GatewayLink configurations. Hardware/RF behavior remains a separate validation gate after source/CI validation.
 
 ## Future hardware-offload direction
 

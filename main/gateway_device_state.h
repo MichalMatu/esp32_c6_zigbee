@@ -85,6 +85,8 @@ void gateway_device_maybe_reclaim(device_slot_t *slot);
 device_slot_t *gateway_device_upsert(
     uint16_t short_addr, const uint8_t ieee[8]);
 bool gateway_device_claim_discovery(device_slot_t *slot);
+bool gateway_device_route_is_current(
+    const device_slot_t *slot, uint16_t short_addr);
 void gateway_device_release_discovery(device_slot_t *slot, uint16_t short_addr);
 void gateway_device_reset_discovery(device_slot_t *slot);
 bool gateway_device_endpoint_update_basic(

@@ -61,9 +61,13 @@ int main(void)
     assert(a->device.short_addr == 0x1234U);
     assert(gateway_device_find_by_ieee(IEEE_A, false) == a);
     assert(gateway_device_find_by_short(0x1234U, false) == a);
+    assert(gateway_device_route_is_current(a, 0x1234U));
+    assert(!gateway_device_route_is_current(a, GATEWAY_INVALID_SHORT_ADDR));
     assert(a->discovery_short_addr == GATEWAY_INVALID_SHORT_ADDR);
     assert(gateway_device_claim_discovery(a));
     assert(a->discovery_short_addr == 0x1234U);
+    assert(!gateway_device_claim_discovery(a));
+    /* Repeated check-ins for one route must not claim duplicate discovery. */
     assert(!gateway_device_claim_discovery(a));
     gateway_device_release_discovery(a, 0x9999U);
     assert(a->discovery_short_addr == 0x1234U);
@@ -78,6 +82,8 @@ int main(void)
     assert(same == a);
     assert(a->previous_short_addr == 0x1234U);
     assert(a->device.short_addr == 0x2345U);
+    assert(!gateway_device_route_is_current(a, 0x1234U));
+    assert(gateway_device_route_is_current(a, 0x2345U));
     assert(gateway_device_find_by_short(0x1234U, false) == NULL);
     assert(gateway_device_claim_discovery(a));
     assert(a->discovery_short_addr == 0x2345U);

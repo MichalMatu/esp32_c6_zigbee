@@ -6,14 +6,14 @@ Use it together with:
 
 - `AGENTS.md` for stable repository, Local Agent, resource, and execution rules;
 - `docs/ARCHITECTURE.md` for module ownership and architectural invariants;
-- `docs/GATEWAY_LINK_V1.md` for the GatewayLink protocol contract;
+- `docs/GATEWAY_LINK_V2.md` for the active GatewayLink protocol contract; `docs/GATEWAY_LINK_V1.md` is historical recovery documentation only;
 - `docs/VERIFIED_BASELINE.md` for frozen hardware/test evidence and recovery points.
 
 `CONTINUATION.md` is intentionally mutable. Update it whenever the active goal, branch, hardware state, or next milestone changes materially.
 
 ## START HERE — new ChatGPT window handoff (2026-09-04)
 
-Read this section first, then `AGENTS.md`, `docs/VERIFIED_BASELINE.md`, `docs/ARCHITECTURE.md`, and `docs/GATEWAY_LINK_V1.md`. Do not reconstruct project state from old chat messages when repository evidence is available.
+Read this section first, then `AGENTS.md`, `docs/VERIFIED_BASELINE.md`, `docs/ARCHITECTURE.md`, and `docs/GATEWAY_LINK_V2.md`. Do not reconstruct project state from old chat messages when repository evidence is available.
 
 ### Hard repository / Local Agent boundary
 
@@ -50,6 +50,12 @@ Until the S3 side exists or new C6-specific evidence/task is supplied, an idle C
 
 On opening a new C6 chat: fetch the live active-branch HEAD and fresh `agent-control:.agent/status/daemon.json`, read this file plus the canonical docs above, then continue only from repository evidence. If daemon is idle and no new C6-side task is enabled by evidence, say so tersely rather than creating work.
 
+
+## 2026-09-04 pre-S3 structural audit
+
+A behavior-preserving structural audit is being closed before S3 integration. The oversized Zigbee SDK boundary was split into lifecycle/public API, work/discovery, ZCL/IAS, and command modules; GatewayLink frame mechanics were split from payload codecs. Poll Control Check-In now uses the same per-route discovery claim as other discovery triggers, preventing duplicate Active Endpoint discovery for one current route. `scripts/run_host_tests.sh` is the canonical strict host-test gate. See `docs/AUDIT_2026-09-04.md` for scope and evidence.
+
+Active development uses GatewayLink v2. v1 is retained only as a frozen recovery contract and must not be implemented by a new S3 peer.
 
 ## Current work context
 
@@ -221,7 +227,7 @@ With the Zigbee-laboratory baseline now frozen, required C6↔S3 end-to-end beha
 
 Do not delete the UART backend. UART remains the known-working fallback/diagnostic transport until I2C is independently hardware-verified.
 
-A later cleanup may split logical packet encoding from UART-specific COBS stream framing more strictly, but do not perform that refactor merely as a prerequisite for the first physical I2C validation unless evidence shows it is necessary.
+GatewayLink frame mechanics (COBS/CRC/frame envelope) are now split from payload codecs in `gateway_link_frame.c`; the public v2 wire contract is unchanged. UART and I2C continue to carry the same complete encoded frame.
 
 ## Completed milestone — Generic Zigbee Device Interview & Capability Discovery
 

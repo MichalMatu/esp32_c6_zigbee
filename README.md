@@ -10,7 +10,7 @@ The hardware-verified SONOFF SNZB-02D baseline is frozen at tag `c6-sonoff-stabl
 
 ## Architecture
 
-The firmware keeps ESP Zigbee SDK integration separate from a protocol-neutral input contract, normalized events, transport, value decoding, reporting policy, device state, and console handling. Zigbee is one input adapter; local I2C sensors can use the same `gateway_input_id_t` + normalized measurement boundary. The pure input/value/policy/state modules have strict host tests in addition to the full ESP-IDF firmware build. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for module responsibilities and invariants.
+The firmware keeps ESP Zigbee SDK integration separate from a protocol-neutral input contract, normalized events, transport, value decoding, reporting policy, device state, and console handling. The SDK-facing gateway itself is split into lifecycle/public API, bounded discovery/work scheduling, ZCL/IAS handling, and outbound command execution so no single translation unit owns the whole coordinator. Zigbee is one input adapter; local I2C sensors can use the same `gateway_input_id_t` + normalized measurement boundary. The pure input/value/policy/state modules have strict host tests in addition to the full ESP-IDF firmware build. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for module responsibilities and invariants.
 
 ## Local SCD4x input
 
