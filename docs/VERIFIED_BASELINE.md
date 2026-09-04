@@ -178,3 +178,17 @@ git checkout c6-gatewaylink-stable-2026-09-03
 ```
 
 Do not move or recreate this tag onto a later commit.
+
+## Dual-C6 Zigbee laboratory development checkpoint — 2026-09-04
+
+This is a hardware-verified development checkpoint, not a frozen stable tag.
+
+Physical task `20260904-c6-ias-fresh-network-e2e-v3` used emulator firmware `1821f6d95c0a1c1481031ecf42e35e586006146d` and proved fresh coordinator formation, 180 s permit-join, emulator factory-new steering success, authorization, announce, endpoint 1 discovery, IAS cluster `0x0500`, Basic metadata, and no emulator abort/panic.
+
+It did not complete IAS Contact semantic E2E: the coordinator logged `IAS ZoneType read failed`, no normalized `CONTACT_OPEN` was observed, and emulator ZoneStatus report requests returned `error=5`.
+
+Therefore no stable Zigbee-lab tag should be created yet. The next gate is successful remote ZoneType `0x0015` read, observed Contact Open false/true normalization, then restart/rejoin resilience.
+
+Verified boards:
+- coordinator serial `40:4C:CA:5D:0A:00`;
+- emulator serial `40:4C:CA:5D:01:D8`.

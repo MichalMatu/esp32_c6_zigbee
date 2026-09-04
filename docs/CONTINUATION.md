@@ -31,6 +31,30 @@ Current stable source state before S3 integration:
 
 Always inspect the live active-branch HEAD instead of assuming this document's commit is still current.
 
+## 2026-09-04 dual-C6 Zigbee laboratory checkpoint
+
+Verified code checkpoint before this documentation commit:
+- `1821f6d95c0a1c1481031ecf42e35e586006146d` — emulator uses explicit commissioning via `esp_zigbee_start(false)`.
+- `d9bbd9be8c975d7ce05590e17631d6092aac49a8` — emulator starts BDB initialization/network steering.
+- `de6ac186f9aa6f0e533edf2a2ef8ffcf13691396` — emulator initializes `zb_storage`.
+- `85869b350d77d244993812bfec3787e2a9e38e58` — production Phase 7 IAS Contact support.
+
+Physical task `20260904-c6-ias-fresh-network-e2e-v3` proved fresh network formation, 180 s permit-join, emulator `factory_new=1`, steering status 0, authorization status 0, device announce, endpoint 1 discovery, IAS Zone cluster `0x0500`, and Basic metadata (`C6EmuV20` / `C6Lab`). The emulator did not abort or panic.
+
+This closes the dual-C6 network formation + join + authorization + endpoint/IAS-cluster discovery checkpoint. Do not repeat the storage/autostart/steering investigation unless later code changes invalidate this evidence.
+
+### Current single blocker / exact continuation point
+
+IAS semantic E2E is not complete. The coordinator detects cluster `0x0500` but logs `IAS ZoneType read failed`. The emulator locally initializes `ZoneType=0x0015` and `ZoneStatus=0x0000`, while explicit ZoneStatus report requests currently return `error=5`. No normalized `CONTACT_OPEN` was observed.
+
+Read-only task `20260904-c6-ias-zonetype-read-diagnose-v1` confirmed that `ezb_zcl_ias_zone_create_cluster_desc()` accepts `ezb_zcl_ias_zone_cluster_server_config_t` or `NULL`. The emulator currently creates the IAS server descriptor with `NULL` and sets ZoneType/ZoneStatus afterward with `ezb_zcl_set_attr_value()`. Root cause is not yet proven between server-side attribute exposure and the coordinator read-attributes request/response path.
+
+Next chat: inspect the exact IAS server config/attribute registration and coordinator `DISCOVERY_READ_IAS_ZONE_TYPE` request+callback path, make the smallest evidence-driven fix, then rerun fresh-network dual-C6 E2E until remote ZoneType `0x0015` is read and normalized `CONTACT_OPEN` false/true toggles are observed. Then verify restart/rejoin persistence and freeze the next Zigbee-lab baseline.
+
+Verified hardware identities; always re-resolve live ports from serial before hardware writes:
+- coordinator C6 serial `40:4C:CA:5D:0A:00`;
+- emulator C6 serial `40:4C:CA:5D:01:D8`.
+
 ## Project split
 
 ESP32-C6 owns deterministic low-level work:
@@ -151,7 +175,7 @@ Implementation progress after the generic-coordinator audit:
 - Phase 4 connects `SET_MEASUREMENT_POLICY` to standard Zigbee Configure Reporting through the discovery-task ownership boundary. Supported requests are correlated by `request_id`; APPLIED/CLAMPED/UNSUPPORTED/ERROR is emitted only from real validation/device-response outcomes.
 - Phase 5 adds normalized writable On/Off over GatewayLink v2. `COMMAND_RESULT=TRANSMITTED` is emitted only from the ezbee AF confirmation callback; the later normalized On/Off measurement remains authoritative device state.
 - Phase 6 adds normalized Level Control: CurrentLevel is normalized to percent and `SET_LEVEL` maps to standard `MoveToLevel` without implicit On/Off side effects.
-- The next implementation slice is the separate second-C6 emulator app/profiles for deterministic interview/reporting/command/state round-trip testing.
+- The second-C6 emulator and core deterministic profiles are implemented. Physical commissioning passes through IAS cluster discovery; the current blocker is remote IAS ZoneType read before CONTACT_OPEN normalization can complete.
 
 Execution order:
 
