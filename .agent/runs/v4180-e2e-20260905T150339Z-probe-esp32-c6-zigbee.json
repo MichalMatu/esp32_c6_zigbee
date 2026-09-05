@@ -1,14 +1,13 @@
 {
-  "event": "task_started",
+  "event": "task_finished",
   "task_id": "v4180-e2e-20260905T150339Z-probe-esp32-c6-zigbee",
   "task_digest": "3bd86cb3f5e60e29046d1c8f47b8dd795a3e162ba40dc3ed5bd81783f4114e5b",
-  "idle_timeout": 360,
-  "task_timeout": 600,
-  "memory_limit_mb": 256,
-  "started_at": "2026-09-05T15:06:10.993746+00:00",
+  "status": "done",
+  "failure_reason": null,
+  "finished_at": "2026-09-05T15:06:13.098274+00:00",
   "attempt_id": "88920d977b813e33989fe500",
   "daemon_version": "4.18.0",
   "daemon_pid": 70374,
-  "updated_at": "2026-09-05T15:06:10.993925+00:00",
+  "updated_at": "2026-09-05T15:06:13.302833+00:00",
   "pid": 70374
 }
