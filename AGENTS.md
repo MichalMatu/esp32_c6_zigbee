@@ -23,6 +23,8 @@ For active work use the LiteGraph control plane documented by the canonical modu
 
 Do not copy changes from LiteGraph back into this repository and do not create a second canonical C6 source tree.
 
+A Chat Bridge conversation bound to this archival repository must pause for an explicit operator **Rebind** before following work in LiteGraph. Never substitute the LiteGraph binding from model context. The archival catalog entry and local registry remain disabled for execution.
+
 ## Historical use
 
 This repository remains useful for read-only provenance and recovery:
