@@ -23,7 +23,7 @@ For active work use the LiteGraph control plane documented by the canonical modu
 
 Do not copy changes from LiteGraph back into this repository and do not create a second canonical C6 source tree.
 
-A Chat Bridge conversation bound to this archival repository must pause for an explicit operator **Rebind** before following work in LiteGraph. Never substitute the LiteGraph binding from model context. The archival catalog entry and local registry remain disabled for execution.
+A Chat Bridge conversation bound to this archival repository must pause for an explicit operator **Rebind** before following work in LiteGraph. Never substitute the LiteGraph binding from model context. The standalone binding has been removed from the Local Agent catalog and registry; its Mac workspace is retired. Historical recovery data is kept outside active workspaces.
 
 ## Historical use
 
