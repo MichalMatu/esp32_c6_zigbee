@@ -1,0 +1,61 @@
+{
+  "id": "v4180-e2e-20260905T150339Z-disabled-pending-esp32-c6-zigbee",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-09-05T15:11:01.971562+00:00",
+  "command_timeout": 360,
+  "edits": {},
+  "commands": [
+    {
+      "command": "python3 -u -c 'import os,time; print('\"'\"'LA418_E2E_STARTED v4180-e2e-20260905T150339Z-disabled-pending-esp32-c6-zigbee'\"'\"', os.getpid(), flush=True); time.sleep(0); print('\"'\"'LA418_E2E_COMPLETED v4180-e2e-20260905T150339Z-disabled-pending-esp32-c6-zigbee'\"'\"', flush=True)'",
+      "exit_code": 0,
+      "output": "LA418_E2E_STARTED v4180-e2e-20260905T150339Z-disabled-pending-esp32-c6-zigbee 74483\nLA418_E2E_COMPLETED v4180-e2e-20260905T150339Z-disabled-pending-esp32-c6-zigbee\n",
+      "elapsed_seconds": 0.392,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 256,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 0.47,
+      "output_policy": "stream",
+      "captured_output_chars": 164,
+      "output_truncated": false,
+      "current_rss_mb": 0.47,
+      "stage_name": "release-e2e-disabled-pending",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "stage_timeout": 360
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "release-e2e-disabled-pending",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 0.392
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.071
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.066
+  },
+  "finished_at": "2026-09-05T15:11:04.269184+00:00",
+  "task_digest": "43a32852f5ece959acf9a16fcbde0d6498ea4fdfa9c3da0a00e1bf594f523c46",
+  "idle_timeout": 360,
+  "task_timeout": 600,
+  "memory_limit_mb": 256,
+  "attempt_id": "76a54d4511211f16bdb73bda",
+  "daemon_version": "4.18.0"
+}
