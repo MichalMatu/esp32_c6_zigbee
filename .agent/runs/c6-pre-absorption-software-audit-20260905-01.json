@@ -1,16 +1,16 @@
 {
   "event": "command_started",
   "phase": "commands",
-  "index": 4,
+  "index": 5,
   "total": 8,
-  "command": "./scripts/verify_migration_ready.sh",
-  "pid": 83605,
+  "command": "set -euo pipefail; . ~/esp/esp-idf-v5.5.4/export.sh; ./scripts/ci_build_variant.sh uart",
+  "pid": 83788,
   "timeout": 900,
   "idle_timeout": 300,
   "memory_limit_mb": 4096,
-  "started_at": "2026-09-05T00:56:16.764908+00:00",
-  "stage_name": "command-4",
-  "stage_index": 4,
+  "started_at": "2026-09-05T00:56:23.245963+00:00",
+  "stage_name": "command-5",
+  "stage_index": 5,
   "stage_total": 8,
   "stage_phase": "commands",
   "task_id": "c6-pre-absorption-software-audit-20260905-01",
@@ -18,5 +18,5 @@
   "task_digest": "7d3f54df51721ee87d77f6ae9808f38efcfb35ae94f62c021f42ddbd66a0d524",
   "daemon_version": "4.15.0",
   "daemon_pid": 83363,
-  "updated_at": "2026-09-05T00:56:16.834299+00:00"
+  "updated_at": "2026-09-05T00:56:23.317715+00:00"
 }
