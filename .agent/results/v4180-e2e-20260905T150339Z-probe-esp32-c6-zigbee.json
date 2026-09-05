@@ -1,0 +1,61 @@
+{
+  "id": "v4180-e2e-20260905T150339Z-probe-esp32-c6-zigbee",
+  "status": "done",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": false,
+  "started_at": "2026-09-05T15:06:10.993850+00:00",
+  "command_timeout": 360,
+  "edits": {},
+  "commands": [
+    {
+      "command": "python3 -u -c 'import os,time; print('\"'\"'LA418_E2E_STARTED v4180-e2e-20260905T150339Z-probe-esp32-c6-zigbee'\"'\"', os.getpid(), flush=True); time.sleep(0); print('\"'\"'LA418_E2E_COMPLETED v4180-e2e-20260905T150339Z-probe-esp32-c6-zigbee'\"'\"', flush=True)'",
+      "exit_code": 0,
+      "output": "LA418_E2E_STARTED v4180-e2e-20260905T150339Z-probe-esp32-c6-zigbee 70588\nLA418_E2E_COMPLETED v4180-e2e-20260905T150339Z-probe-esp32-c6-zigbee\n",
+      "elapsed_seconds": 0.386,
+      "timed_out": false,
+      "idle_timed_out": false,
+      "memory_limit_mb": 256,
+      "memory_limited": false,
+      "background_process_leak": false,
+      "peak_rss_mb": 0.23,
+      "output_policy": "stream",
+      "captured_output_chars": 142,
+      "output_truncated": false,
+      "current_rss_mb": 0.23,
+      "stage_name": "release-e2e-probe",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "stage_timeout": 360
+    }
+  ],
+  "verification": [],
+  "stages": [
+    {
+      "stage_name": "release-e2e-probe",
+      "stage_index": 1,
+      "stage_total": 1,
+      "stage_phase": "commands",
+      "outcome": "passed",
+      "elapsed_seconds": 0.386
+    }
+  ],
+  "git_status": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.069
+  },
+  "git_diff": {
+    "exit_code": 0,
+    "output": "",
+    "elapsed_seconds": 0.066
+  },
+  "finished_at": "2026-09-05T15:06:13.098274+00:00",
+  "task_digest": "3bd86cb3f5e60e29046d1c8f47b8dd795a3e162ba40dc3ed5bd81783f4114e5b",
+  "idle_timeout": 360,
+  "task_timeout": 600,
+  "memory_limit_mb": 256,
+  "attempt_id": "88920d977b813e33989fe500",
+  "daemon_version": "4.18.0"
+}
