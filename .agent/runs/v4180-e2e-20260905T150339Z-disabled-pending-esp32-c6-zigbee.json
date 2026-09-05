@@ -1,14 +1,13 @@
 {
-  "event": "task_started",
+  "event": "task_finished",
   "task_id": "v4180-e2e-20260905T150339Z-disabled-pending-esp32-c6-zigbee",
   "task_digest": "43a32852f5ece959acf9a16fcbde0d6498ea4fdfa9c3da0a00e1bf594f523c46",
-  "idle_timeout": 360,
-  "task_timeout": 600,
-  "memory_limit_mb": 256,
-  "started_at": "2026-09-05T15:11:01.971520+00:00",
+  "status": "done",
+  "failure_reason": null,
+  "finished_at": "2026-09-05T15:11:04.269184+00:00",
   "attempt_id": "76a54d4511211f16bdb73bda",
   "daemon_version": "4.18.0",
   "daemon_pid": 74275,
-  "updated_at": "2026-09-05T15:11:01.971606+00:00",
+  "updated_at": "2026-09-05T15:11:04.477909+00:00",
   "pid": 74275
 }
