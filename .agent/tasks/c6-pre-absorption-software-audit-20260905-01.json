@@ -1,0 +1,20 @@
+{
+  "id": "c6-pre-absorption-software-audit-20260905-01",
+  "agent_binding": "64877d7d-af3f-4312-a511-699c44aa42dd",
+  "mode": "commands",
+  "work_branch": "main",
+  "allow_write": true,
+  "resources": [],
+  "memory_limit_mb": 4096,
+  "task_timeout": 7200,
+  "commands": [
+    "set -euo pipefail; git fetch origin main; test -z \"$(git status --porcelain)\"; git reset --hard origin/main; echo CURRENT_HEAD=$(git rev-parse HEAD); git log --oneline --decorate -6",
+    "set -euo pipefail; echo '=== DIFF FROM HARDWARE-PROVEN RUNTIME ==='; git diff --name-status 5ce963d6ee3b03b9b788f9d02bd9acb4910acead..HEAD; echo '=== RUNTIME/BUILD INPUT CHANGES ==='; git diff --name-only 5ce963d6ee3b03b9b788f9d02bd9acb4910acead..HEAD -- main CMakeLists.txt dependencies.lock partitions.csv sdkconfig.defaults || true; git diff --check 5ce963d6ee3b03b9b788f9d02bd9acb4910acead..HEAD",
+    "./scripts/check_repository_quality.sh",
+    "./scripts/verify_migration_ready.sh",
+    "set -euo pipefail; . ~/esp/esp-idf-v5.5.4/export.sh; ./scripts/ci_build_variant.sh uart",
+    "set -euo pipefail; . ~/esp/esp-idf-v5.5.4/export.sh; ./scripts/ci_build_variant.sh i2c",
+    "set -euo pipefail; . ~/esp/esp-idf-v5.5.4/export.sh; ./scripts/ci_build_variant.sh emulator",
+    "set -euo pipefail; git status -sb; test -z \"$(git status --porcelain)\"; echo VERIFIED_HEAD=$(git rev-parse HEAD)"
+  ]
+}
